@@ -1,0 +1,491 @@
+// Functions to load/save/reset struct lu objects //
+
+use crate::basiclu::*;
+use crate::lu_def::{BASICLU_HASH, NO_TASK};
+
+// private entries in xstore
+pub(crate) const BASICLU_TASK: usize = 256;
+pub(crate) const BASICLU_FTCOLUMN_IN: usize = 257;
+pub(crate) const BASICLU_FTCOLUMN_OUT: usize = 258;
+pub(crate) const BASICLU_PIVOT_ROW: usize = 259;
+pub(crate) const BASICLU_PIVOT_COL: usize = 260;
+pub(crate) const BASICLU_RANKDEF: usize = 261;
+pub(crate) const BASICLU_MIN_COLNZ: usize = 262;
+pub(crate) const BASICLU_MIN_ROWNZ: usize = 263;
+pub(crate) const BASICLU_MARKER: usize = 266;
+pub(crate) const BASICLU_UPDATE_COST_NUMER: usize = 267;
+pub(crate) const BASICLU_UPDATE_COST_DENOM: usize = 268;
+pub(crate) const BASICLU_PIVOTLEN: usize = 269;
+
+/// This data structure provides access to istore, xstore.
+///
+/// lu_* routines do not access istore, xstore directly. Instead, they operate
+/// on a struct lu object. Scalar quantities stored in istore, xstore are copied
+/// to a struct lu object by lu_load() and copied back by lu_save(). Subarrays
+/// of istore, xstore and the user arrays Li, Lx, Ui, Ux, Wi, Wx are aliased by
+/// pointers in struct lu.
+#[derive(Default)]
+pub struct lu<'a> {
+    // user parameters, not modified //
+    pub Lmem: lu_int,
+    pub Umem: lu_int,
+    pub Wmem: lu_int,
+    pub droptol: f64,
+    pub abstol: f64,
+    pub reltol: f64,
+    pub nzbias: lu_int,
+    pub maxsearch: lu_int,
+    pub pad: lu_int,
+    pub stretch: f64,
+    pub compress_thres: f64,
+    pub sparse_thres: f64,
+    pub search_rows: lu_int,
+
+    // user readable //
+    pub m: lu_int,
+    pub addmemL: lu_int,
+    pub addmemU: lu_int,
+    pub addmemW: lu_int,
+
+    pub nupdate: lu_int,
+    pub nforrest: lu_int,
+    pub nfactorize: lu_int,
+    pub nupdate_total: lu_int,
+    pub nforrest_total: lu_int,
+    pub nsymperm_total: lu_int,
+    pub Lnz: lu_int, // nz in L excluding diagonal
+    pub Unz: lu_int, // nz in U excluding diagonal
+    pub Rnz: lu_int, // nz in update etas excluding diagonal
+    pub min_pivot: f64,
+    pub max_pivot: f64,
+    pub max_eta: f64,
+    pub update_cost_numer: f64,
+    pub update_cost_denom: f64,
+    pub time_factorize: f64,
+    pub time_solve: f64,
+    pub time_update: f64,
+    pub time_factorize_total: f64,
+    pub time_solve_total: f64,
+    pub time_update_total: f64,
+    pub Lflops: lu_int,
+    pub Uflops: lu_int,
+    pub Rflops: lu_int,
+    pub condestL: f64,
+    pub condestU: f64,
+    pub normL: f64,
+    pub normU: f64,
+    pub normestLinv: f64,
+    pub normestUinv: f64,
+    pub onenorm: f64,       // 1-norm and inf-norm of matrix after fresh
+    pub infnorm: f64,       // factorization with dependent cols replaced
+    pub residual_test: f64, // computed by lu_residual_test()
+
+    pub matrix_nz: lu_int, // nz in basis matrix when factorized
+    pub rank: lu_int,      // rank of basis matrix when factorized
+    pub bump_size: lu_int,
+    pub bump_nz: lu_int,
+    pub nsearch_pivot: lu_int, // # rows/cols searched for pivot
+    pub nexpand: lu_int,       // # rows/cols expanded in factorize
+    pub ngarbage: lu_int,      // # garbage collections in factorize
+    pub factor_flops: lu_int,  // # flops in factorize
+    pub time_singletons: f64,
+    pub time_search_pivot: f64,
+    pub time_elim_pivot: f64,
+
+    pub pivot_error: f64, // error estimate for pivot in last update
+
+    // private //
+    pub(crate) task: lu_int,      // the part of factorization in progress
+    pub(crate) pivot_row: lu_int, // chosen pivot row
+    pub(crate) pivot_col: lu_int, // chosen pivot column
+    pub(crate) ftran_for_update: lu_int, // >= 0 if FTRAN prepared for update
+    pub(crate) btran_for_update: lu_int, // >= 0 if BTRAN prepared for update
+    pub(crate) marker: lu_int,    // see @marked, below
+    pub(crate) pivotlen: lu_int,  // length of @pivotcol, @pivotrow; <= 2*m
+    pub(crate) rankdef: lu_int,   // # columns removed from active submatrix
+    // because maximum was 0 or < abstol
+    pub(crate) min_colnz: lu_int, // colcount lists 1..min_colnz-1 are empty
+    pub(crate) min_rownz: lu_int, // rowcount lists 1..min_rownz-1 are empty
+
+    // aliases to user arrays //
+    pub(crate) Lindex: Option<&'a mut [lu_int]>,
+    pub(crate) Uindex: Option<&'a mut [lu_int]>,
+    pub(crate) Windex: Option<&'a mut [lu_int]>,
+
+    pub(crate) Lvalue: Option<&'a mut [f64]>,
+    pub(crate) Uvalue: Option<&'a mut [f64]>,
+    pub(crate) Wvalue: Option<&'a mut [f64]>,
+
+    // pointers into istore
+    //
+    // When two declaration lists are on one line, then the arrays from the
+    // second list share memory with the array from the first list. The arrays
+    // from the first lists are used during factorization, the arrays from the
+    // second lists are used during solves/updates.
+
+    // documented in lu_singletons.c, lu_setup_bump.c, lu_build_factors.c
+    pub(crate) colcount_flink: &'a [lu_int],
+    pub(crate) pivotcol: &'a [lu_int],
+    pub(crate) colcount_blink: &'a [lu_int],
+    pub(crate) pivotrow: &'a [lu_int],
+    pub(crate) rowcount_flink: &'a [lu_int],
+    pub(crate) Rbegin: &'a [lu_int],
+    pub(crate) eta_row: &'a [lu_int],
+    pub(crate) rowcount_blink: &'a [lu_int],
+    pub(crate) iwork1: &'a mut [lu_int],
+    pub(crate) Wbegin: &'a [lu_int],
+    pub(crate) Lbegin: &'a [lu_int], // + Wbegin reused
+    pub(crate) Wend: &'a [lu_int],
+    pub(crate) Ltbegin: &'a [lu_int], // + Wend   reused
+    pub(crate) Wflink: &'a [lu_int],
+    pub(crate) Ltbegin_p: &'a [lu_int], // + Wflink reused
+    pub(crate) Wblink: &'a [lu_int],
+    pub(crate) p: &'a [lu_int], // + Wblink reused
+    pub(crate) pinv: &'a mut [lu_int],
+    pub(crate) pmap: &'a [lu_int],
+    pub(crate) qinv: &'a mut [lu_int],
+    pub(crate) qmap: &'a [lu_int],
+    pub(crate) Lbegin_p: &'a mut [lu_int], // Lbegin_p reused
+    pub(crate) Ubegin: &'a mut [lu_int],   // Ubegin   reused
+
+    pub(crate) iwork0: &'a [lu_int],
+    pub(crate) marked: &'a [lu_int],
+    // iwork0: size m workspace, zeroed
+    // marked: size m workspace, 0 <= marked[i] <= @marker
+
+    // pointers into xstore
+    pub(crate) work0: &'a [f64],         // size m workspace, zeroed
+    pub(crate) work1: &'a [f64],         // size m workspace, uninitialized
+    pub(crate) col_pivot: &'a mut [f64], // pivot elements by column index
+    pub(crate) row_pivot: &'a [f64],     // pivot elements by row index
+}
+
+/// Initialize @this from @istore, @xstore if these are a valid BASICLU
+/// instance. The remaining arguments are copied only and can be NULL.
+///
+/// Return `BASICLU_OK` or `BASICLU_ERROR_invalid_store`
+pub(crate) fn lu_load(
+    this: &mut lu,
+    istore: &[lu_int],
+    xstore: &[f64],
+    Li: Option<&[lu_int]>,
+    Lx: Option<&[f64]>,
+    Ui: Option<&[lu_int]>,
+    Ux: Option<&[f64]>,
+    Wi: Option<&[lu_int]>,
+    Wx: Option<&[f64]>,
+) -> lu_int {
+    if istore[0] != BASICLU_HASH || xstore[0] != BASICLU_HASH as f64 {
+        return BASICLU_ERROR_invalid_store;
+    }
+
+    // user parameters
+    this.Lmem = xstore[BASICLU_MEMORYL];
+    this.Umem = xstore[BASICLU_MEMORYU];
+    this.Wmem = xstore[BASICLU_MEMORYW];
+    this.droptol = xstore[BASICLU_DROP_TOLERANCE];
+    this.abstol = xstore[BASICLU_ABS_PIVOT_TOLERANCE];
+    this.reltol = xstore[BASICLU_REL_PIVOT_TOLERANCE];
+    this.reltol = fmin(this.reltol, 1.0);
+    this.nzbias = xstore[BASICLU_BIAS_NONZEROS];
+    this.maxsearch = xstore[BASICLU_MAXN_SEARCH_PIVOT];
+    this.pad = xstore[BASICLU_PAD];
+    this.stretch = xstore[BASICLU_STRETCH];
+    this.compress_thres = xstore[BASICLU_COMPRESSION_THRESHOLD];
+    this.sparse_thres = xstore[BASICLU_SPARSE_THRESHOLD];
+    this.search_rows = if xstore[BASICLU_SEARCH_ROWS] != 0.0 {
+        1
+    } else {
+        0
+    };
+
+    // user readable
+    let m = xstore[BASICLU_DIM];
+    this.m = m;
+    this.addmemL = 0;
+    this.addmemU = 0;
+    this.addmemW = 0;
+
+    this.nupdate = xstore[BASICLU_NUPDATE];
+    this.nforrest = xstore[BASICLU_NFORREST];
+    this.nfactorize = xstore[BASICLU_NFACTORIZE];
+    this.nupdate_total = xstore[BASICLU_NUPDATE_TOTAL];
+    this.nforrest_total = xstore[BASICLU_NFORREST_TOTAL];
+    this.nsymperm_total = xstore[BASICLU_NSYMPERM_TOTAL];
+    this.Lnz = xstore[BASICLU_LNZ];
+    this.Unz = xstore[BASICLU_UNZ];
+    this.Rnz = xstore[BASICLU_RNZ];
+    this.min_pivot = xstore[BASICLU_MIN_PIVOT];
+    this.max_pivot = xstore[BASICLU_MAX_PIVOT];
+    this.max_eta = xstore[BASICLU_MAX_ETA];
+    this.update_cost_numer = xstore[BASICLU_UPDATE_COST_NUMER];
+    this.update_cost_denom = xstore[BASICLU_UPDATE_COST_DENOM];
+    this.time_factorize = xstore[BASICLU_TIME_FACTORIZE];
+    this.time_solve = xstore[BASICLU_TIME_SOLVE];
+    this.time_update = xstore[BASICLU_TIME_UPDATE];
+    this.time_factorize_total = xstore[BASICLU_TIME_FACTORIZE_TOTAL];
+    this.time_solve_total = xstore[BASICLU_TIME_SOLVE_TOTAL];
+    this.time_update_total = xstore[BASICLU_TIME_UPDATE_TOTAL];
+    this.Lflops = xstore[BASICLU_LFLOPS];
+    this.Uflops = xstore[BASICLU_UFLOPS];
+    this.Rflops = xstore[BASICLU_RFLOPS];
+    this.condestL = xstore[BASICLU_CONDEST_L];
+    this.condestU = xstore[BASICLU_CONDEST_U];
+    this.normL = xstore[BASICLU_NORM_L];
+    this.normU = xstore[BASICLU_NORM_U];
+    this.normestLinv = xstore[BASICLU_NORMEST_LINV];
+    this.normestUinv = xstore[BASICLU_NORMEST_UINV];
+    this.onenorm = xstore[BASICLU_MATRIX_ONENORM];
+    this.infnorm = xstore[BASICLU_MATRIX_INFNORM];
+    this.residual_test = xstore[BASICLU_RESIDUAL_TEST];
+
+    this.matrix_nz = xstore[BASICLU_MATRIX_NZ];
+    this.rank = xstore[BASICLU_RANK];
+    this.bump_size = xstore[BASICLU_BUMP_SIZE];
+    this.bump_nz = xstore[BASICLU_BUMP_NZ];
+    this.nsearch_pivot = xstore[BASICLU_NSEARCH_PIVOT];
+    this.nexpand = xstore[BASICLU_NEXPAND];
+    this.ngarbage = xstore[BASICLU_NGARBAGE];
+    this.factor_flops = xstore[BASICLU_FACTOR_FLOPS];
+    this.time_singletons = xstore[BASICLU_TIME_SINGLETONS];
+    this.time_search_pivot = xstore[BASICLU_TIME_SEARCH_PIVOT];
+    this.time_elim_pivot = xstore[BASICLU_TIME_ELIM_PIVOT];
+
+    this.pivot_error = xstore[BASICLU_PIVOT_ERROR];
+
+    // private
+    this.task = xstore[BASICLU_TASK] as lu_int;
+    this.pivot_row = xstore[BASICLU_PIVOT_ROW] as lu_int;
+    this.pivot_col = xstore[BASICLU_PIVOT_COL] as lu_int;
+    this.ftran_for_update = xstore[BASICLU_FTCOLUMN_IN] as lu_int;
+    this.btran_for_update = xstore[BASICLU_FTCOLUMN_OUT] as lu_int;
+    this.marker = xstore[BASICLU_MARKER] as lu_int;
+    this.pivotlen = xstore[BASICLU_PIVOTLEN] as lu_int;
+    this.rankdef = xstore[BASICLU_RANKDEF] as lu_int;
+    this.min_colnz = xstore[BASICLU_MIN_COLNZ] as lu_int;
+    this.min_rownz = xstore[BASICLU_MIN_ROWNZ] as lu_int;
+
+    // aliases to user arrays
+    this.Lindex = Li;
+    this.Lvalue = Lx;
+    this.Uindex = Ui;
+    this.Uvalue = Ux;
+    this.Windex = Wi;
+    this.Wvalue = Wx;
+
+    // partition istore for factorize
+    iptr = istore + 1;
+    this.colcount_flink = iptr;
+    iptr += 2 * m + 2;
+    this.colcount_blink = iptr;
+    iptr += 2 * m + 2;
+    this.rowcount_flink = iptr;
+    iptr += 2 * m + 2;
+    this.rowcount_blink = iptr;
+    iptr += 2 * m + 2;
+    this.Wbegin = iptr;
+    iptr += 2 * m + 1;
+    this.Wend = iptr;
+    iptr += 2 * m + 1;
+    this.Wflink = iptr;
+    iptr += 2 * m + 1;
+    this.Wblink = iptr;
+    iptr += 2 * m + 1;
+    this.pinv = iptr;
+    iptr += m;
+    this.qinv = iptr;
+    iptr += m;
+    this.Lbegin_p = iptr;
+    iptr += m + 1;
+    this.Ubegin = iptr;
+    iptr += m + 1;
+    this.iwork0 = iptr;
+    iptr += m;
+
+    // share istore memory for solve/update
+    this.pivotcol = this.colcount_flink;
+    this.pivotrow = this.colcount_blink;
+    this.Rbegin = this.rowcount_flink;
+    this.eta_row = this.rowcount_flink + m + 1;
+    this.iwork1 = this.rowcount_blink;
+    this.Lbegin = this.Wbegin + m + 1;
+    this.Ltbegin = this.Wend + m + 1;
+    this.Ltbegin_p = this.Wflink + m + 1;
+    this.p = this.Wblink + m + 1;
+    this.pmap = this.pinv;
+    this.qmap = this.qinv;
+    this.marked = this.iwork0;
+
+    // partition xstore for factorize and update
+    let xptr = xstore + 512;
+    this.work0 = xptr;
+    xptr += m;
+    this.work1 = xptr;
+    xptr += m;
+    this.col_pivot = xptr;
+    xptr += m;
+    this.row_pivot = xptr;
+    xptr += m;
+
+    // Reset @marked if increasing @marker by four causes overflow.
+    if this.marker > LU_INT_MAX - 4 {
+        memset(this.marked, 0, m * sizeof(lu_int));
+        this.marker = 0;
+    }
+
+    // One past the final position in @Wend must hold the file size.
+    // The file has 2*m lines while factorizing and m lines otherwise.
+    if this.nupdate >= 0 {
+        this.Wend[m] = this.Wmem;
+    } else {
+        this.Wend[2 * m] = this.Wmem;
+    }
+
+    BASICLU_OK
+}
+
+/// Copy scalar entries (except for user parameters) from @this to @istore,
+/// @xstore. Store status code.
+///
+/// Return @status
+pub(crate) fn lu_save(
+    this: &lu,
+    istore: &mut [lu_int],
+    xstore: &mut [f64],
+    status: lu_int,
+) -> lu_int {
+    // user readable
+    xstore[BASICLU_STATUS] = status;
+    xstore[BASICLU_ADD_MEMORYL] = this.addmemL;
+    xstore[BASICLU_ADD_MEMORYU] = this.addmemU;
+    xstore[BASICLU_ADD_MEMORYW] = this.addmemW;
+
+    xstore[BASICLU_NUPDATE] = this.nupdate;
+    xstore[BASICLU_NFORREST] = this.nforrest;
+    xstore[BASICLU_NFACTORIZE] = this.nfactorize;
+    xstore[BASICLU_NUPDATE_TOTAL] = this.nupdate_total;
+    xstore[BASICLU_NFORREST_TOTAL] = this.nforrest_total;
+    xstore[BASICLU_NSYMPERM_TOTAL] = this.nsymperm_total;
+    xstore[BASICLU_LNZ] = this.Lnz;
+    xstore[BASICLU_UNZ] = this.Unz;
+    xstore[BASICLU_RNZ] = this.Rnz;
+    xstore[BASICLU_MIN_PIVOT] = this.min_pivot;
+    xstore[BASICLU_MAX_PIVOT] = this.max_pivot;
+    xstore[BASICLU_MAX_ETA] = this.max_eta;
+    xstore[BASICLU_UPDATE_COST_NUMER] = this.update_cost_numer;
+    xstore[BASICLU_UPDATE_COST_DENOM] = this.update_cost_denom;
+    xstore[BASICLU_UPDATE_COST] = this.update_cost_numer / this.update_cost_denom;
+    xstore[BASICLU_TIME_FACTORIZE] = this.time_factorize;
+    xstore[BASICLU_TIME_SOLVE] = this.time_solve;
+    xstore[BASICLU_TIME_UPDATE] = this.time_update;
+    xstore[BASICLU_TIME_FACTORIZE_TOTAL] = this.time_factorize_total;
+    xstore[BASICLU_TIME_SOLVE_TOTAL] = this.time_solve_total;
+    xstore[BASICLU_TIME_UPDATE_TOTAL] = this.time_update_total;
+    xstore[BASICLU_LFLOPS] = this.Lflops;
+    xstore[BASICLU_UFLOPS] = this.Uflops;
+    xstore[BASICLU_RFLOPS] = this.Rflops;
+    xstore[BASICLU_CONDEST_L] = this.condestL;
+    xstore[BASICLU_CONDEST_U] = this.condestU;
+    xstore[BASICLU_NORM_L] = this.normL;
+    xstore[BASICLU_NORM_U] = this.normU;
+    xstore[BASICLU_NORMEST_LINV] = this.normestLinv;
+    xstore[BASICLU_NORMEST_UINV] = this.normestUinv;
+    xstore[BASICLU_MATRIX_ONENORM] = this.onenorm;
+    xstore[BASICLU_MATRIX_INFNORM] = this.infnorm;
+    xstore[BASICLU_RESIDUAL_TEST] = this.residual_test;
+
+    xstore[BASICLU_MATRIX_NZ] = this.matrix_nz;
+    xstore[BASICLU_RANK] = this.rank;
+    xstore[BASICLU_BUMP_SIZE] = this.bump_size;
+    xstore[BASICLU_BUMP_NZ] = this.bump_nz;
+    xstore[BASICLU_NSEARCH_PIVOT] = this.nsearch_pivot;
+    xstore[BASICLU_NEXPAND] = this.nexpand;
+    xstore[BASICLU_NGARBAGE] = this.ngarbage;
+    xstore[BASICLU_FACTOR_FLOPS] = this.factor_flops;
+    xstore[BASICLU_TIME_SINGLETONS] = this.time_singletons;
+    xstore[BASICLU_TIME_SEARCH_PIVOT] = this.time_search_pivot;
+    xstore[BASICLU_TIME_ELIM_PIVOT] = this.time_elim_pivot;
+
+    xstore[BASICLU_PIVOT_ERROR] = this.pivot_error;
+
+    // private
+    xstore[BASICLU_TASK] = this.task as f64;
+    xstore[BASICLU_PIVOT_ROW] = this.pivot_row as f64;
+    xstore[BASICLU_PIVOT_COL] = this.pivot_col as f64;
+    xstore[BASICLU_FTCOLUMN_IN] = this.ftran_for_update as f64;
+    xstore[BASICLU_FTCOLUMN_OUT] = this.btran_for_update as f64;
+    xstore[BASICLU_MARKER] = this.marker as f64;
+    xstore[BASICLU_PIVOTLEN] = this.pivotlen as f64;
+    xstore[BASICLU_RANKDEF] = this.rankdef as f64;
+    xstore[BASICLU_MIN_COLNZ] = this.min_colnz as f64;
+    xstore[BASICLU_MIN_ROWNZ] = this.min_rownz as f64;
+
+    status
+}
+
+/// Reset @this for a new factorization. Invalidate current factorization.
+pub(crate) fn lu_reset(this: &mut lu) {
+    // user readable
+    this.nupdate = -1; // invalidate factorization
+    this.nforrest = 0;
+    this.Lnz = 0;
+    this.Unz = 0;
+    this.Rnz = 0;
+    this.min_pivot = 0.0;
+    this.max_pivot = 0.0;
+    this.max_eta = 0.0;
+    this.update_cost_numer = 0.0;
+    this.update_cost_denom = 1.0;
+    this.time_factorize = 0.0;
+    this.time_solve = 0.0;
+    this.time_update = 0.0;
+    this.Lflops = 0;
+    this.Uflops = 0;
+    this.Rflops = 0;
+    this.condestL = 0.0;
+    this.condestU = 0.0;
+    this.normL = 0.0;
+    this.normU = 0.0;
+    this.normestLinv = 0.0;
+    this.normestUinv = 0.0;
+    this.onenorm = 0.0;
+    this.infnorm = 0.0;
+    this.residual_test = 0.0;
+
+    this.matrix_nz = 0;
+    this.rank = 0;
+    this.bump_size = 0;
+    this.bump_nz = 0;
+    this.nsearch_pivot = 0;
+    this.nexpand = 0;
+    this.ngarbage = 0;
+    this.factor_flops = 0;
+    this.time_singletons = 0.0;
+    this.time_search_pivot = 0.0;
+    this.time_elim_pivot = 0.0;
+
+    this.pivot_error = 0.0;
+
+    // private
+    this.task = NO_TASK;
+    this.pivot_row = -1;
+    this.pivot_col = -1;
+    this.ftran_for_update = -1;
+    this.btran_for_update = -1;
+    this.marker = 0;
+    this.pivotlen = 0;
+    this.rankdef = 0;
+    this.min_colnz = 1;
+    this.min_rownz = 1;
+
+    // One past the final position in @Wend must hold the file size.
+    // The file has 2*m lines during factorization.
+    this.Wend[2 * this.m] = this.Wmem;
+
+    // The integer workspace iwork0 must be zeroed for a new factorization.
+    // The double workspace work0 actually needs only be zeroed once in the
+    // initialization of xstore. However, it is easier and more consistent
+    // to do that here as well.
+    memset(this.iwork0, 0, this.m);
+    memset(this.work0, 0, this.m);
+}
