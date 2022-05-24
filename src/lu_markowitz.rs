@@ -35,7 +35,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
     let Wbegin = &this.Wbegin;
     let Wend = &this.Wend;
     let Windex = this.Windex.as_ref().unwrap();
-    let Wvalue = this.Wvalue.unwrap();
+    let Wvalue = this.Wvalue.as_ref().unwrap();
     let colcount_flink = &this.colcount_flink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
@@ -56,34 +56,16 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
 
     // integers for Markowitz cost must be 64 bit to prevent overflow
     let M = m as int_least64_t;
-    let nz1: int_least64_t;
-    let nz2: int_least64_t;
-    let mc: int_least64_t;
-    let MC: int_least64_t;
 
     // lu_tic(tic);
     let tic = Instant::now();
     let mut pivot_row = -1; // row of best pivot so far
     let mut pivot_col = -1; // col of best pivot so far
-    let mut MC = M * M; // Markowitz cost of best pivot so far
+    let mut MC: int_least64_t = M * M; // Markowitz cost of best pivot so far
     let mut nsearch = 0; // count rows/columns searched
     let mut min_colnz = -1; // minimum col count in active submatrix
     let mut min_rownz = -1; // minimum row count in active submatrix
     assert!(nz_start >= 1);
-
-    let done = || {
-        this.pivot_row = pivot_row;
-        this.pivot_col = pivot_col;
-        this.nsearch_pivot += nsearch;
-        if min_colnz >= 0 {
-            this.min_colnz = min_colnz;
-        }
-        if min_rownz >= 0 {
-            this.min_rownz = min_rownz;
-        }
-        this.time_search_pivot += tic.elapsed().as_secs_f64();
-        return BASICLU_OK;
-    };
 
     // If the active submatrix contains empty columns, choose one and return
     // with pivot_row = -1.
@@ -91,7 +73,9 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
         pivot_col = colcount_flink[m as usize];
         assert!(pivot_col >= 0 && pivot_col < m);
         assert_eq!(Wend[pivot_col as usize], Wbegin[pivot_col as usize]);
-        return done();
+        return done(
+            this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
+        );
     }
 
     for nz in nz_start..=m {
@@ -115,16 +99,18 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
                 }
                 let i = Windex[pos as usize];
                 assert!(i >= 0 && i < m);
-                nz1 = nz;
-                nz2 = Wend[(m + i) as usize] - Wbegin[(m + i) as usize];
+                let nz1: int_least64_t = nz;
+                let nz2: int_least64_t = Wend[(m + i) as usize] - Wbegin[(m + i) as usize];
                 assert!(nz2 >= 1);
-                mc = (nz1 - 1) * (nz2 - 1);
+                let mc: int_least64_t = (nz1 - 1) * (nz2 - 1);
                 if mc < MC {
                     MC = mc;
                     pivot_row = i;
                     pivot_col = j;
                     if search_rows != 0 && MC <= (nz1 - 1) * (nz1 - 1) {
-                        return done();
+                        return done(
+                            this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
+                        );
                     }
                 }
             }
@@ -133,7 +119,9 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
             // if (++nsearch >= maxsearch) {
             nsearch += 1;
             if nsearch >= maxsearch {
-                return done();
+                return done(
+                    this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
+                );
             }
             j = colcount_flink[j as usize];
         }
@@ -157,10 +145,10 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
             for pos in Wbegin[(m + i) as usize]..Wend[(m + i) as usize] {
                 j = Windex[pos as usize];
                 assert!(j >= 0 && j < m);
-                nz1 = nz;
-                nz2 = Wend[j as usize] - Wbegin[j as usize];
+                let nz1: int_least64_t = nz;
+                let nz2: int_least64_t = Wend[j as usize] - Wbegin[j as usize];
                 assert!(nz2 >= 1);
-                mc = (nz1 - 1) * (nz2 - 1);
+                let mc: int_least64_t = (nz1 - 1) * (nz2 - 1);
                 if mc >= MC {
                     continue;
                 }
@@ -183,7 +171,9 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
                     pivot_row = i;
                     pivot_col = j;
                     if MC <= nz1 * (nz1 - 1) {
-                        return done();
+                        return done(
+                            this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
+                        );
                     }
                 }
             }
@@ -196,12 +186,42 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
                 // if (++nsearch >= maxsearch)
                 nsearch += 1;
                 if nsearch >= maxsearch {
-                    return done();
+                    return done(
+                        this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
+                    );
                 }
             }
             i = inext;
         }
         assert_eq!(i, m + nz);
     }
-    done()
+    done(
+        this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
+    )
+}
+
+fn done(
+    this: &mut lu,
+    pivot_row: lu_int,
+    pivot_col: lu_int,
+    nsearch: lu_int,
+    min_colnz: lu_int,
+    min_rownz: lu_int,
+    tic: Instant,
+) -> lu_int {
+    this.pivot_row = pivot_row;
+    this.pivot_col = pivot_col;
+
+    this.nsearch_pivot += nsearch;
+
+    if min_colnz >= 0 {
+        this.min_colnz = min_colnz;
+    }
+    if min_rownz >= 0 {
+        this.min_rownz = min_rownz;
+    }
+
+    this.time_search_pivot += tic.elapsed().as_secs_f64();
+
+    return BASICLU_OK;
 }

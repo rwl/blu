@@ -150,6 +150,7 @@ pub(crate) fn lu_residual_test(
 
     // reset workspace
     for i in 0..m {
-        rhs[i as usize] = 0.0;
+        // rhs[i as usize] = 0.0;
+        this.work0[i as usize] = 0.0;
     }
 }

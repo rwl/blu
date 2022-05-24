@@ -312,7 +312,7 @@ pub(crate) fn lu_load(
     let (Ubegin, istore) = istore.split_at(m as usize + 1);
     this.Ubegin = Vec::from(Ubegin);
     // iptr += m + 1;
-    let (iwork0, istore) = istore.split_at(m as usize);
+    let (iwork0, _) = istore.split_at(m as usize);
     this.iwork0 = Vec::from(iwork0);
     // iptr += m;
 
@@ -347,7 +347,7 @@ pub(crate) fn lu_load(
     let (col_pivot, xstore) = xstore.split_at(m as usize);
     this.col_pivot = Vec::from(col_pivot);
     // xptr += m;
-    let (row_pivot, xstore) = xstore.split_at(m as usize);
+    let (row_pivot, _) = xstore.split_at(m as usize);
     this.row_pivot = Vec::from(row_pivot);
     // xptr += m;
 
@@ -375,7 +375,7 @@ pub(crate) fn lu_load(
 /// Return @status
 pub(crate) fn lu_save(
     this: &lu,
-    istore: &mut [lu_int],
+    _istore: &mut [lu_int],
     xstore: &mut [f64],
     status: lu_int,
 ) -> lu_int {

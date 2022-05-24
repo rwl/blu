@@ -94,10 +94,10 @@ pub(crate) fn lu_singletons(
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
     let col_pivot = &mut this.col_pivot;
-    let Lindex = &mut this.Lindex.unwrap();
-    let Lvalue = &mut this.Lvalue.unwrap();
-    let Uindex = &mut this.Uindex.unwrap();
-    let Uvalue = &mut this.Uvalue.unwrap();
+    let Lindex = this.Lindex.as_mut().unwrap();
+    let Lvalue = this.Lvalue.as_mut().unwrap();
+    let Uindex = this.Uindex.as_mut().unwrap();
+    let Uvalue = this.Uvalue.as_mut().unwrap();
     // let iwork1 = &mut this.iwork1;
     // let iwork2 = iwork1 + m;
     let (iwork1, iwork2) = this.iwork1.split_at_mut(m as usize);
@@ -287,7 +287,7 @@ pub(crate) fn singleton_cols(
     Bbegin: &[lu_int], // B columnwise
     Bend: &[lu_int],
     Bi: &[lu_int],
-    Bx: &[f64],
+    _Bx: &[f64],
     Btp: &[lu_int], /* B rowwise */
     Bti: &[lu_int],
     Btx: &[f64],
@@ -296,7 +296,7 @@ pub(crate) fn singleton_cols(
     Ux: &mut [f64],
     Lp: &mut [lu_int],
     Li: &mut [lu_int],
-    Lx: &mut [f64],
+    _Lx: &mut [f64],
     col_pivot: &mut [f64],
     pinv: &mut [lu_int],
     qinv: &mut [lu_int],
@@ -403,10 +403,10 @@ fn singleton_rows(
     Bx: &[f64],
     Btp: &[lu_int], // B rowwise
     Bti: &[lu_int],
-    Btx: &[f64],
+    _Btx: &[f64],
     Up: &mut [lu_int],
-    Ui: &mut [lu_int],
-    Ux: &mut [f64],
+    _Ui: &mut [lu_int],
+    _Ux: &mut [f64],
     Lp: &mut [lu_int],
     Li: &mut [lu_int],
     Lx: &mut [f64],

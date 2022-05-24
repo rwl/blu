@@ -51,12 +51,12 @@ pub(crate) fn lu_pivot(this: &mut lu) -> lu_int {
     let Umem = this.Umem;
     let pivot_col = this.pivot_col;
     let pivot_row = this.pivot_row;
-    let colmax = &this.col_pivot;
+    // let colmax = &this.col_pivot;
     let Lbegin_p = &this.Lbegin_p;
-    let Ubegin = &this.Ubegin;
+    // let Ubegin = &this.Ubegin;
     let Wbegin = &this.Wbegin;
     let Wend = &this.Wend;
-    let Uindex = this.Uindex.as_ref().unwrap();
+    // let Uindex = this.Uindex.as_ref().unwrap();
     let nz_col = Wend[pivot_col as usize] - Wbegin[pivot_col as usize];
     let nz_row = Wend[(m + pivot_row) as usize] - Wbegin[(m + pivot_row) as usize];
 
@@ -73,7 +73,7 @@ pub(crate) fn lu_pivot(this: &mut lu) -> lu_int {
         this.addmemL = need - room;
         status = BASICLU_REALLOCATE;
     }
-    let room = Umem - Ubegin[rank as usize];
+    let room = Umem - this.Ubegin[rank as usize];
     let need = nz_row - 1; // # off-diagonals in pivot row
     if room < need {
         this.addmemU = need - room;
@@ -99,10 +99,10 @@ pub(crate) fn lu_pivot(this: &mut lu) -> lu_int {
     // Remove all entries in columns whose maximum entry has dropped below
     // absolute pivot tolerance.
     if status == BASICLU_OK {
-        for pos in Ubegin[rank as usize]..Ubegin[(rank + 1) as usize] {
-            let j = Uindex[pos as usize];
+        for pos in this.Ubegin[rank as usize]..this.Ubegin[(rank + 1) as usize] {
+            let j = this.Uindex.as_ref().unwrap()[pos as usize];
             assert_ne!(j, pivot_col);
-            if colmax[j as usize] == 0.0 || colmax[j as usize] < this.abstol {
+            if this.col_pivot[j as usize] == 0.0 || this.col_pivot[j as usize] < this.abstol {
                 lu_remove_col(this, j);
             }
         }
@@ -216,10 +216,8 @@ fn lu_pivot_any(this: &mut lu) -> lu_int {
         position += 1;
     }
 
-    // let wi = Windex + cbeg; TODO: check
+    // let wi = Windex + cbeg;
     // let wx = Wvalue + cbeg;
-    let (_, wi) = Windex.split_at(cbeg as usize);
-    let (_, wx) = Wvalue.split_at(cbeg as usize);
     for rpos in (rbeg + 1)..rend {
         let j = Windex[rpos as usize];
         assert_ne!(j, pivot_col);
@@ -271,10 +269,12 @@ fn lu_pivot_any(this: &mut lu) -> lu_int {
         // Compute update in workspace and append to column.
         let a = xrj / pivot;
         for pos in 1..=cnz1 {
-            work[pos as usize] -= a * wx[pos as usize];
+            // work[pos as usize] -= a * wx[pos as usize];
+            work[pos as usize] -= a * Wvalue[cbeg as usize..][pos as usize];
         }
         for pos in 1..=cnz1 {
-            Windex[put as usize] = wi[pos as usize];
+            // Windex[put as usize] = wi[pos as usize];
+            Windex[put as usize] = Windex[cbeg as usize..][pos as usize];
             Wvalue[put as usize] = work[pos as usize];
             put += 1;
             // if ((x = fabs(work[pos])) > cmx) {
@@ -547,10 +547,8 @@ fn lu_pivot_small(this: &mut lu) -> lu_int {
         position += 1;
     }
 
-    // let wi = Windex + cbeg;  TODO: check
+    // let wi = Windex + cbeg;
     // let wx = Wvalue + cbeg;
-    let (_, wi) = Windex.split_at(cbeg as usize);
-    let (_, wx) = Wvalue.split_at(cbeg as usize);
     let mut col_number = 0; // mask cancelled[col_number]
 
     // for (rpos = rbeg+1; rpos < rend; rpos++, col_number++) {
@@ -605,13 +603,15 @@ fn lu_pivot_small(this: &mut lu) -> lu_int {
         // Compute update in workspace and append to column.
         let a = xrj / pivot;
         for pos in 1..=cnz1 {
-            work[pos as usize] -= a * wx[pos as usize];
+            // work[pos as usize] -= a * wx[pos as usize];
+            work[pos as usize] -= a * Wvalue[cbeg as usize..][pos as usize];
         }
         let mut mask = 0;
         for pos in 1..=cnz1 {
             let x = work[pos as usize].abs();
             if x > droptol {
-                Windex[put as usize] = wi[pos as usize];
+                // Windex[put as usize] = wi[pos as usize];
+                Windex[put as usize] = Windex[cbeg as usize..][pos as usize];
                 Wvalue[put as usize] = work[pos as usize];
                 put += 1;
                 if x > cmx {
@@ -620,7 +620,7 @@ fn lu_pivot_small(this: &mut lu) -> lu_int {
             } else {
                 // cancellation in row wi[pos]
                 // mask |= (int64_t) 1 << (pos-1);
-                mask |= (1 << (pos - 1) as i64);
+                mask |= 1 << (pos - 1) as i64;
             }
             work[pos as usize] = 0.0;
         }

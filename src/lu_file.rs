@@ -109,7 +109,7 @@ pub(crate) fn lu_file_compress(
         let iend = end[i as usize];
         assert!(ibeg >= used);
         used += extra_space;
-        if (used > ibeg) {
+        if used > ibeg {
             used = ibeg; // chop extra space added before
         }
         begin[i as usize] = used;
