@@ -1,6 +1,8 @@
 mod basiclu;
 mod basiclu_factorize;
 mod basiclu_initialize;
+mod lu_build_factors;
+mod lu_condest;
 mod lu_def;
 mod lu_factorize_bump;
 mod lu_file;
@@ -8,7 +10,9 @@ mod lu_initialize;
 mod lu_internal;
 mod lu_list;
 mod lu_markowitz;
+mod lu_matrix_norm;
 mod lu_pivot;
+mod lu_residual_test;
 mod lu_setup_bump;
 mod lu_singletons;
 

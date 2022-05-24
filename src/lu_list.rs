@@ -31,17 +31,17 @@ use crate::basiclu::lu_int;
 
 /// Initialize all lists to empty.
 pub(crate) fn lu_list_init(
-    flink: &[lu_int],
-    blink: &[lu_int],
+    flink: &mut [lu_int],
+    blink: &mut [lu_int],
     nelem: lu_int,
     nlist: lu_int,
-    min_list: Option<&mut [lu_int]>,
+    min_list: Option<&mut lu_int>,
 ) {
     for i in 0..nelem + nlist {
-        flink[i] = i;
-        blink[i] = i;
+        flink[i as usize] = i;
+        blink[i as usize] = i;
     }
-    if let min_list = Some(min_list) {
+    if let Some(min_list) = min_list {
         *min_list = lu_int::max(1, nlist);
     }
 }
@@ -51,24 +51,24 @@ pub(crate) fn lu_list_init(
 pub(crate) fn lu_list_add(
     elem: lu_int,
     list: lu_int,
-    flink: &[lu_int],
-    blink: &[lu_int],
+    flink: &mut [lu_int],
+    blink: &mut [lu_int],
     nelem: lu_int,
-    min_list: Option<&mut [lu_int]>,
+    min_list: Option<&mut lu_int>,
 ) {
     // lu_int temp;
-    assert_eq!(flink[elem], elem);
-    assert_eq!(blink[elem], elem);
+    assert_eq!(flink[elem as usize], elem);
+    assert_eq!(blink[elem as usize], elem);
     // append elem to the end of list
-    let temp = blink[nelem + list];
-    blink[nelem + list] = elem;
-    blink[elem] = temp;
-    flink[temp] = elem;
-    flink[elem] = nelem + list;
+    let temp = blink[(nelem + list) as usize];
+    blink[(nelem + list) as usize] = elem;
+    blink[elem as usize] = temp;
+    flink[temp as usize] = elem;
+    flink[elem as usize] = nelem + list;
     if let Some(min_list) = min_list {
         // if (list > 0 && min_list && list < *min_list) TODO: check translation
-        if list > 0 && list < min_list[0] {
-            min_list[0] = list;
+        if list > 0 && list < *min_list {
+            *min_list = list;
         }
     }
 }
@@ -76,10 +76,10 @@ pub(crate) fn lu_list_add(
 /// Remove element @elem from its list. If @elem was not in a list before,
 /// then do nothing.
 pub(crate) fn lu_list_remove(flink: &mut [lu_int], blink: &mut [lu_int], elem: lu_int) {
-    flink[blink[elem]] = flink[elem];
-    blink[flink[elem]] = blink[elem];
-    flink[elem] = elem;
-    blink[elem] = elem;
+    flink[blink[elem as usize] as usize] = flink[elem as usize];
+    blink[flink[elem as usize] as usize] = blink[elem as usize];
+    flink[elem as usize] = elem;
+    blink[elem as usize] = elem;
 }
 
 /// Remove element @elem from its list (if in a list) and add it to list @list.
@@ -89,7 +89,7 @@ pub(crate) fn lu_list_move(
     flink: &mut [lu_int],
     blink: &mut [lu_int],
     nelem: lu_int,
-    min_list: Option<&mut [lu_int]>,
+    min_list: Option<&mut lu_int>,
 ) {
     lu_list_remove(flink, blink, elem);
     lu_list_add(elem, list, flink, blink, nelem, min_list);
@@ -99,36 +99,36 @@ pub(crate) fn lu_list_move(
 /// are in the same list, then their positions are swapped. If they are in
 /// different lists, then each is moved to the other's list.
 pub(crate) fn lu_list_swap(flink: &mut [lu_int], blink: &mut [lu_int], e1: lu_int, e2: lu_int) {
-    let e1next = flink[e1];
-    let e2next = flink[e2];
-    let e1prev = blink[e1];
-    let e2prev = blink[e2];
+    let e1next = flink[e1 as usize];
+    let e2next = flink[e2 as usize];
+    let e1prev = blink[e1 as usize];
+    let e2prev = blink[e2 as usize];
 
     assert_ne!(e1next, e1); // must be in a list
     assert_ne!(e2next, e2);
 
     if e1next == e2 {
-        flink[e2] = e1;
-        blink[e1] = e2;
-        flink[e1prev] = e2;
-        blink[e2] = e1prev;
-        flink[e1] = e2next;
-        blink[e2next] = e1;
+        flink[e2 as usize] = e1;
+        blink[e1 as usize] = e2;
+        flink[e1prev as usize] = e2;
+        blink[e2 as usize] = e1prev;
+        flink[e1 as usize] = e2next;
+        blink[e2next as usize] = e1;
     } else if e2next == e1 {
-        flink[e1] = e2;
-        blink[e2] = e1;
-        flink[e2] = e1next;
-        blink[e1next] = e2;
-        flink[e2prev] = e1;
-        blink[e1] = e2prev;
+        flink[e1 as usize] = e2;
+        blink[e2 as usize] = e1;
+        flink[e2 as usize] = e1next;
+        blink[e1next as usize] = e2;
+        flink[e2prev as usize] = e1;
+        blink[e1 as usize] = e2prev;
     } else {
-        flink[e2] = e1next;
-        blink[e1next] = e2;
-        flink[e2prev] = e1;
-        blink[e1] = e2prev;
-        flink[e1prev] = e2;
-        blink[e2] = e1prev;
-        flink[e1] = e2next;
-        blink[e2next] = e1;
+        flink[e2 as usize] = e1next;
+        blink[e1next as usize] = e2;
+        flink[e2prev as usize] = e1;
+        blink[e1 as usize] = e2prev;
+        flink[e1prev as usize] = e2;
+        blink[e2 as usize] = e1prev;
+        flink[e1 as usize] = e2next;
+        blink[e2next as usize] = e1;
     }
 }

@@ -1,6 +1,10 @@
 use crate::basiclu::*;
+use crate::lu_build_factors::lu_build_factors;
+use crate::lu_condest::lu_condest;
 use crate::lu_def::*;
+use crate::lu_factorize_bump::lu_factorize_bump;
 use crate::lu_internal::{lu, lu_load, lu_reset, lu_save};
+use crate::lu_residual_test::lu_residual_test;
 use crate::lu_setup_bump::lu_setup_bump;
 use crate::lu_singletons::lu_singletons;
 use std::time::Instant;
@@ -236,12 +240,12 @@ use std::time::Instant;
 pub fn basiclu_factorize(
     istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: &mut [lu_int],
-    Lx: &mut [f64],
-    Ui: &mut [lu_int],
-    Ux: &mut [f64],
-    Wi: &mut [lu_int],
-    Wx: &mut [f64],
+    Li: Vec<lu_int>,
+    Lx: Vec<f64>,
+    Ui: Vec<lu_int>,
+    Ux: Vec<f64>,
+    Wi: Vec<lu_int>,
+    Wx: Vec<f64>,
     Bbegin: &[lu_int],
     Bend: &[lu_int],
     Bi: &[lu_int],
@@ -272,13 +276,13 @@ pub fn basiclu_factorize(
     //     let status = BASICLU_ERROR_argument_missing;
     //     return lu_save(&this, istore, xstore, status);
     // }
-    if !c0ntinue {
+    if c0ntinue == 0 {
         lu_reset(&mut this);
         this.task = SINGLETONS;
     }
 
     let return_to_caller = || {
-        elapsed = lu_toc(tic);
+        let elapsed = tic.elapsed().as_secs_f64();
         this.time_factorize += elapsed;
         this.time_factorize_total += elapsed;
         return lu_save(&this, istore, xstore, status);
@@ -300,7 +304,7 @@ pub fn basiclu_factorize(
             }
 
             this.task = FACTORIZE_BUMP;
-            status = lu_factorize_bump(&this);
+            status = lu_factorize_bump(&mut this);
             if status != BASICLU_OK {
                 return return_to_caller();
             }
@@ -313,14 +317,14 @@ pub fn basiclu_factorize(
             }
 
             this.task = FACTORIZE_BUMP;
-            status = lu_factorize_bump(&this);
+            status = lu_factorize_bump(&mut this);
             if status != BASICLU_OK {
                 return return_to_caller();
             }
         }
         FACTORIZE_BUMP => {
             // this.task = FACTORIZE_BUMP;
-            status = lu_factorize_bump(&this);
+            status = lu_factorize_bump(&mut this);
             if status != BASICLU_OK {
                 return return_to_caller();
             }
@@ -333,7 +337,7 @@ pub fn basiclu_factorize(
     };
 
     this.task = BUILD_FACTORS;
-    status = lu_build_factors(&this);
+    status = lu_build_factors(&mut this);
     if status != BASICLU_OK {
         return return_to_caller();
     }
@@ -347,31 +351,31 @@ pub fn basiclu_factorize(
 
     this.condestL = lu_condest(
         this.m,
-        this.Lbegin,
-        this.Lindex,
-        this.Lvalue,
-        NULL,
-        this.p,
+        &this.Lbegin,
+        this.Lindex.as_ref().unwrap(),
+        this.Lvalue.as_ref().unwrap(),
+        None,
+        Some(&this.p),
         0,
-        this.work1,
-        &this.normL,
-        &this.normestLinv,
+        &mut this.work1,
+        &mut this.normL,
+        &mut this.normestLinv,
     );
     this.condestU = lu_condest(
         this.m,
-        this.Ubegin,
-        this.Uindex,
-        this.Uvalue,
-        this.row_pivot,
-        this.p,
+        &this.Ubegin,
+        this.Uindex.as_ref().unwrap(),
+        this.Uvalue.as_ref().unwrap(),
+        Some(&this.row_pivot),
+        Some(&this.p),
         1,
-        this.work1,
-        &this.normU,
-        &this.normestUinv,
+        &mut this.work1,
+        &mut this.normU,
+        &mut this.normestUinv,
     );
 
     // measure numerical stability of the factorization
-    lu_residual_test(&this, Bbegin, Bend, Bi, Bx);
+    lu_residual_test(&mut this, Bbegin, Bend, Bi, Bx);
 
     // factor_cost is a deterministic measure of the factorization cost.
     // The parameters have been adjusted such that (on my computer)
@@ -384,16 +388,16 @@ pub fn basiclu_factorize(
     //
     // update_cost_denom is fixed here.
     // update_cost_numer is zero here and increased by solves/updates.
-    let factor_cost = 0.04 * this.m
-        + 0.07 * this.matrix_nz
-        + 0.20 * this.bump_nz
-        + 0.20 * this.nsearch_pivot
-        + 0.008 * this.factor_flops;
+    let factor_cost = 0.04 * (this.m as f64)
+        + 0.07 * (this.matrix_nz as f64)
+        + 0.20 * (this.bump_nz as f64)
+        + 0.20 * (this.nsearch_pivot as f64)
+        + 0.008 * (this.factor_flops as f64);
 
-    this.update_cost_denom = factor_cost * 250;
+    this.update_cost_denom = factor_cost * 250.0;
 
     if cfg!(feature = "debug") {
-        let elapsed = this.time_factorize + tic.elapsed();
+        let elapsed = this.time_factorize + tic.elapsed().as_secs_f64();
         println!(
             " 1e-6 * factor_cost / time_factorize: {}",
             1e-6 * factor_cost / elapsed,

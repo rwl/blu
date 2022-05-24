@@ -32,14 +32,14 @@ use std::time::Instant;
 ///     Linear Programming Bases", ORSA Journal on Computing (1990)
 pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
     let m = this.m;
-    let Wbegin = this.Wbegin;
-    let Wend = this.Wend;
-    let Windex = this.Windex.unwrap();
+    let Wbegin = &this.Wbegin;
+    let Wend = &this.Wend;
+    let Windex = this.Windex.as_ref().unwrap();
     let Wvalue = this.Wvalue.unwrap();
-    let colcount_flink = this.colcount_flink;
+    let colcount_flink = &this.colcount_flink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = this.col_pivot;
+    let colmax = &this.col_pivot;
     let abstol = this.abstol;
     let reltol = this.reltol;
     let maxsearch = this.maxsearch;
@@ -54,7 +54,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
     // lu_int nsearch, cheap, found, min_colnz, min_rownz;
     // double cmx, x, tol, tic[2];
 
-    /* integers for Markowitz cost must be 64 bit to prevent overflow */
+    // integers for Markowitz cost must be 64 bit to prevent overflow
     let M = m as int_least64_t;
     let nz1: int_least64_t;
     let nz2: int_least64_t;
@@ -81,42 +81,42 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
         if min_rownz >= 0 {
             this.min_rownz = min_rownz;
         }
-        this.time_search_pivot += lu_toc(tic);
+        this.time_search_pivot += tic.elapsed().as_secs_f64();
         return BASICLU_OK;
     };
 
     // If the active submatrix contains empty columns, choose one and return
     // with pivot_row = -1.
-    if colcount_flink[m] != m {
-        pivot_col = colcount_flink[m];
-        assert(pivot_col >= 0 && pivot_col < m);
-        assert(Wend[pivot_col] == Wbegin[pivot_col]);
+    if colcount_flink[m as usize] != m {
+        pivot_col = colcount_flink[m as usize];
+        assert!(pivot_col >= 0 && pivot_col < m);
+        assert_eq!(Wend[pivot_col as usize], Wbegin[pivot_col as usize]);
         return done();
     }
 
     for nz in nz_start..=m {
         // Search columns with nz nonzeros.
-        let mut j = colcount_flink[m + nz];
+        let mut j = colcount_flink[(m + nz) as usize];
         while j < m {
             if min_colnz == -1 {
                 min_colnz = nz;
             }
-            assert_eq!(Wend[j] - Wbegin[j], nz);
-            cmx = colmax[j];
-            assert(cmx >= 0);
-            if !cmx || cmx < abstol {
+            assert_eq!(Wend[j as usize] - Wbegin[j as usize], nz);
+            let cmx = colmax[j as usize];
+            assert!(cmx >= 0.0);
+            if cmx == 0.0 || cmx < abstol {
                 continue;
             }
-            tol = fmax(abstol, reltol * cmx);
-            for pos in Wbegin[j]..Wend[j] {
-                x = fabs(Wvalue[pos]);
-                if !x || x < tol {
+            let tol = f64::max(abstol, reltol * cmx);
+            for pos in Wbegin[j as usize]..Wend[j as usize] {
+                let x = Wvalue[pos as usize].abs();
+                if x == 0.0 || x < tol {
                     continue;
                 }
-                i = Windex[pos];
+                let i = Windex[pos as usize];
                 assert!(i >= 0 && i < m);
                 nz1 = nz;
-                nz2 = Wend[m + i] - Wbegin[m + i];
+                nz2 = Wend[(m + i) as usize] - Wbegin[(m + i) as usize];
                 assert!(nz2 >= 1);
                 mc = (nz1 - 1) * (nz2 - 1);
                 if mc < MC {
@@ -135,7 +135,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
             if nsearch >= maxsearch {
                 return done();
             }
-            j = colcount_flink[j];
+            j = colcount_flink[j as usize];
         }
         assert_eq!(j, m + nz);
 
@@ -144,39 +144,39 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
         }
 
         // Search rows with nz nonzeros.
-        let mut i = rowcount_flink[m + nz];
+        let mut i = rowcount_flink[(m + nz) as usize];
         while i < m {
             if min_rownz == -1 {
                 min_rownz = nz;
             }
             // rowcount_flink[i] might be changed below, so keep a copy
-            inext = rowcount_flink[i];
-            assert_eq!(Wend[m + i] - Wbegin[m + i], nz);
-            cheap = 0; // row has entries with Markowitz cost < MC?
-            found = 0; // eligible pivot found?
-            for pos in Wbegin[m + i]..Wend[m + i] {
-                j = Windex[pos];
+            let inext = rowcount_flink[i as usize];
+            assert_eq!(Wend[(m + i) as usize] - Wbegin[(m + i) as usize], nz);
+            let mut cheap = 0; // row has entries with Markowitz cost < MC?
+            let mut found = 0; // eligible pivot found?
+            for pos in Wbegin[(m + i) as usize]..Wend[(m + i) as usize] {
+                j = Windex[pos as usize];
                 assert!(j >= 0 && j < m);
                 nz1 = nz;
-                nz2 = Wend[j] - Wbegin[j];
+                nz2 = Wend[j as usize] - Wbegin[j as usize];
                 assert!(nz2 >= 1);
                 mc = (nz1 - 1) * (nz2 - 1);
                 if mc >= MC {
                     continue;
                 }
                 cheap = 1;
-                cmx = colmax[j];
-                assert!(cmx >= 0);
-                if !cmx || cmx < abstol {
+                let cmx = colmax[j as usize];
+                assert!(cmx >= 0.0);
+                if cmx == 0.0 || cmx < abstol {
                     continue;
                 }
                 // find position of pivot in column file
-                let mut where_ = Wbegin[j];
-                while Windex[where_] != i {
-                    assert!(where_ < Wend[j] - 1);
+                let mut where_ = Wbegin[j as usize];
+                while Windex[where_ as usize] != i {
+                    assert!(where_ < Wend[j as usize] - 1);
                     where_ += 1;
                 }
-                x = fabs(Wvalue[where_]);
+                let x = Wvalue[where_ as usize].abs();
                 if x >= abstol && x >= reltol * cmx {
                     found = 1;
                     MC = mc;
@@ -189,7 +189,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
             }
             // If row i has cheap entries but none of them is numerically
             // acceptable, then don't search the row again until updated.
-            if cheap && !found {
+            if cheap != 0 && found == 0 {
                 lu_list_move(i, m + 1, rowcount_flink, rowcount_blink, m, None);
             } else {
                 assert!(MC < M * M);
