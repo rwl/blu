@@ -1,6 +1,9 @@
 mod basiclu;
 mod basiclu_factorize;
+mod basiclu_get_factors;
 mod basiclu_initialize;
+mod basiclu_solve_dense;
+mod basiclu_solve_sparse;
 mod lu_build_factors;
 mod lu_condest;
 mod lu_def;
@@ -15,7 +18,12 @@ mod lu_pivot;
 mod lu_residual_test;
 mod lu_setup_bump;
 mod lu_singletons;
+mod lu_solve_dense;
+mod lu_solve_sparse;
 
 // pub use basiclu::*;
 pub use basiclu_factorize::*;
+pub use basiclu_get_factors::*;
 pub use basiclu_initialize::*;
+pub use basiclu_solve_dense::*;
+pub use basiclu_solve_sparse::*;

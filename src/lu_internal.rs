@@ -168,12 +168,12 @@ pub(crate) fn lu_load(
     this: &mut lu,
     istore: &[lu_int],
     xstore: &[f64],
-    Li: Option<Vec<lu_int>>,
-    Lx: Option<Vec<f64>>,
-    Ui: Option<Vec<lu_int>>,
-    Ux: Option<Vec<f64>>,
-    Wi: Option<Vec<lu_int>>,
-    Wx: Option<Vec<f64>>,
+    Li: Option<&[lu_int]>,
+    Lx: Option<&[f64]>,
+    Ui: Option<&[lu_int]>,
+    Ux: Option<&[f64]>,
+    Wi: Option<&[lu_int]>,
+    Wx: Option<&[f64]>,
 ) -> lu_int {
     if istore[0] != BASICLU_HASH || xstore[0] != BASICLU_HASH as f64 {
         return BASICLU_ERROR_invalid_store;
@@ -266,12 +266,30 @@ pub(crate) fn lu_load(
     this.min_rownz = xstore[BASICLU_MIN_ROWNZ] as lu_int;
 
     // aliases to user arrays
-    this.Lindex = Li;
-    this.Lvalue = Lx;
-    this.Uindex = Ui;
-    this.Uvalue = Ux;
-    this.Windex = Wi;
-    this.Wvalue = Wx;
+    this.Lindex = match Li {
+        Some(Li) => Some(Li.to_vec()),
+        None => None,
+    };
+    this.Lvalue = match Lx {
+        Some(Lix) => Some(Lx.to_vec()),
+        None => None,
+    };
+    this.Uindex = match Ui {
+        Some(Ui) => Some(Ui.to_vec()),
+        None => None,
+    };
+    this.Uvalue = match Ux {
+        Some(Ux) => Some(Ux.to_vec()),
+        None => None,
+    };
+    this.Windex = match Wi {
+        Some(Wi) => Some(Wi.to_vec()),
+        None => None,
+    };
+    this.Wvalue = match Wx {
+        Some(Wx) => Some(Wx.to_vec()),
+        None => None,
+    };
 
     // partition istore for factorize
     // iptr = istore + 1;
