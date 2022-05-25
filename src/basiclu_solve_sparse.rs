@@ -140,10 +140,11 @@ pub fn basiclu_solve_sparse(
     } else {
         // check RHS indices
         let mut ok = nzrhs >= 0 && nzrhs <= this.m;
-        let mut n = 0;
-        while n < nzrhs && ok {
+        for n in 0..nzrhs {
+            if !ok {
+                break;
+            }
             ok = ok && irhs[n] >= 0 && irhs[n] < this.m;
-            n += 1;
         }
         if !ok {
             BASICLU_ERROR_invalid_argument

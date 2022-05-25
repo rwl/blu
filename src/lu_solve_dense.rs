@@ -1,5 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
+use crate::lu_garbage_perm::lu_garbage_perm;
 use crate::lu_internal::lu;
 
 pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans: char) {

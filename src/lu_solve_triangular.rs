@@ -1,0 +1,130 @@
+// Copyright (C) 2016-2018  ERGO-Code
+
+use crate::basiclu::lu_int;
+
+/// Substitution with triangular matrix.
+///
+/// The symbolic nonzero pattern of the solution must be given in topological
+/// order in pattern_symb[0..nz_symb-1]. On return pattern[0..nz-1] holds the
+/// nonzero pattern of the solution after dropping numerical zeros; nz is
+/// returned. pattern and pattern_symb can point to the same array.
+///
+/// Entries in the solution that are less than or equal to droptol are set to
+/// zero. When droptol is zero or negative, then no entries will be set to zero.
+///
+/// Note: The nonzero pattern of the solution never includes zeros. That means,
+///       even if droptol is negative, the output pattern is not identical to
+///       the symbolic pattern when exact cancellation happens.
+///
+/// The pivot elements must be stored separately to the matrix. When pivot is
+/// NULL, then the pivot elements are assumed to be 1. The matrix is given in
+/// parallel arrays index, value. When end is not NULL, column j has elements
+///
+///   index[begin[j]..end[j]-1], value[begin[j]..end[j]-1].
+///
+/// When end is NULL, then each column must be terminated by a negative index.
+pub(crate) fn lu_solve_triangular(
+    nz_symb: lu_int,
+    pattern_symb: &[lu_int],
+    begin: &[lu_int],
+    end: Option<&[lu_int]>,
+    index: &[lu_int],
+    value: &[f64],
+    pivot: Option<&[f64]>,
+    droptol: f64,
+    lhs: &[f64], // solution overwrites RHS
+    pattern: &mut [lu_int],
+    flops: &mut lu_int, // add flop count
+) -> lu_int {
+    let mut nz: lu_int = 0;
+    let mut flop_count = 0;
+
+    if pivot.is_some() && end.is_some() {
+        let pivot = pivot.unwrap();
+        let end = end.unwrap();
+
+        for n in 0..nz_symb {
+            ipivot = pattern_symb[n];
+            if lhs[ipivot] {
+                x = lhs[ipivot] /= pivot[ipivot];
+                flop_count += 1;
+                for pos in begin[ipivot]..end[ipivot] {
+                    i = index[pos];
+                    lhs[i] -= x * value[pos];
+                    flop_count += 1;
+                }
+                if x.abs() > droptol {
+                    pattern[nz] = ipivot;
+                    nz += 1;
+                } else {
+                    lhs[ipivot] = 0.0;
+                }
+            }
+        }
+    } else if let Some(pivot) = pivot {
+        for n in 0..nz_symb {
+            let ipivot = pattern_symb[n];
+            if lhs[ipivot] {
+                let x = lhs[ipivot] /= pivot[ipivot];
+                flop_count += 1;
+                // for (pos = begin[ipivot]; (i = index[pos]) >= 0; pos++)
+                let mut pos = begin[ipivot];
+                while index[pos] >= 0 {
+                    let i = index[pos];
+                    lhs[i] -= x * value[pos];
+                    flop_count += 1;
+                    pos += 1;
+                }
+                if x.abs() > droptol {
+                    pattern[nz] = ipivot;
+                    nz += 1;
+                } else {
+                    lhs[ipivot] = 0.0;
+                }
+            }
+        }
+    } else if let Some(end) = end {
+        for n in 0..nz_symb {
+            let ipivot = pattern_symb[n];
+            if lhs[ipivot] {
+                let x = lhs[ipivot];
+                // for (pos = begin[ipivot]; pos < end[ipivot]; pos++)
+                for pos in begin[ipivot]..end[ipivot] {
+                    let i = index[pos];
+                    lhs[i] -= x * value[pos];
+                    flop_count += 1;
+                }
+                if x.abs() > droptol {
+                    pattern[nz] = ipivot;
+                    nz += 1;
+                } else {
+                    lhs[ipivot] = 0.0;
+                }
+            }
+        }
+    } else {
+        for n in 0..nz_symb {
+            let ipivot = pattern_symb[n];
+            if lhs[ipivot] {
+                let x = lhs[ipivot];
+                // for (pos = begin[ipivot]; (i = index[pos]) >= 0; pos++)
+                let mut pos = begin[ipivot];
+                while index[pos] >= 0 {
+                    let i = index[pos];
+                    lhs[i] -= x * value[pos];
+                    flop_count += 1;
+                    pos += 1;
+                }
+                if fabs(x) > droptol {
+                    pattern[nz] = ipivot;
+                    nz += 1;
+                } else {
+                    lhs[ipivot] = 0.0;
+                }
+            }
+        }
+    }
+
+    *flops += flop_count;
+    nz
+}
