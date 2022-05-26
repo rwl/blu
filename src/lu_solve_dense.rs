@@ -33,15 +33,15 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
         // Solve transposed system
 
         // memcpy(work1, rhs, m*sizeof(double));
-        work1[..m].copy_from_slice(rhs);
+        work1[..m as usize].copy_from_slice(rhs);
 
         // Solve with U'.
         for k in 0..m {
-            let jpivot = pivotcol[k];
-            let ipivot = pivotrow[k];
+            let jpivot = pivotcol[k as usize] as usize;
+            let ipivot = pivotrow[k as usize] as usize;
             let x = work1[jpivot] / col_pivot[jpivot];
             for pos in Wbegin[jpivot]..Wend[jpivot] {
-                work1[Windex[pos]] -= x * Wvalue[pos];
+                work1[Windex[pos as usize] as usize] -= x * Wvalue[pos as usize];
             }
             lhs[ipivot] = x;
         }
@@ -49,11 +49,11 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
         // Solve with update ETAs backwards.
         // for (t = nforrest-1; t >= 0; t--)
         for t in (0..nforrest).rev() {
-            let ipivot = eta_row[t];
-            let x = lhs[ipivot];
-            for pos in Rbegin[t]..Rbegin[t + 1] {
-                let i = Lindex[pos];
-                lhs[i] -= x * Lvalue[pos];
+            let ipivot = eta_row[t as usize];
+            let x = lhs[ipivot as usize];
+            for pos in Rbegin[t as usize]..Rbegin[(t + 1) as usize] {
+                let i = Lindex[pos as usize] as usize;
+                lhs[i] -= x * Lvalue[pos as usize];
             }
         }
 
@@ -62,55 +62,55 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
         for k in (0..m).rev() {
             let mut x = 0.0;
             // for (pos = Lbegin_p[k]; (i = Lindex[pos]) >= 0; pos++)
-            let mut pos = Lbegin_p[k];
+            let mut pos = Lbegin_p[k as usize] as usize;
             while Lindex[pos] >= 0 {
                 let i = Lindex[pos];
-                x += lhs[i] * Lvalue[pos];
+                x += lhs[i as usize] * Lvalue[pos];
                 pos += 1;
             }
-            lhs[p[k]] -= x;
+            lhs[p[k as usize] as usize] -= x;
         }
     } else {
         // Solve forward system //
 
         // memcpy(work1, rhs, m*sizeof(double));
-        work1[..m].copy_from_slice(rhs);
+        work1[..m as usize].copy_from_slice(rhs);
 
         // Solve with L.
         for k in 0..m {
             let mut x = 0.0;
-            let mut pos = Ltbegin_p[k];
+            let mut pos = Ltbegin_p[k as usize] as usize;
             while Lindex[pos] >= 0 {
                 let i = Lindex[pos];
-                x += work1[i] * Lvalue[pos];
+                x += work1[i as usize] * Lvalue[pos];
                 pos += 1;
             }
-            work1[p[k]] -= x;
+            work1[p[k as usize] as usize] -= x;
         }
 
         // Solve with update ETAs.
         let mut pos = Rbegin[0];
-        for t in 0..nforrest {
+        for t in 0..nforrest as usize {
             let ipivot = eta_row[t];
             let mut x = 0.0;
             while pos < Rbegin[t + 1] {
-                x += work1[Lindex[pos]] * Lvalue[pos];
+                x += work1[Lindex[pos as usize] as usize] * Lvalue[pos as usize];
                 pos += 1;
             }
-            work1[ipivot] -= x;
+            work1[ipivot as usize] -= x;
         }
 
         // Solve with U.
         // for (k = m-1; k >= 0; k--)
         for k in (0..m).rev() {
-            let jpivot = pivotcol[k];
-            let ipivot = pivotrow[k];
+            let jpivot = pivotcol[k as usize] as usize;
+            let ipivot = pivotrow[k as usize] as usize;
             let x = work1[ipivot] / row_pivot[ipivot];
             // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-            let mut pos = Ubegin[ipivot];
+            let mut pos = Ubegin[ipivot] as usize;
             while Uindex[pos] >= 0 {
                 let i = Uindex[pos];
-                work1[i] -= x * Uvalue[pos];
+                work1[i as usize] -= x * Uvalue[pos];
                 pos += 1;
             }
             lhs[jpivot] = x;

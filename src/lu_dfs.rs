@@ -28,11 +28,12 @@ pub(crate) fn lu_dfs(
     index: &[lu_int],
     top: lu_int,
     xi: &mut [lu_int],
-    pstack: &mut [lu_int],
-    marked: &[lu_int],
+    // pstack: &mut [lu_int],
+    pstack: &mut [f64],
+    marked: &mut [lu_int],
     M: lu_int,
 ) -> lu_int {
-    if marked[i] == M {
+    if marked[i as usize] == M {
         return top;
     }
 
@@ -51,32 +52,33 @@ fn dfs_end(
     index: &[lu_int],
     mut top: lu_int,
     xi: &mut [lu_int],
-    pstack: &mut [lu_int],
-    marked: &[lu_int],
+    // pstack: &mut [lu_int],
+    pstack: &mut [f64],
+    marked: &mut [lu_int],
     M: lu_int,
 ) -> lu_int {
-    let mut head = 0;
-    assert_ne!(marked[i], M);
+    let mut head: lu_int = 0;
+    assert_ne!(marked[i as usize], M);
 
     xi[0] = i;
     while head >= 0 {
-        i = xi[head];
-        if marked[i] != M {
+        i = xi[head as usize];
+        if marked[i as usize] != M {
             // node i has not been visited
-            marked[i] = M;
-            pstack[head] = begin[i];
+            marked[i as usize] = M;
+            pstack[head as usize] = begin[i as usize] as f64;
         }
         let mut done = 1;
         // continue dfs at node i
-        for p in pstack[head]..end[i] {
-            let inext = index[p];
-            if marked[inext] == M {
+        for p in (pstack[head as usize] as lu_int)..end[i as usize] {
+            let inext = index[p as usize];
+            if marked[inext as usize] == M {
                 continue; // skip visited node
             }
-            pstack[head] = p + 1;
+            pstack[head as usize] = (p + 1) as f64;
             // xi[++head] = inext; /* start dfs at node inext */
             head += 1;
-            xi[head] = inext; // start dfs at node inext
+            xi[head as usize] = inext; // start dfs at node inext
             done = 0;
             break;
         }
@@ -85,11 +87,10 @@ fn dfs_end(
             head -= 1;
             // xi[--top] = i;
             top -= 1;
-            xi[top] = i;
+            xi[top as usize] = i;
         }
     }
-
-    return top;
+    top
 }
 
 // adapted from T. Davis, CSPARSE
@@ -99,43 +100,44 @@ fn dfs(
     index: &[lu_int],
     mut top: lu_int,
     xi: &mut [lu_int],
-    pstack: &mut [lu_int],
-    marked: &[lu_int],
+    // pstack: &mut [lu_int],
+    pstack: &mut [f64],
+    marked: &mut [lu_int],
     M: lu_int,
 ) -> lu_int {
-    let mut head = 0;
-    assert_ne!(marked[i], M);
+    let mut head: lu_int = 0;
+    assert_ne!(marked[i as usize], M);
 
     xi[0] = i;
     while head >= 0 {
-        i = xi[head];
-        if marked[i] != M {
+        i = xi[head as usize];
+        if marked[i as usize] != M {
             // node i has not been visited
-            marked[i] = M;
-            pstack[head] = begin[i];
+            marked[i as usize] = M;
+            pstack[head as usize] = begin[i as usize] as f64;
         }
         let mut done = 1;
         // continue dfs at node i
         // for (p = pstack[head]; (inext = index[p]) >= 0; p++)
-        let mut p = pstack[head];
-        while index[p] >= 0 {
-            let inext = index[p];
-            if marked[inext] == M {
+        let mut p = pstack[head as usize] as lu_int;
+        while index[p as usize] >= 0 {
+            let inext = index[p as usize];
+            if marked[inext as usize] == M {
+                p += 1; // TODO: check
                 continue; // skip visited node
             }
-            pstack[head] = p + 1;
+            pstack[head as usize] = (p + 1) as f64;
             // xi[++head] = inext; /* start dfs at node inext */
             head += 1;
-            xi[head] = inext; // start dfs at node inext
+            xi[head as usize] = inext; // start dfs at node inext
             done = 0;
             break;
-            p += 1;
         }
         if done != 0 {
             // node i has no unvisited neighbours
             head -= 1;
             top -= 1;
-            xi[top] = i;
+            xi[top as usize] = i;
         }
     }
 

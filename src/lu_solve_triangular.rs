@@ -32,7 +32,7 @@ pub(crate) fn lu_solve_triangular(
     value: &[f64],
     pivot: Option<&[f64]>,
     droptol: f64,
-    lhs: &[f64], // solution overwrites RHS
+    lhs: &mut [f64], // solution overwrites RHS
     pattern: &mut [lu_int],
     flops: &mut lu_int, // add flop count
 ) -> lu_int {
@@ -44,82 +44,87 @@ pub(crate) fn lu_solve_triangular(
         let end = end.unwrap();
 
         for n in 0..nz_symb {
-            ipivot = pattern_symb[n];
-            if lhs[ipivot] {
-                x = lhs[ipivot] /= pivot[ipivot];
+            let ipivot = pattern_symb[n as usize];
+            if lhs[ipivot as usize] != 0.0 {
+                // x = lhs[ipivot] /= pivot[ipivot];
+                lhs[ipivot as usize] /= pivot[ipivot as usize];
+                let x = lhs[ipivot as usize];
+
                 flop_count += 1;
-                for pos in begin[ipivot]..end[ipivot] {
-                    i = index[pos];
-                    lhs[i] -= x * value[pos];
+                for pos in begin[ipivot as usize]..end[ipivot as usize] {
+                    let i = index[pos as usize];
+                    lhs[i as usize] -= x * value[pos as usize];
                     flop_count += 1;
                 }
                 if x.abs() > droptol {
-                    pattern[nz] = ipivot;
+                    pattern[nz as usize] = ipivot;
                     nz += 1;
                 } else {
-                    lhs[ipivot] = 0.0;
+                    lhs[ipivot as usize] = 0.0;
                 }
             }
         }
     } else if let Some(pivot) = pivot {
         for n in 0..nz_symb {
-            let ipivot = pattern_symb[n];
-            if lhs[ipivot] {
-                let x = lhs[ipivot] /= pivot[ipivot];
+            let ipivot = pattern_symb[n as usize];
+            if lhs[ipivot as usize] != 0.0 {
+                // let x = lhs[ipivot] /= pivot[ipivot]; TODO check
+                lhs[ipivot as usize] /= pivot[ipivot as usize];
+                let x = lhs[ipivot as usize];
                 flop_count += 1;
                 // for (pos = begin[ipivot]; (i = index[pos]) >= 0; pos++)
-                let mut pos = begin[ipivot];
-                while index[pos] >= 0 {
-                    let i = index[pos];
-                    lhs[i] -= x * value[pos];
+                let mut pos = begin[ipivot as usize];
+                while index[pos as usize] >= 0 {
+                    let i = index[pos as usize];
+                    lhs[i as usize] -= x * value[pos as usize];
                     flop_count += 1;
                     pos += 1;
                 }
                 if x.abs() > droptol {
-                    pattern[nz] = ipivot;
+                    pattern[nz as usize] = ipivot;
                     nz += 1;
                 } else {
-                    lhs[ipivot] = 0.0;
+                    lhs[ipivot as usize] = 0.0;
                 }
             }
         }
     } else if let Some(end) = end {
         for n in 0..nz_symb {
-            let ipivot = pattern_symb[n];
-            if lhs[ipivot] {
-                let x = lhs[ipivot];
+            let ipivot = pattern_symb[n as usize];
+            if lhs[ipivot as usize] != 0.0 {
+                let x = lhs[ipivot as usize];
                 // for (pos = begin[ipivot]; pos < end[ipivot]; pos++)
-                for pos in begin[ipivot]..end[ipivot] {
-                    let i = index[pos];
-                    lhs[i] -= x * value[pos];
+                for pos in begin[ipivot as usize]..end[ipivot as usize] {
+                    let i = index[pos as usize];
+                    lhs[i as usize] -= x * value[pos as usize];
                     flop_count += 1;
                 }
                 if x.abs() > droptol {
-                    pattern[nz] = ipivot;
+                    pattern[nz as usize] = ipivot;
                     nz += 1;
                 } else {
-                    lhs[ipivot] = 0.0;
+                    lhs[ipivot as usize] = 0.0;
                 }
             }
         }
     } else {
         for n in 0..nz_symb {
-            let ipivot = pattern_symb[n];
-            if lhs[ipivot] {
-                let x = lhs[ipivot];
+            let ipivot = pattern_symb[n as usize];
+            if lhs[ipivot as usize] != 0.0 {
+                let x = lhs[ipivot as usize];
                 // for (pos = begin[ipivot]; (i = index[pos]) >= 0; pos++)
-                let mut pos = begin[ipivot];
-                while index[pos] >= 0 {
-                    let i = index[pos];
-                    lhs[i] -= x * value[pos];
+                let mut pos = begin[ipivot as usize];
+                while index[pos as usize] >= 0 {
+                    let i = index[pos as usize];
+                    lhs[i as usize] -= x * value[pos as usize];
                     flop_count += 1;
                     pos += 1;
                 }
-                if fabs(x) > droptol {
-                    pattern[nz] = ipivot;
+                if x.abs() > droptol {
+                    pattern[nz as usize] = ipivot;
                     nz += 1;
                 } else {
-                    lhs[ipivot] = 0.0;
+                    lhs[ipivot as usize] = 0.0;
                 }
             }
         }

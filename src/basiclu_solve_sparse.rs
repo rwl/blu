@@ -109,7 +109,7 @@ pub fn basiclu_solve_sparse(
     xrhs: &[f64],
     p_nzlhs: &mut lu_int,
     ilhs: &mut [lu_int],
-    lhs: &[f64],
+    lhs: &mut [f64],
     trans: char,
 ) -> lu_int {
     let mut this = lu {
@@ -140,7 +140,7 @@ pub fn basiclu_solve_sparse(
     } else {
         // check RHS indices
         let mut ok = nzrhs >= 0 && nzrhs <= this.m;
-        for n in 0..nzrhs {
+        for n in 0..nzrhs as usize {
             if !ok {
                 break;
             }

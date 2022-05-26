@@ -166,7 +166,7 @@ pub fn basiclu_solve_for_update(
     xrhs: Option<&[f64]>,
     p_nzlhs: Option<&mut lu_int>,
     ilhs: Option<&mut [lu_int]>,
-    lhs: Option<&[f64]>,
+    lhs: Option<&mut [f64]>,
     trans: char,
 ) -> lu_int {
     let mut this = lu {
@@ -206,7 +206,7 @@ pub fn basiclu_solve_for_update(
             irhs[0] >= 0 && irhs[0] < this.m
         } else {
             let mut ok = nzrhs >= 0 && nzrhs <= this.m;
-            for n in 0..nzrhs {
+            for n in 0..nzrhs as usize {
                 if !ok {
                     break;
                 }

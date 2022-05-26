@@ -75,7 +75,7 @@ pub fn basiclu_solve_dense(
     lhs: &mut [f64],
     trans: char,
 ) -> lu_int {
-    let mut this = &lu {
+    let mut this = lu {
         ..Default::default()
     };
 

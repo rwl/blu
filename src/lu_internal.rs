@@ -271,7 +271,7 @@ pub(crate) fn lu_load(
         None => None,
     };
     this.Lvalue = match Lx {
-        Some(Lix) => Some(Lx.to_vec()),
+        Some(Lx) => Some(Lx.to_vec()),
         None => None,
     };
     this.Uindex = match Ui {

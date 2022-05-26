@@ -18,19 +18,20 @@ use crate::lu_dfs::lu_dfs;
 pub(crate) fn lu_solve_symbolic(
     m: lu_int,
     begin: &[lu_int],
-    end: &[lu_int],
+    end: Option<&[lu_int]>,
     index: &[lu_int],
     nrhs: lu_int,
     irhs: &[lu_int],
-    ilhs: &[lu_int],
-    pstack: &[lu_int], // size m workspace
-    marked: &[lu_int], // marked[i] != M on entry
+    ilhs: &mut [lu_int],
+    // pstack: &[lu_int], // size m workspace
+    pstack: &mut [f64],    // size m workspace
+    marked: &mut [lu_int], // marked[i] != M on entry
     M: lu_int,
 ) -> lu_int {
     let mut top = m;
     for n in 0..nrhs {
-        if marked[irhs[n]] != M {
-            let i = irhs[n];
+        if marked[irhs[n as usize] as usize] != M {
+            let i = irhs[n as usize];
             top = lu_dfs(i, begin, end, index, top, ilhs, pstack, marked, M);
         }
     }

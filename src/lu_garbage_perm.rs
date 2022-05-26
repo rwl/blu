@@ -15,9 +15,9 @@ use crate::lu_internal::lu;
 pub(crate) fn lu_garbage_perm(this: &mut lu) {
     let m = this.m;
     let pivotlen = this.pivotlen;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
-    let marked = &this.marked;
+    let pivotcol = &mut this.pivotcol;
+    let pivotrow = &mut this.pivotrow;
+    let marked = &mut this.marked;
 
     if pivotlen > m {
         // marker = ++this.marker;
@@ -26,21 +26,21 @@ pub(crate) fn lu_garbage_perm(this: &mut lu) {
         let mut put = pivotlen;
         // for (get = pivotlen-1; get >= 0; get--) {
         for get in (0..pivotlen).rev() {
-            if marked[pivotcol[get]] != marker {
-                let j = pivotcol[get];
-                marked[j] = marker;
+            if marked[pivotcol[get as usize] as usize] != marker {
+                let j = pivotcol[get as usize];
+                marked[j as usize] = marker;
                 // pivotcol[--put] = j;
                 put -= 1;
-                pivotcol[put] = j;
-                pivotrow[put] = pivotrow[get];
+                pivotcol[put as usize] = j;
+                pivotrow[put as usize] = pivotrow[get as usize];
             }
         }
         assert_eq!(put + m, pivotlen);
 
         // memmove(pivotcol, pivotcol + put, m * sizeof(lu_int));  TODO: check
-        pivotcol[..m].copy_from_slice(pivotcol[put..]);
+        pivotcol[..m as usize].copy_from_slice(&pivotcol[put as usize..]);
         // memmove(pivotrow, pivotrow + put, m * sizeof(lu_int));
-        pivotrow[..m].copy_from_slice(pivotrow[put..]);
+        pivotrow[..m as usize].copy_from_slice(&pivotrow[put as usize..]);
 
         this.pivotlen = m;
     }
