@@ -52,24 +52,24 @@ pub(crate) fn lu_setup_bump(
     let abstol = this.abstol;
     let pad = this.pad;
     let stretch = this.stretch;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let pinv = &this.pinv;
-    let qinv = &this.qinv;
+    let colcount_flink = this.colcount_flink.as_mut().unwrap();
+    let colcount_blink = this.colcount_blink.as_mut().unwrap();
+    let rowcount_flink = this.rowcount_flink.as_mut().unwrap();
+    let rowcount_blink = this.rowcount_blink.as_mut().unwrap();
+    let pinv = this.pinv.as_ref().unwrap();
+    let qinv = this.qinv.as_ref().unwrap();
     // let Wbegin = &mut this.Wbegin;
     // let Wend = &mut this.Wend;
     // let Wbegin2 = Wbegin + m; /* alias for row file */
     // let Wend2 = Wend + m;
-    let (Wbegin, Wbegin2) = this.Wbegin.split_at_mut(m as usize);
-    let (Wend, Wend2) = this.Wend.split_at_mut(m as usize);
-    let Wflink = &mut this.Wflink;
-    let Wblink = &mut this.Wblink;
+    let (Wbegin, Wbegin2) = this.Wbegin.as_mut().unwrap().split_at_mut(m as usize);
+    let (Wend, Wend2) = this.Wend.as_mut().unwrap().split_at_mut(m as usize);
+    let Wflink = this.Wflink.as_mut().unwrap();
+    let Wblink = this.Wblink.as_mut().unwrap();
     let Windex = this.Windex.as_mut().unwrap();
     let Wvalue = this.Wvalue.as_mut().unwrap();
     let colmax = &mut this.col_pivot;
-    let iwork0 = &mut this.iwork0;
+    let iwork0 = this.iwork0.as_mut().unwrap();
 
     let mut bump_nz = Bnz - Lnz - Unz - rank; // will change if columns are dropped
 

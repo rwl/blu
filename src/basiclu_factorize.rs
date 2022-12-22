@@ -240,12 +240,12 @@ use std::time::Instant;
 pub fn basiclu_factorize(
     istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: &[lu_int],
-    Lx: &[f64],
-    Ui: &[lu_int],
-    Ux: &[f64],
-    Wi: &[lu_int],
-    Wx: &[f64],
+    Li: Vec<lu_int>,
+    Lx: Vec<f64>,
+    Ui: Vec<lu_int>,
+    Ux: Vec<f64>,
+    Wi: Vec<lu_int>,
+    Wx: Vec<f64>,
     Bbegin: &[lu_int],
     Bend: &[lu_int],
     Bi: &[lu_int],
@@ -259,7 +259,7 @@ pub fn basiclu_factorize(
 
     let status = lu_load(
         &mut this,
-        istore,
+        // istore,
         xstore,
         Some(Li),
         Some(Lx),
@@ -284,14 +284,14 @@ pub fn basiclu_factorize(
     fn return_to_caller(
         tic: Instant,
         this: &mut lu,
-        istore: &mut [lu_int],
+        _istore: &mut [lu_int],
         xstore: &mut [f64],
         status: lu_int,
     ) -> lu_int {
         let elapsed = tic.elapsed().as_secs_f64();
         this.time_factorize += elapsed;
         this.time_factorize_total += elapsed;
-        return lu_save(&this, istore, xstore, status);
+        return lu_save(&this, /*istore,*/ xstore, status);
     }
 
     // continue factorization
@@ -338,7 +338,7 @@ pub fn basiclu_factorize(
         BUILD_FACTORS => {}
         _ => {
             let status = BASICLU_ERROR_invalid_call;
-            return lu_save(&this, istore, xstore, status);
+            return lu_save(&this, /*istore,*/ xstore, status);
         }
     };
 
@@ -357,11 +357,11 @@ pub fn basiclu_factorize(
 
     this.condestL = lu_condest(
         this.m,
-        &this.Lbegin,
+        this.Lbegin.as_ref().unwrap(),
         this.Lindex.as_ref().unwrap(),
         this.Lvalue.as_ref().unwrap(),
         None,
-        Some(&this.p),
+        Some(this.p.as_ref().unwrap()),
         0,
         &mut this.work1,
         &mut this.normL,
@@ -373,7 +373,7 @@ pub fn basiclu_factorize(
         this.Uindex.as_ref().unwrap(),
         this.Uvalue.as_ref().unwrap(),
         Some(&this.row_pivot),
-        Some(&this.p),
+        Some(this.p.as_ref().unwrap()),
         1,
         &mut this.work1,
         &mut this.normU,

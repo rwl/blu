@@ -21,22 +21,28 @@ pub(crate) fn lu_factorize_bump(this: &mut lu) -> lu_int {
         if this.pivot_row < 0 {
             // Eliminate empty column without choosing a pivot.
             lu_list_remove(
-                &mut this.colcount_flink,
-                &mut this.colcount_blink,
+                this.colcount_flink.as_mut().unwrap(),
+                this.colcount_blink.as_mut().unwrap(),
                 this.pivot_col,
             );
             this.pivot_col = -1;
             this.rankdef += 1;
         } else {
             // Eliminate pivot. This may require reallocation.
-            assert_eq!(this.pinv[this.pivot_row as usize], -1);
-            assert_eq!(this.qinv[this.pivot_col as usize], -1);
+            let pinv = this.pinv.as_ref().unwrap();
+            let qinv = this.qinv.as_ref().unwrap();
+
+            assert_eq!(pinv[this.pivot_row as usize], -1);
+            assert_eq!(qinv[this.pivot_col as usize], -1);
             status = lu_pivot(this);
             if status != BASICLU_OK {
                 break;
             }
-            this.pinv[this.pivot_row as usize] = this.rank;
-            this.qinv[this.pivot_col as usize] = this.rank;
+            let pinv = this.pinv.as_mut().unwrap();
+            let qinv = this.qinv.as_mut().unwrap();
+
+            pinv[this.pivot_row as usize] = this.rank;
+            qinv[this.pivot_col as usize] = this.rank;
             this.pivot_col = -1;
             this.pivot_row = -1;
             this.rank += 1;

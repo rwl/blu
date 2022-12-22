@@ -116,22 +116,22 @@ pub(crate) fn lu_build_factors(this: &mut lu) -> lu_int {
     let Wmem = this.Wmem;
     let pad = this.pad;
     let stretch = this.stretch as lu_int;
-    let pinv = &mut this.pinv;
-    let qinv = &mut this.qinv;
-    let pmap = &mut this.pmap; // shares memory with pinv
-    let qmap = &mut this.qmap; // shares memory with qinv
-    let pivotcol = &mut this.pivotcol;
-    let pivotrow = &mut this.pivotrow;
-    let Lbegin = &mut this.Lbegin;
+    let pinv = this.pinv.as_mut().unwrap();
+    let qinv = this.qinv.as_mut().unwrap();
+    let pmap = this.pmap.as_mut().unwrap(); // shares memory with pinv
+    let qmap = this.qmap.as_mut().unwrap(); // shares memory with qinv
+    let pivotcol = this.pivotcol.as_mut().unwrap();
+    let pivotrow = this.pivotrow.as_mut().unwrap();
+    let Lbegin = this.Lbegin.as_mut().unwrap();
     let Lbegin_p = &mut this.Lbegin_p;
-    let Ltbegin = &mut this.Ltbegin;
-    let Ltbegin_p = &mut this.Ltbegin_p;
+    let Ltbegin = this.Ltbegin.as_mut().unwrap();
+    let Ltbegin_p = this.Ltbegin_p.as_mut().unwrap();
     let Ubegin = &mut this.Ubegin;
-    let Rbegin = &mut this.Rbegin;
-    let Wbegin = &mut this.Wbegin;
-    let Wend = &mut this.Wend;
-    let Wflink = &mut this.Wflink;
-    let Wblink = &mut this.Wblink;
+    let Rbegin = this.Rbegin.as_mut().unwrap();
+    let Wbegin = this.Wbegin.as_mut().unwrap();
+    let Wend = this.Wend.as_mut().unwrap();
+    let Wflink = this.Wflink.as_mut().unwrap();
+    let Wblink = this.Wblink.as_mut().unwrap();
     let col_pivot = &mut this.col_pivot;
     let row_pivot = &mut this.row_pivot;
     let Lindex = this.Lindex.as_mut().unwrap();
@@ -140,7 +140,7 @@ pub(crate) fn lu_build_factors(this: &mut lu) -> lu_int {
     let Uvalue = this.Uvalue.as_mut().unwrap();
     let Windex = this.Windex.as_mut().unwrap();
     let Wvalue = this.Wvalue.as_mut().unwrap();
-    let iwork1 = &mut this.iwork1;
+    let iwork1 = this.iwork1.as_mut().unwrap();
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;
     // double pivot, min_pivot, max_pivot;
@@ -404,7 +404,8 @@ pub(crate) fn lu_build_factors(this: &mut lu) -> lu_int {
     }
 
     // memcpy(this.p, pivotrow, m*sizeof(lu_int));
-    this.p = pivotrow.clone();
+    // this.p = pivotrow.clone();
+    this.p.as_mut().unwrap().copy_from_slice(pivotrow); // TODO: check
 
     this.min_pivot = min_pivot;
     this.max_pivot = max_pivot;

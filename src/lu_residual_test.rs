@@ -23,11 +23,11 @@ pub(crate) fn lu_residual_test(
 ) {
     let m = this.m;
     let rank = this.rank;
-    let p = &this.p;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
+    let p = this.p.as_ref().unwrap();
+    let pivotcol = this.pivotcol.as_ref().unwrap();
+    let pivotrow = this.pivotrow.as_ref().unwrap();
     let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = &this.Ltbegin_p;
+    let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
     let Ubegin = &this.Ubegin;
     let row_pivot = &this.row_pivot;
     let Lindex = this.Lindex.as_ref().unwrap();

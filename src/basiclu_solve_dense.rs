@@ -63,14 +63,14 @@ use crate::lu_solve_dense::lu_solve_dense;
 ///
 ///             The factorization is invalid.
 pub fn basiclu_solve_dense(
-    istore: &mut [lu_int],
+    // istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: &[lu_int],
-    Lx: &[f64],
-    Ui: &[lu_int],
-    Ux: &[f64],
-    Wi: &[lu_int],
-    Wx: &[f64],
+    Li: Vec<lu_int>,
+    Lx: Vec<f64>,
+    Ui: Vec<lu_int>,
+    Ux: Vec<f64>,
+    Wi: Vec<lu_int>,
+    Wx: Vec<f64>,
     rhs: &[f64],
     lhs: &mut [f64],
     trans: char,
@@ -81,7 +81,7 @@ pub fn basiclu_solve_dense(
 
     let status = lu_load(
         &mut this,
-        istore,
+        // istore,
         xstore,
         Some(Li),
         Some(Lx),
@@ -99,10 +99,10 @@ pub fn basiclu_solve_dense(
     // }
     if this.nupdate < 0 {
         let status = BASICLU_ERROR_invalid_call;
-        return lu_save(&this, istore, xstore, status);
+        return lu_save(&this, /*istore,*/ xstore, status);
     }
 
     lu_solve_dense(&mut this, rhs, lhs, trans);
 
-    lu_save(&this, istore, xstore, status)
+    lu_save(&this, /*istore,*/ xstore, status)
 }

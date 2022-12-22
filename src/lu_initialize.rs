@@ -6,13 +6,13 @@ use crate::lu_internal::{lu, lu_load, lu_reset, lu_save};
 ///
 /// Make @istore, @xstore a BASICLU instance. Set parameters to defaults and
 /// initialize global counters. Reset instance for a fresh factorization.
-pub(crate) fn lu_initialize(m: lu_int, istore: &mut [lu_int], xstore: &mut [f64]) {
+pub(crate) fn lu_initialize(m: lu_int, /*istore: &mut [lu_int],*/ xstore: &mut [f64]) {
     let mut this = lu {
         ..Default::default()
     };
 
     // set constant entries
-    istore[0] = BASICLU_HASH;
+    // istore[0] = BASICLU_HASH;
     xstore[0] = BASICLU_HASH as f64;
     xstore[BASICLU_DIM] = m as f64;
 
@@ -43,8 +43,8 @@ pub(crate) fn lu_initialize(m: lu_int, istore: &mut [lu_int], xstore: &mut [f64]
 
     // lu_reset() and lu_save() initializes the remaining slots
     lu_load(
-        &mut this, istore, xstore, None, None, None, None, None, None,
+        &mut this, /*istore,*/ xstore, None, None, None, None, None, None,
     );
     lu_reset(&mut this);
-    lu_save(&this, istore, xstore, BASICLU_OK);
+    lu_save(&this, /*istore,*/ xstore, BASICLU_OK);
 }

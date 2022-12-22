@@ -111,10 +111,10 @@ use crate::lu_initialize::lu_initialize;
 ///     xstore[BASICLU_RFLOPS] Number of flops for operations with L, U and update
 ///                            ETA vectors in calls to basiclu_solve_sparse and
 ///                            basiclu_solve_for_update since last factorization.
-pub fn basiclu_initialize(m: lu_int, istore: &mut [lu_int], xstore: &mut [f64]) -> lu_int {
+pub fn basiclu_initialize(m: lu_int, /*istore: &mut [lu_int],*/ xstore: &mut [f64]) -> lu_int {
     if m <= 0 {
         return BASICLU_ERROR_invalid_argument;
     }
-    lu_initialize(m, istore, xstore);
+    lu_initialize(m, /*istore,*/ xstore);
     BASICLU_OK
 }

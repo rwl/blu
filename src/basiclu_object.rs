@@ -105,7 +105,7 @@ pub fn basiclu_obj_initialize(obj: &mut basiclu_object, m: lu_int) -> lu_int {
     obj.nzlhs = 0;
     obj.realloc_factor = 1.5;
 
-    lu_initialize(m, &mut obj.istore, &mut obj.xstore);
+    lu_initialize(m, /*&mut obj.istore,*/ &mut obj.xstore);
     obj.xstore[BASICLU_MEMORYL] = fmemsize as f64;
     obj.xstore[BASICLU_MEMORYU] = fmemsize as f64;
     obj.xstore[BASICLU_MEMORYW] = fmemsize as f64;
@@ -149,12 +149,12 @@ pub fn basiclu_obj_factorize(
     let mut status = basiclu_factorize(
         &mut obj.istore,
         &mut obj.xstore,
-        &obj.Li,
-        &obj.Lx,
-        &obj.Ui,
-        &obj.Ux,
-        &obj.Wi,
-        &obj.Wx,
+        obj.Li.clone(), // FIXME
+        obj.Lx.clone(),
+        obj.Ui.clone(),
+        obj.Ux.clone(),
+        obj.Wi.clone(),
+        obj.Wx.clone(),
         Bbegin,
         Bend,
         Bi,
@@ -170,12 +170,12 @@ pub fn basiclu_obj_factorize(
         status = basiclu_factorize(
             &mut obj.istore,
             &mut obj.xstore,
-            &obj.Li,
-            &obj.Lx,
-            &obj.Ui,
-            &obj.Ux,
-            &obj.Wi,
-            &obj.Wx,
+            obj.Li.clone(), // FIXME
+            obj.Lx.clone(),
+            obj.Ui.clone(),
+            obj.Ux.clone(),
+            obj.Wi.clone(),
+            obj.Wx.clone(),
             Bbegin,
             Bend,
             Bi,
@@ -224,12 +224,12 @@ pub fn basiclu_obj_get_factors(
     basiclu_get_factors(
         &mut obj.istore,
         &mut obj.xstore,
-        Some(&obj.Li),
-        Some(&obj.Lx),
-        Some(&obj.Ui),
-        Some(&obj.Ux),
-        Some(&obj.Wi),
-        Some(&obj.Wx),
+        Some(obj.Li.clone()), // FIXME
+        Some(obj.Lx.clone()),
+        Some(obj.Ui.clone()),
+        Some(obj.Ux.clone()),
+        Some(obj.Wi.clone()),
+        Some(obj.Wx.clone()),
         rowperm,
         colperm,
         Lcolptr,
@@ -271,14 +271,14 @@ pub fn basiclu_obj_solve_dense(
     }
 
     basiclu_solve_dense(
-        &mut obj.istore,
+        // &mut obj.istore,
         &mut obj.xstore,
-        &obj.Li,
-        &obj.Lx,
-        &obj.Ui,
-        &obj.Ux,
-        &obj.Wi,
-        &obj.Wx,
+        obj.Li.clone(), // FIXME
+        obj.Lx.clone(),
+        obj.Ui.clone(),
+        obj.Ux.clone(),
+        obj.Wi.clone(),
+        obj.Wx.clone(),
         rhs,
         lhs,
         trans,

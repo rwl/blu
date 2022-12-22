@@ -15,9 +15,9 @@ use crate::lu_internal::lu;
 pub(crate) fn lu_garbage_perm(this: &mut lu) {
     let m = this.m;
     let pivotlen = this.pivotlen;
-    let pivotcol = &mut this.pivotcol;
-    let pivotrow = &mut this.pivotrow;
-    let marked = &mut this.marked;
+    let pivotcol = this.pivotcol.as_mut().unwrap();
+    let pivotrow = this.pivotrow.as_mut().unwrap();
+    let marked = this.marked.as_mut().unwrap();
 
     if pivotlen > m {
         // marker = ++this.marker;
@@ -38,9 +38,9 @@ pub(crate) fn lu_garbage_perm(this: &mut lu) {
         assert_eq!(put + m, pivotlen);
 
         // memmove(pivotcol, pivotcol + put, m * sizeof(lu_int));  TODO: check
-        pivotcol[..m as usize].copy_from_slice(&pivotcol[put as usize..]);
+        pivotcol.copy_within((put as usize)..(put + m) as usize, 0);
         // memmove(pivotrow, pivotrow + put, m * sizeof(lu_int));
-        pivotrow[..m as usize].copy_from_slice(&pivotrow[put as usize..]);
+        pivotrow.copy_within((put as usize)..(put + m) as usize, 0);
 
         this.pivotlen = m;
     }

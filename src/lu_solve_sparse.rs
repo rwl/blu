@@ -22,19 +22,19 @@ pub(crate) fn lu_solve_sparse(
     let pivotlen = this.pivotlen;
     let nz_sparse = (this.sparse_thres as lu_int) * m;
     let droptol = this.droptol;
-    let p = &this.p;
-    let pmap = &this.pmap;
-    let qmap = &this.qmap;
+    let p = this.p.as_ref().unwrap();
+    let pmap = this.pmap.as_ref().unwrap();
+    let qmap = this.qmap.as_ref().unwrap();
     let eta_row = &this.eta_row;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
-    let Lbegin = &this.Lbegin;
-    let Ltbegin = &this.Ltbegin;
-    let Ltbegin_p = &this.Ltbegin_p;
+    let pivotcol = this.pivotcol.as_ref().unwrap();
+    let pivotrow = this.pivotrow.as_ref().unwrap();
+    let Lbegin = this.Lbegin.as_ref().unwrap();
+    let Ltbegin = this.Ltbegin.as_ref().unwrap();
+    let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
     let Ubegin = &this.Ubegin;
-    let Rbegin = &this.Rbegin;
-    let Wbegin = &this.Wbegin;
-    let Wend = &this.Wend;
+    let Rbegin = this.Rbegin.as_ref().unwrap();
+    let Wbegin = this.Wbegin.as_ref().unwrap();
+    let Wend = this.Wend.as_ref().unwrap();
     let col_pivot = &this.col_pivot;
     let row_pivot = &this.row_pivot;
     let Lindex = this.Lindex.as_ref().unwrap();
@@ -43,7 +43,7 @@ pub(crate) fn lu_solve_sparse(
     let Uvalue = this.Uvalue.as_ref().unwrap();
     let Windex = this.Windex.as_ref().unwrap();
     let Wvalue = this.Wvalue.as_ref().unwrap();
-    let marked = &mut this.marked;
+    let marked = this.marked.as_mut().unwrap();
 
     let (mut Lflops, mut Uflops, mut Rflops) = (0, 0, 0);
     let tic = Instant::now();
@@ -51,8 +51,9 @@ pub(crate) fn lu_solve_sparse(
     if trans == 't' || trans == 'T' {
         // Solve transposed system //
 
-        let pattern_symb = &mut this.iwork1;
-        let pattern = &mut this.iwork1[m as usize..];
+        // let pattern_symb = &mut this.iwork1;
+        // let pattern = &mut this.iwork1[m as usize..];
+        let (pattern_symb, pattern) = this.iwork1.as_mut().unwrap().split_at_mut(m as usize);
         let work = &mut this.work0;
         // lu_int *pstack = (void *) this.work1;
         let pstack = &mut this.work1;
@@ -192,8 +193,9 @@ pub(crate) fn lu_solve_sparse(
     } else {
         // Solve forward system //
 
-        let pattern_symb = &mut this.iwork1;
-        let pattern = &mut this.iwork1[m as usize..];
+        // let pattern_symb = &mut this.iwork1;
+        // let pattern = &mut this.iwork1[m as usize..];
+        let (pattern_symb, pattern) = this.iwork1.as_mut().unwrap().split_at_mut(m as usize);
         let work = &mut this.work0;
         // lu_int *pstack       = (void *) this.work1;
         let pstack = &mut this.work1;

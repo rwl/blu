@@ -4,18 +4,21 @@ use crate::lu_garbage_perm::lu_garbage_perm;
 use crate::lu_internal::lu;
 
 pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans: char) {
+    lu_garbage_perm(this);
+    assert_eq!(this.pivotlen, this.m);
+
     let m = this.m;
     let nforrest = this.nforrest;
-    let p = &this.p;
+    let p = this.p.as_ref().unwrap();
     let eta_row = &this.eta_row;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
+    let pivotcol = this.pivotcol.as_ref().unwrap();
+    let pivotrow = this.pivotrow.as_ref().unwrap();
     let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = &this.Ltbegin_p;
+    let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
     let Ubegin = &this.Ubegin;
-    let Rbegin = &this.Rbegin;
-    let Wbegin = &this.Wbegin;
-    let Wend = &this.Wend;
+    let Rbegin = this.Rbegin.as_ref().unwrap();
+    let Wbegin = this.Wbegin.as_ref().unwrap();
+    let Wend = this.Wend.as_ref().unwrap();
     let col_pivot = &this.col_pivot;
     let row_pivot = &this.row_pivot;
     let Lindex = this.Lindex.as_ref().unwrap();
@@ -26,8 +29,6 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
     let Wvalue = this.Wvalue.as_ref().unwrap();
     let work1 = &mut this.work1;
 
-    lu_garbage_perm(this);
-    assert_eq!(this.pivotlen, m);
 
     if trans == 't' || trans == 'T' {
         // Solve transposed system

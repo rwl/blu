@@ -92,12 +92,12 @@ use crate::lu_internal::{lu, lu_load, lu_save};
 pub fn basiclu_get_factors(
     istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: Option<&[lu_int]>,
-    Lx: Option<&[f64]>,
-    Ui: Option<&[lu_int]>,
-    Ux: Option<&[f64]>,
-    Wi: Option<&[lu_int]>,
-    Wx: Option<&[f64]>,
+    Li: Option<Vec<lu_int>>,
+    Lx: Option<Vec<f64>>,
+    Ui: Option<Vec<lu_int>>,
+    Ux: Option<Vec<f64>>,
+    Wi: Option<Vec<lu_int>>,
+    Wx: Option<Vec<f64>>,
     rowperm: Option<&[lu_int]>,
     colperm: Option<&[lu_int]>,
     Lcolptr: Option<&mut [lu_int]>,
@@ -111,23 +111,25 @@ pub fn basiclu_get_factors(
         ..Default::default()
     };
 
-    let status = lu_load(&mut this, istore, xstore, Li, Lx, Ui, Ux, Wi, Wx);
+    let status = lu_load(&mut this, /*istore,*/ xstore, Li, Lx, Ui, Ux, Wi, Wx);
     if status != BASICLU_OK {
         return status;
     }
     if this.nupdate != 0 {
         let status = BASICLU_ERROR_invalid_call;
-        return lu_save(&this, istore, xstore, status);
+        return lu_save(&this, /*istore,*/ xstore, status);
     }
     let m = this.m;
 
     if let Some(rowperm) = rowperm {
         // memcpy(rowperm, this.pivotrow, m * sizeof(lu_int));
-        this.pivotrow.copy_from_slice(rowperm);
+        let pivotrow = this.pivotrow.as_mut().unwrap();
+        pivotrow.copy_from_slice(rowperm);
     }
     if let Some(colperm) = colperm {
         // memcpy(colperm, this.pivotcol, m * sizeof(lu_int));
-        this.pivotcol.copy_from_slice(colperm);
+        let pivotcol = this.pivotcol.as_mut().unwrap();
+        pivotcol.copy_from_slice(colperm);
     }
 
     if Lcolptr.is_some() && Lrowidx.is_some() && Lvalue_.is_some() {
@@ -136,11 +138,11 @@ pub fn basiclu_get_factors(
         let Lvalue_ = Lvalue_.unwrap();
 
         let Lbegin_p = &this.Lbegin_p;
-        let Ltbegin_p = &this.Ltbegin_p;
+        let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
         let Lindex = this.Lindex.as_ref().unwrap();
         let Lvalue = this.Lvalue.as_ref().unwrap();
-        let p = &this.p;
-        let colptr = &mut this.iwork1; // size m workspace
+        let p = this.p.as_ref().unwrap();
+        let colptr = this.iwork1.as_mut().unwrap(); // size m workspace
 
         // L[:,k] will hold the elimination factors from the k-th pivot step.
         // First set the column pointers and store the unit diagonal elements
@@ -184,13 +186,13 @@ pub fn basiclu_get_factors(
         let Urowidx = Urowidx.unwrap();
         let Uvalue_ = Uvalue_.unwrap();
 
-        let Wbegin = &this.Wbegin;
-        let Wend = &this.Wend;
+        let Wbegin = this.Wbegin.as_ref().unwrap();
+        let Wend = this.Wend.as_ref().unwrap();
         let Windex = this.Windex.as_ref().unwrap();
         let Wvalue = this.Wvalue.as_ref().unwrap();
         let col_pivot = &this.col_pivot;
-        let pivotcol = &this.pivotcol;
-        let colptr = &mut this.iwork1; // size m workspace
+        let pivotcol = this.pivotcol.as_ref().unwrap();
+        let colptr = this.iwork1.as_mut().unwrap(); // size m workspace
 
         // U[:,k] will hold the column of B from the k-th pivot step.
         // First set the column pointers and store the pivot element at the end
