@@ -198,7 +198,9 @@ pub(crate) fn lu_load(
     Wi: Option<Vec<lu_int>>,
     Wx: Option<Vec<f64>>,
 ) -> lu_int {
-    if /*istore[0] != BASICLU_HASH ||*/ xstore[0] != BASICLU_HASH as f64 {
+    if
+    /*istore[0] != BASICLU_HASH ||*/
+    xstore[0] != BASICLU_HASH as f64 {
         return BASICLU_ERROR_invalid_store;
     }
 
@@ -380,21 +382,21 @@ pub(crate) fn lu_load(
     this.pivotcol = this.colcount_flink.take();
     this.pivotrow = this.colcount_blink.take();
     this.Rbegin = this.rowcount_flink.take(); // FIXME: [..m+1]
-    // this.eta_row = this.rowcount_flink + m + 1;
-    // this.eta_row = this.rowcount_flink[m as usize + 1..].to_vec();
+                                              // this.eta_row = this.rowcount_flink + m + 1;
+                                              // this.eta_row = this.rowcount_flink[m as usize + 1..].to_vec();
     this.eta_row = vec![0; m as usize + 1]; // FIXME: rowcount_flink[m+1..]
     this.iwork1 = this.rowcount_blink.take();
     // this.Lbegin = this.Wbegin + m + 1;
     // this.Lbegin = this.Wbegin[m as usize + 1..].to_vec();
     this.Lbegin = this.Wbegin.take(); // [m+1..]
-    // this.Ltbegin = this.Wend + m + 1;
-    // this.Ltbegin = this.Wend[m as usize + 1..].to_vec();
+                                      // this.Ltbegin = this.Wend + m + 1;
+                                      // this.Ltbegin = this.Wend[m as usize + 1..].to_vec();
     this.Ltbegin = this.Wend.take(); // [m+1..]
-    // this.Ltbegin_p = this.Wflink + m + 1;
-    // this.Ltbegin_p = this.Wflink[m as usize + 1..].to_vec();
+                                     // this.Ltbegin_p = this.Wflink + m + 1;
+                                     // this.Ltbegin_p = this.Wflink[m as usize + 1..].to_vec();
     this.Ltbegin_p = this.Wflink.take(); // [m+1..]
-    // this.p = this.Wblink + m + 1;
-    // this.p = this.Wblink[m as usize + 1..].to_vec();
+                                         // this.p = this.Wblink + m + 1;
+                                         // this.p = this.Wblink[m as usize + 1..].to_vec();
     this.p = this.Wblink.take(); // [m+1..]
     this.pmap = this.pinv.take();
     this.qmap = this.qinv.take();
@@ -574,7 +576,9 @@ pub(crate) fn lu_reset(this: &mut lu) {
 
     // One past the final position in @Wend must hold the file size.
     // The file has 2*m lines during factorization.
-    if let Some (Wend) = this.Wend.as_mut() { Wend[2 * this.m as usize] = this.Wmem; }
+    if let Some(Wend) = this.Wend.as_mut() {
+        Wend[2 * this.m as usize] = this.Wmem;
+    }
 
     // The integer workspace iwork0 must be zeroed for a new factorization.
     // The double workspace work0 actually needs only be zeroed once in the

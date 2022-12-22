@@ -29,7 +29,6 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
     let Wvalue = this.Wvalue.as_ref().unwrap();
     let work1 = &mut this.work1;
 
-
     if trans == 't' || trans == 'T' {
         // Solve transposed system
 
