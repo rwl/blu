@@ -92,12 +92,10 @@ use crate::lu_internal::{lu, lu_load, lu_save};
 pub fn basiclu_get_factors(
     istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: Option<Vec<lu_int>>,
-    Lx: Option<Vec<f64>>,
-    Ui: Option<Vec<lu_int>>,
-    Ux: Option<Vec<f64>>,
-    Wi: Option<Vec<lu_int>>,
-    Wx: Option<Vec<f64>>,
+    Li: &[lu_int],
+    Lx: &[f64],
+    Wi: &[lu_int],
+    Wx: &[f64],
     rowperm: Option<&[lu_int]>,
     colperm: Option<&[lu_int]>,
     Lcolptr: Option<&mut [lu_int]>,
@@ -111,7 +109,9 @@ pub fn basiclu_get_factors(
         ..Default::default()
     };
 
-    let status = lu_load(&mut this, /*istore,*/ xstore, Li, Lx, Ui, Ux, Wi, Wx);
+    let status = lu_load(
+        &mut this, /*istore,*/ xstore, /*, Li, Lx, Ui, Ux, Wi, Wx*/
+    );
     if status != BASICLU_OK {
         return status;
     }
@@ -139,8 +139,10 @@ pub fn basiclu_get_factors(
 
         let Lbegin_p = &this.Lbegin_p;
         let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
-        let Lindex = this.Lindex.as_ref().unwrap();
-        let Lvalue = this.Lvalue.as_ref().unwrap();
+        // let Lindex = this.Lindex.as_ref().unwrap();
+        // let Lvalue = this.Lvalue.as_ref().unwrap();
+        let Lindex = Li;
+        let Lvalue = Lx;
         let p = this.p.as_ref().unwrap();
         let colptr = this.iwork1.as_mut().unwrap(); // size m workspace
 
@@ -188,8 +190,10 @@ pub fn basiclu_get_factors(
 
         let Wbegin = this.Wbegin.as_ref().unwrap();
         let Wend = this.Wend.as_ref().unwrap();
-        let Windex = this.Windex.as_ref().unwrap();
-        let Wvalue = this.Wvalue.as_ref().unwrap();
+        // let Windex = this.Windex.as_ref().unwrap();
+        // let Wvalue = this.Wvalue.as_ref().unwrap();
+        let Windex = Wi;
+        let Wvalue = Wx;
         let col_pivot = &this.col_pivot;
         let pivotcol = this.pivotcol.as_ref().unwrap();
         let colptr = this.iwork1.as_mut().unwrap(); // size m workspace

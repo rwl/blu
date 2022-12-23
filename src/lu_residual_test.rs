@@ -20,6 +20,10 @@ pub(crate) fn lu_residual_test(
     Bend: &[lu_int],
     Bi: &[lu_int],
     Bx: &[f64],
+    Li: &[lu_int],
+    Lx: &[f64],
+    Ui: &[lu_int],
+    Ux: &[f64],
 ) {
     let m = this.m;
     let rank = this.rank;
@@ -30,10 +34,14 @@ pub(crate) fn lu_residual_test(
     let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
     let Ubegin = &this.Ubegin;
     let row_pivot = &this.row_pivot;
-    let Lindex = this.Lindex.as_ref().unwrap();
-    let Lvalue = this.Lvalue.as_ref().unwrap();
-    let Uindex = this.Uindex.as_ref().unwrap();
-    let Uvalue = this.Uvalue.as_ref().unwrap();
+    let Lindex = Li;
+    let Lvalue = Lx;
+    let Uindex = Ui;
+    let Uvalue = Ux;
+    // let Lindex = this.Lindex.as_ref().unwrap();
+    // let Lvalue = this.Lvalue.as_ref().unwrap();
+    // let Uindex = this.Uindex.as_ref().unwrap();
+    // let Uvalue = this.Uvalue.as_ref().unwrap();
     let rhs = &mut this.work0;
     let lhs = &mut this.work1;
 

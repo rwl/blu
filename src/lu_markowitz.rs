@@ -30,12 +30,14 @@ use std::time::Instant;
 ///
 /// [1] U. Suhl, L. Suhl, "Computing Sparse LU Factorizations for Large-Scale
 ///     Linear Programming Bases", ORSA Journal on Computing (1990)
-pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
+pub(crate) fn lu_markowitz(this: &mut lu, Wi: &[lu_int], Wx: &[f64]) -> lu_int {
     let m = this.m;
     let Wbegin = this.Wbegin.as_ref().unwrap();
     let Wend = this.Wend.as_ref().unwrap();
-    let Windex = this.Windex.as_ref().unwrap();
-    let Wvalue = this.Wvalue.as_ref().unwrap();
+    // let Windex = this.Windex.as_ref().unwrap();
+    // let Wvalue = this.Wvalue.as_ref().unwrap();
+    let Windex = Wi;
+    let Wvalue = Wx;
     let colcount_flink = this.colcount_flink.as_ref().unwrap();
     let rowcount_flink = this.rowcount_flink.as_mut().unwrap();
     let rowcount_blink = this.rowcount_blink.as_mut().unwrap();

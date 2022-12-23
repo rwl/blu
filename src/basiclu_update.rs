@@ -117,12 +117,12 @@ use crate::lu_update::lu_update;
 pub fn basiclu_update(
     istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: &[lu_int],
-    Lx: &[f64],
-    Ui: &[lu_int],
-    Ux: &[f64],
-    Wi: &[lu_int],
-    Wx: &[f64],
+    Li: &mut [lu_int],
+    Lx: &mut [f64],
+    Ui: &mut [lu_int],
+    Ux: &mut [f64],
+    Wi: &mut [lu_int],
+    Wx: &mut [f64],
     xtbl: f64,
 ) -> lu_int {
     let mut this = lu {
@@ -133,12 +133,12 @@ pub fn basiclu_update(
         &mut this,
         // istore,
         xstore,
-        Some(Li.to_vec()), // FIXME
-        Some(Lx.to_vec()),
-        Some(Ui.to_vec()),
-        Some(Ux.to_vec()),
-        Some(Wi.to_vec()),
-        Some(Wx.to_vec()),
+        // Some(Li.to_vec()), // FIXME
+        // Some(Lx.to_vec()),
+        // Some(Ui.to_vec()),
+        // Some(Ux.to_vec()),
+        // Some(Wi.to_vec()),
+        // Some(Wx.to_vec()),
     );
     if status != BASICLU_OK {
         return status;
@@ -150,7 +150,7 @@ pub fn basiclu_update(
     let status = if this.nupdate < 0 || this.ftran_for_update < 0 || this.btran_for_update < 0 {
         BASICLU_ERROR_invalid_call
     } else {
-        lu_update(&mut this, xtbl)
+        lu_update(&mut this, xtbl, Li, Lx, Ui, Ux, Wi, Wx)
     };
     lu_save(&mut this, /*istore,*/ xstore, status)
 }

@@ -65,12 +65,12 @@ use crate::lu_solve_dense::lu_solve_dense;
 pub fn basiclu_solve_dense(
     // istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: Vec<lu_int>,
-    Lx: Vec<f64>,
-    Ui: Vec<lu_int>,
-    Ux: Vec<f64>,
-    Wi: Vec<lu_int>,
-    Wx: Vec<f64>,
+    Li: &[lu_int],
+    Lx: &[f64],
+    Ui: &[lu_int],
+    Ux: &[f64],
+    Wi: &[lu_int],
+    Wx: &[f64],
     rhs: &[f64],
     lhs: &mut [f64],
     trans: char,
@@ -83,12 +83,12 @@ pub fn basiclu_solve_dense(
         &mut this,
         // istore,
         xstore,
-        Some(Li),
-        Some(Lx),
-        Some(Ui),
-        Some(Ux),
-        Some(Wi),
-        Some(Wx),
+        // Some(Li),
+        // Some(Lx),
+        // Some(Ui),
+        // Some(Ux),
+        // Some(Wi),
+        // Some(Wx),
     );
     if status != BASICLU_OK {
         return status;
@@ -102,7 +102,7 @@ pub fn basiclu_solve_dense(
         return lu_save(&this, /*istore,*/ xstore, status);
     }
 
-    lu_solve_dense(&mut this, rhs, lhs, trans);
+    lu_solve_dense(&mut this, rhs, lhs, trans, Li, Lx, Ui, Ux, Wi, Wx);
 
     lu_save(&this, /*istore,*/ xstore, status)
 }

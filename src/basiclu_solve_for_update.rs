@@ -155,12 +155,12 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 pub fn basiclu_solve_for_update(
     istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: &[lu_int],
-    Lx: &[f64],
-    Ui: &[lu_int],
-    Ux: &[f64],
-    Wi: &[lu_int],
-    Wx: &[f64],
+    Li: &mut [lu_int],
+    Lx: &mut [f64],
+    Ui: &mut [lu_int],
+    Ux: &mut [f64],
+    Wi: &mut [lu_int],
+    Wx: &mut [f64],
     nzrhs: lu_int,
     irhs: &[lu_int],
     xrhs: Option<&[f64]>,
@@ -178,12 +178,12 @@ pub fn basiclu_solve_for_update(
         &mut this,
         // istore,
         xstore,
-        Some(Li.to_vec()), // FIXME
-        Some(Lx.to_vec()),
-        Some(Ui.to_vec()),
-        Some(Ux.to_vec()),
-        Some(Wi.to_vec()),
-        Some(Wx.to_vec()),
+        // Some(Li.to_vec()), // FIXME
+        // Some(Lx.to_vec()),
+        // Some(Ui.to_vec()),
+        // Some(Ux.to_vec()),
+        // Some(Wi.to_vec()),
+        // Some(Wx.to_vec()),
     );
     if status != BASICLU_OK {
         return status;
@@ -223,7 +223,9 @@ pub fn basiclu_solve_for_update(
 
     if status == BASICLU_OK {
         // may request reallocation
-        status = lu_solve_for_update(&mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        status = lu_solve_for_update(
+            &mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans, Li, Lx, Ui, Ux, Wi, Wx,
+        );
     }
 
     lu_save(&this, /*istore,*/ xstore, status)

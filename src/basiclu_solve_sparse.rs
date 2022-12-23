@@ -120,12 +120,12 @@ pub fn basiclu_solve_sparse(
         &mut this,
         // istore,
         xstore,
-        Some(Li.to_vec()),
-        Some(Lx.to_vec()),
-        Some(Ui.to_vec()),
-        Some(Ux.to_vec()),
-        Some(Wi.to_vec()),
-        Some(Wx.to_vec()),
+        // Some(Li.to_vec()),
+        // Some(Lx.to_vec()),
+        // Some(Ui.to_vec()),
+        // Some(Ux.to_vec()),
+        // Some(Wi.to_vec()),
+        // Some(Wx.to_vec()),
     );
     if status != BASICLU_OK {
         return status;
@@ -154,7 +154,9 @@ pub fn basiclu_solve_sparse(
     };
 
     if status == BASICLU_OK {
-        lu_solve_sparse(&mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        lu_solve_sparse(
+            &mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans, Li, Lx, Ui, Ux, Wi, Wx,
+        );
     }
 
     lu_save(&this, /*istore,*/ xstore, status)

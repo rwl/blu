@@ -1,9 +1,21 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
+use crate::basiclu::lu_int;
 use crate::lu_garbage_perm::lu_garbage_perm;
 use crate::lu_internal::lu;
 
-pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans: char) {
+pub(crate) fn lu_solve_dense(
+    this: &mut lu,
+    rhs: &[f64],
+    lhs: &mut [f64],
+    trans: char,
+    Li: &[lu_int],
+    Lx: &[f64],
+    Ui: &[lu_int],
+    Ux: &[f64],
+    Wi: &[lu_int],
+    Wx: &[f64],
+) {
     lu_garbage_perm(this);
     assert_eq!(this.pivotlen, this.m);
 
@@ -21,12 +33,18 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
     let Wend = this.Wend.as_ref().unwrap();
     let col_pivot = &this.col_pivot;
     let row_pivot = &this.row_pivot;
-    let Lindex = this.Lindex.as_ref().unwrap();
-    let Lvalue = this.Lvalue.as_ref().unwrap();
-    let Uindex = this.Uindex.as_ref().unwrap();
-    let Uvalue = this.Uvalue.as_ref().unwrap();
-    let Windex = this.Windex.as_ref().unwrap();
-    let Wvalue = this.Wvalue.as_ref().unwrap();
+    let Lindex = Li;
+    let Lvalue = Lx;
+    let Uindex = Ui;
+    let Uvalue = Ux;
+    let Windex = Wi;
+    let Wvalue = Wx;
+    // let Lindex = this.Lindex.as_ref().unwrap();
+    // let Lvalue = this.Lvalue.as_ref().unwrap();
+    // let Uindex = this.Uindex.as_ref().unwrap();
+    // let Uvalue = this.Uvalue.as_ref().unwrap();
+    // let Windex = this.Windex.as_ref().unwrap();
+    // let Wvalue = this.Wvalue.as_ref().unwrap();
     let work1 = &mut this.work1;
 
     if trans == 't' || trans == 'T' {

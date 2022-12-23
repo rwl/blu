@@ -108,7 +108,15 @@ use crate::lu_list::lu_list_move;
 ///
 ///  BASICLU_REALLOCATE  require more memory in L, U, and/or W
 ///  BASICLU_OK
-pub(crate) fn lu_build_factors(this: &mut lu) -> lu_int {
+pub(crate) fn lu_build_factors(
+    this: &mut lu,
+    Li: &mut [lu_int],
+    Lx: &mut [f64],
+    Ui: &mut [lu_int],
+    Ux: &mut [f64],
+    Wi: &mut [lu_int],
+    Wx: &mut [f64],
+) -> lu_int {
     let m = this.m;
     let rank = this.rank;
     let Lmem = this.Lmem;
@@ -134,12 +142,12 @@ pub(crate) fn lu_build_factors(this: &mut lu) -> lu_int {
     let Wblink = this.Wblink.as_mut().unwrap();
     let col_pivot = &mut this.col_pivot;
     let row_pivot = &mut this.row_pivot;
-    let Lindex = this.Lindex.as_mut().unwrap();
-    let Lvalue = this.Lvalue.as_mut().unwrap();
-    let Uindex = this.Uindex.as_mut().unwrap();
-    let Uvalue = this.Uvalue.as_mut().unwrap();
-    let Windex = this.Windex.as_mut().unwrap();
-    let Wvalue = this.Wvalue.as_mut().unwrap();
+    let Lindex = Li;
+    let Lvalue = Lx;
+    let Uindex = Ui;
+    let Uvalue = Ux;
+    let Windex = Wi;
+    let Wvalue = Wx;
     let iwork1 = this.iwork1.as_mut().unwrap();
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;

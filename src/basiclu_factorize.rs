@@ -240,12 +240,12 @@ use std::time::Instant;
 pub fn basiclu_factorize(
     istore: &mut [lu_int],
     xstore: &mut [f64],
-    Li: Vec<lu_int>,
-    Lx: Vec<f64>,
-    Ui: Vec<lu_int>,
-    Ux: Vec<f64>,
-    Wi: Vec<lu_int>,
-    Wx: Vec<f64>,
+    Li: &mut [lu_int],
+    Lx: &mut [f64],
+    Ui: &mut [lu_int],
+    Ux: &mut [f64],
+    Wi: &mut [lu_int],
+    Wx: &mut [f64],
     Bbegin: &[lu_int],
     Bend: &[lu_int],
     Bi: &[lu_int],
@@ -261,12 +261,12 @@ pub fn basiclu_factorize(
         &mut this,
         // istore,
         xstore,
-        Some(Li),
-        Some(Lx),
-        Some(Ui),
-        Some(Ux),
-        Some(Wi),
-        Some(Wx),
+        // Some(Li),
+        // Some(Lx),
+        // Some(Ui),
+        // Some(Ux),
+        // Some(Wi),
+        // Some(Wx),
     );
     if status != BASICLU_OK {
         return status;
@@ -298,39 +298,39 @@ pub fn basiclu_factorize(
     match this.task {
         SINGLETONS => {
             // this.task = SINGLETONS;
-            let status = lu_singletons(&mut this, Bbegin, Bend, Bi, Bx);
+            let status = lu_singletons(&mut this, Bbegin, Bend, Bi, Bx, Li, Lx, Ui, Ux, Wi, Wx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
 
             this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx);
+            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx, Wi, Wx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
 
             this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this);
+            let status = lu_factorize_bump(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
         }
         SETUP_BUMP => {
             // this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx);
+            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx, Wi, Wx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
 
             this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this);
+            let status = lu_factorize_bump(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
         }
         FACTORIZE_BUMP => {
             // this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this);
+            let status = lu_factorize_bump(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
@@ -343,7 +343,7 @@ pub fn basiclu_factorize(
     };
 
     this.task = BUILD_FACTORS;
-    let status = lu_build_factors(&mut this);
+    let status = lu_build_factors(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
     if status != BASICLU_OK {
         return return_to_caller(tic, &mut this, istore, xstore, status);
     }
@@ -358,8 +358,10 @@ pub fn basiclu_factorize(
     this.condestL = lu_condest(
         this.m,
         this.Lbegin.as_ref().unwrap(),
-        this.Lindex.as_ref().unwrap(),
-        this.Lvalue.as_ref().unwrap(),
+        // this.Lindex.as_ref().unwrap(),
+        // this.Lvalue.as_ref().unwrap(),
+        Li,
+        Lx,
         None,
         Some(this.p.as_ref().unwrap()),
         0,
@@ -370,8 +372,10 @@ pub fn basiclu_factorize(
     this.condestU = lu_condest(
         this.m,
         &this.Ubegin,
-        this.Uindex.as_ref().unwrap(),
-        this.Uvalue.as_ref().unwrap(),
+        // this.Uindex.as_ref().unwrap(),
+        // this.Uvalue.as_ref().unwrap(),
+        Ui,
+        Ux,
         Some(&this.row_pivot),
         Some(this.p.as_ref().unwrap()),
         1,
@@ -381,7 +385,7 @@ pub fn basiclu_factorize(
     );
 
     // measure numerical stability of the factorization
-    lu_residual_test(&mut this, Bbegin, Bend, Bi, Bx);
+    lu_residual_test(&mut this, Bbegin, Bend, Bi, Bx, Li, Lx, Ui, Ux);
 
     // factor_cost is a deterministic measure of the factorization cost.
     // The parameters have been adjusted such that (on my computer)

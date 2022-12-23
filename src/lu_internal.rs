@@ -108,13 +108,13 @@ pub struct lu {
     pub(crate) min_rownz: lu_int, // rowcount lists 1..min_rownz-1 are empty
 
     // aliases to user arrays //
-    pub(crate) Lindex: Option<Vec<lu_int>>,
-    pub(crate) Uindex: Option<Vec<lu_int>>,
-    pub(crate) Windex: Option<Vec<lu_int>>,
-
-    pub(crate) Lvalue: Option<Vec<f64>>,
-    pub(crate) Uvalue: Option<Vec<f64>>,
-    pub(crate) Wvalue: Option<Vec<f64>>,
+    // pub(crate) Lindex: Option<Vec<lu_int>>,
+    // pub(crate) Uindex: Option<Vec<lu_int>>,
+    // pub(crate) Windex: Option<Vec<lu_int>>,
+    //
+    // pub(crate) Lvalue: Option<Vec<f64>>,
+    // pub(crate) Uvalue: Option<Vec<f64>>,
+    // pub(crate) Wvalue: Option<Vec<f64>>,
 
     // pub(crate) Lindex: Option<Box<&'a mut lu_int>>,
     // pub(crate) Uindex: Option<Box<&'a mut lu_int>>,
@@ -191,12 +191,6 @@ pub(crate) fn lu_load(
     // Ux: Option<&[f64]>,
     // Wi: Option<&[lu_int]>,
     // Wx: Option<&[f64]>,
-    Li: Option<Vec<lu_int>>,
-    Lx: Option<Vec<f64>>,
-    Ui: Option<Vec<lu_int>>,
-    Ux: Option<Vec<f64>>,
-    Wi: Option<Vec<lu_int>>,
-    Wx: Option<Vec<f64>>,
 ) -> lu_int {
     if
     /*istore[0] != BASICLU_HASH ||*/
@@ -291,12 +285,12 @@ pub(crate) fn lu_load(
     this.min_rownz = xstore[BASICLU_MIN_ROWNZ] as lu_int;
 
     // aliases to user arrays
-    this.Lindex = Li;
-    this.Lvalue = Lx;
-    this.Uindex = Ui;
-    this.Uvalue = Ux;
-    this.Windex = Wi;
-    this.Wvalue = Wx;
+    // this.Lindex = Li;
+    // this.Lvalue = Lx;
+    // this.Uindex = Ui;
+    // this.Uvalue = Ux;
+    // this.Windex = Wi;
+    // this.Wvalue = Wx;
     // this.Lindex = match Li {
     //     Some(Li) => Some(Li.to_vec()),
     //     None => None,

@@ -82,6 +82,12 @@ pub(crate) fn lu_singletons(
     Bend: &[lu_int],
     Bi: &[lu_int],
     Bx: &[f64],
+    Li: &mut [lu_int],
+    Lx: &mut [f64],
+    Ui: &mut [lu_int],
+    Ux: &mut [f64],
+    Wi: &mut [lu_int],
+    Wx: &mut [f64],
 ) -> lu_int {
     let m = this.m;
     let Lmem = this.Lmem;
@@ -94,17 +100,23 @@ pub(crate) fn lu_singletons(
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
     let col_pivot = &mut this.col_pivot;
-    let Lindex = this.Lindex.as_mut().unwrap();
-    let Lvalue = this.Lvalue.as_mut().unwrap();
-    let Uindex = this.Uindex.as_mut().unwrap();
-    let Uvalue = this.Uvalue.as_mut().unwrap();
+    let Lindex = Li;
+    let Lvalue = Lx;
+    let Uindex = Ui;
+    let Uvalue = Ux;
+    // let Lindex = this.Lindex.as_mut().unwrap();
+    // let Lvalue = this.Lvalue.as_mut().unwrap();
+    // let Uindex = this.Uindex.as_mut().unwrap();
+    // let Uvalue = this.Uvalue.as_mut().unwrap();
     // let iwork1 = &mut this.iwork1;
     // let iwork2 = iwork1 + m;
     let (iwork1, iwork2) = this.iwork1.as_mut().unwrap().split_at_mut(m as usize);
 
     let Btp = this.Wbegin.as_mut().unwrap(); // build B rowwise in W
-    let Bti = this.Windex.as_mut().unwrap();
-    let Btx = this.Wvalue.as_mut().unwrap();
+                                             // let Bti = this.Windex.as_mut().unwrap();
+                                             // let Btx = this.Wvalue.as_mut().unwrap();
+    let Bti = Wi;
+    let Btx = Wx;
 
     // lu_int i, j, pos, put, rank, Bnz, ok;
     // double tic[2];
