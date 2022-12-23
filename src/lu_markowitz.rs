@@ -32,16 +32,16 @@ use std::time::Instant;
 ///     Linear Programming Bases", ORSA Journal on Computing (1990)
 pub(crate) fn lu_markowitz(this: &mut lu, Wi: &[lu_int], Wx: &[f64]) -> lu_int {
     let m = this.m;
-    let Wbegin = this.Wbegin.as_ref().unwrap();
-    let Wend = this.Wend.as_ref().unwrap();
+    let Wbegin = &this.factor.Wbegin;
+    let Wend = &this.factor.Wend;
     // let Windex = this.Windex.as_ref().unwrap();
     // let Wvalue = this.Wvalue.as_ref().unwrap();
     let Windex = Wi;
     let Wvalue = Wx;
-    let colcount_flink = this.colcount_flink.as_ref().unwrap();
-    let rowcount_flink = this.rowcount_flink.as_mut().unwrap();
-    let rowcount_blink = this.rowcount_blink.as_mut().unwrap();
-    let colmax = &this.col_pivot;
+    let colcount_flink = &this.factor.colcount_flink;
+    let rowcount_flink = &mut this.factor.rowcount_flink;
+    let rowcount_blink = &mut this.factor.rowcount_blink;
+    let colmax = &this.xstore.col_pivot;
     let abstol = this.abstol;
     let reltol = this.reltol;
     let maxsearch = this.maxsearch;

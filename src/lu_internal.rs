@@ -2,6 +2,7 @@
 
 use crate::basiclu::*;
 use crate::lu_def::{BASICLU_HASH, NO_TASK};
+use std::mem::swap;
 
 // private entries in xstore
 pub(crate) const BASICLU_TASK: usize = 256;
@@ -107,70 +108,58 @@ pub struct lu {
     pub(crate) min_colnz: lu_int, // colcount lists 1..min_colnz-1 are empty
     pub(crate) min_rownz: lu_int, // rowcount lists 1..min_rownz-1 are empty
 
-    // aliases to user arrays //
-    // pub(crate) Lindex: Option<Vec<lu_int>>,
-    // pub(crate) Uindex: Option<Vec<lu_int>>,
-    // pub(crate) Windex: Option<Vec<lu_int>>,
-    //
-    // pub(crate) Lvalue: Option<Vec<f64>>,
-    // pub(crate) Uvalue: Option<Vec<f64>>,
-    // pub(crate) Wvalue: Option<Vec<f64>>,
+    pub(crate) factor: IStoreFactor,
+    pub(crate) solve: IStoreSolve,
+    pub(crate) xstore: XStore,
+}
 
-    // pub(crate) Lindex: Option<Box<&'a mut lu_int>>,
-    // pub(crate) Uindex: Option<Box<&'a mut lu_int>>,
-    // pub(crate) Windex: Option<Box<&'a mut lu_int>>,
-    // pub(crate) Lvalue: Option<Box<&'a mut f64>>,
-    // pub(crate) Uvalue: Option<Box<&'a mut f64>>,
-    // pub(crate) Wvalue: Option<Box<&'a mut f64>>,
+/// Integer arrays used during factorization.
+#[derive(Default)]
+pub struct IStoreFactor {
+    pub(crate) colcount_flink: Vec<lu_int>,
+    pub(crate) colcount_blink: Vec<lu_int>,
+    pub(crate) rowcount_flink: Vec<lu_int>,
+    pub(crate) rowcount_blink: Vec<lu_int>,
 
-    // pointers into istore
-    //
-    // When two declaration lists are on one line, then the arrays from the
-    // second list share memory with the array from the first list. The arrays
-    // from the first lists are used during factorization, the arrays from the
-    // second lists are used during solves/updates.
+    pub(crate) Wbegin: Vec<lu_int>,
+    pub(crate) Wend: Vec<lu_int>,
+    pub(crate) Wflink: Vec<lu_int>,
+    pub(crate) Wblink: Vec<lu_int>,
 
-    // documented in lu_singletons.c, lu_setup_bump.c, lu_build_factors.c
-    pub(crate) colcount_flink: Option<Vec<lu_int>>,
-    pub(crate) pivotcol: Option<Vec<lu_int>>,
-
-    pub(crate) colcount_blink: Option<Vec<lu_int>>,
-    pub(crate) pivotrow: Option<Vec<lu_int>>,
-
-    pub(crate) rowcount_flink: Option<Vec<lu_int>>,
-    pub(crate) Rbegin: Option<Vec<lu_int>>,
-    pub(crate) eta_row: Vec<lu_int>,
-
-    pub(crate) rowcount_blink: Option<Vec<lu_int>>,
-    pub(crate) iwork1: Option<Vec<lu_int>>,
-
-    pub(crate) Wbegin: Option<Vec<lu_int>>,
-    pub(crate) Lbegin: Option<Vec<lu_int>>, // + Wbegin reused
-
-    pub(crate) Wend: Option<Vec<lu_int>>,
-    pub(crate) Ltbegin: Option<Vec<lu_int>>, // + Wend   reused
-
-    pub(crate) Wflink: Option<Vec<lu_int>>,
-    pub(crate) Ltbegin_p: Option<Vec<lu_int>>, // + Wflink reused
-
-    pub(crate) Wblink: Option<Vec<lu_int>>,
-    pub(crate) p: Option<Vec<lu_int>>, // + Wblink reused
-
-    pub(crate) pinv: Option<Vec<lu_int>>,
-    pub(crate) pmap: Option<Vec<lu_int>>,
-
-    pub(crate) qinv: Option<Vec<lu_int>>,
-    pub(crate) qmap: Option<Vec<lu_int>>,
+    pub(crate) pinv: Vec<lu_int>,
+    pub(crate) qinv: Vec<lu_int>,
 
     pub(crate) Lbegin_p: Vec<lu_int>, // Lbegin_p reused
     pub(crate) Ubegin: Vec<lu_int>,   // Ubegin   reused
 
-    pub(crate) iwork0: Option<Vec<lu_int>>,
-    pub(crate) marked: Option<Vec<lu_int>>,
-    // iwork0: size m workspace, zeroed
-    // marked: size m workspace, 0 <= marked[i] <= @marker
+    pub(crate) iwork0: Vec<lu_int>, // size m workspace, zeroed
+}
 
-    // pointers into xstore
+/// Integer arrays used during solves/updates.
+#[derive(Default)]
+pub struct IStoreSolve {
+    pub(crate) pivotcol: Vec<lu_int>,
+    pub(crate) pivotrow: Vec<lu_int>,
+
+    pub(crate) Rbegin: Vec<lu_int>,
+    pub(crate) eta_row: Vec<lu_int>,
+    pub(crate) iwork1: Vec<lu_int>,
+    pub(crate) Lbegin: Vec<lu_int>,    // + Wbegin reused
+    pub(crate) Ltbegin: Vec<lu_int>,   // + Wend   reused
+    pub(crate) Ltbegin_p: Vec<lu_int>, // + Wflink reused
+    pub(crate) p: Vec<lu_int>,         // + Wblink reused
+
+    pub(crate) pmap: Vec<lu_int>,
+    pub(crate) qmap: Vec<lu_int>,
+
+    pub(crate) Lbegin_p: Vec<lu_int>, // Lbegin_p reused
+    pub(crate) Ubegin: Vec<lu_int>,   // Ubegin   reused
+
+    pub(crate) marked: Vec<lu_int>, // size m workspace, 0 <= marked[i] <= @marker
+}
+
+#[derive(Default)]
+pub struct XStore {
     pub(crate) work0: Vec<f64>,     // size m workspace, zeroed
     pub(crate) work1: Vec<f64>,     // size m workspace, uninitialized
     pub(crate) col_pivot: Vec<f64>, // pivot elements by column index
@@ -316,120 +305,93 @@ pub(crate) fn lu_load(
     //     None => None,
     // };
 
-    // partition istore for factorize
-    // iptr = istore + 1;
-    // let (_, istore) = istore.split_at(1);
-    // let (colcount_flink, istore) = istore.split_at(2 * m as usize + 2);
-    // this.colcount_flink = Vec::from(colcount_flink);
-    this.colcount_flink = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 2;
-    // let (colcount_blink, istore) = istore.split_at(2 * m as usize + 2);
-    // this.colcount_blink = Vec::from(colcount_blink);
-    this.colcount_blink = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 2;
-    // let (rowcount_flink, istore) = istore.split_at(2 * m as usize + 2);
-    // this.rowcount_flink = Vec::from(rowcount_flink);
-    this.rowcount_flink = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 2;
-    // let (rowcount_blink, istore) = istore.split_at(2 * m as usize + 2);
-    // this.rowcount_blink = Vec::from(rowcount_blink);
-    this.rowcount_blink = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 2;
-    // let (Wbegin, istore) = istore.split_at(2 * m as usize + 1);
-    // this.Wbegin = Vec::from(Wbegin);
-    this.Wbegin = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 1;
-    // let (Wend, istore) = istore.split_at(2 * m as usize + 1);
-    // this.Wend = Vec::from(Wend);
-    this.Wend = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 1;
-    // let (Wflink, istore) = istore.split_at(2 * m as usize + 1);
-    // this.Wflink = Vec::from(Wflink);
-    this.Wflink = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 1;
-    // let (Wblink, istore) = istore.split_at(2 * m as usize + 1);
-    // this.Wblink = Vec::from(Wblink);
-    this.Wblink = Some(vec![0; 2 * m as usize + 2]);
-    // iptr += 2 * m + 1;
-    // let (pinv, istore) = istore.split_at(m as usize);
-    // this.pinv = Vec::from(pinv);
-    this.pinv = Some(vec![0; m as usize]);
-    // iptr += m;
-    // let (qinv, istore) = istore.split_at(m as usize);
-    // this.qinv = Vec::from(qinv);
-    this.qinv = Some(vec![0; m as usize]);
-    // iptr += m;
-    // let (Lbegin_p, istore) = istore.split_at(m as usize + 1);
-    // this.Lbegin_p = Vec::from(Lbegin_p);
-    this.Lbegin_p = vec![0; m as usize + 1];
-    // iptr += m + 1;
-    // let (Ubegin, istore) = istore.split_at(m as usize + 1);
-    // this.Ubegin = Vec::from(Ubegin);
-    this.Ubegin = vec![0; m as usize + 1];
-    // iptr += m + 1;
-    // let (iwork0, _) = istore.split_at(m as usize);
-    // this.iwork0 = Vec::from(iwork0);
-    this.iwork0 = Some(vec![0; m as usize]);
-    // iptr += m;
-
-    // share istore memory for solve/update
-    this.pivotcol = this.colcount_flink.take();
-    this.pivotrow = this.colcount_blink.take();
-    this.Rbegin = this.rowcount_flink.take(); // FIXME: [..m+1]
-                                              // this.eta_row = this.rowcount_flink + m + 1;
-                                              // this.eta_row = this.rowcount_flink[m as usize + 1..].to_vec();
-    this.eta_row = vec![0; m as usize + 1]; // FIXME: rowcount_flink[m+1..]
-    this.iwork1 = this.rowcount_blink.take();
-    // this.Lbegin = this.Wbegin + m + 1;
-    // this.Lbegin = this.Wbegin[m as usize + 1..].to_vec();
-    this.Lbegin = this.Wbegin.take(); // [m+1..]
-                                      // this.Ltbegin = this.Wend + m + 1;
-                                      // this.Ltbegin = this.Wend[m as usize + 1..].to_vec();
-    this.Ltbegin = this.Wend.take(); // [m+1..]
-                                     // this.Ltbegin_p = this.Wflink + m + 1;
-                                     // this.Ltbegin_p = this.Wflink[m as usize + 1..].to_vec();
-    this.Ltbegin_p = this.Wflink.take(); // [m+1..]
-                                         // this.p = this.Wblink + m + 1;
-                                         // this.p = this.Wblink[m as usize + 1..].to_vec();
-    this.p = this.Wblink.take(); // [m+1..]
-    this.pmap = this.pinv.take();
-    this.qmap = this.qinv.take();
-    this.marked = this.iwork0.take();
-
-    // partition xstore for factorize and update
-    // let xptr = xstore + 512;
-    // let (_, xstore) = xstore.split_at(512);
-    // let (work0, xstore) = xstore.split_at(m as usize);
-    this.work0 = vec![0.0; m as usize];
-    // xptr += m;
-    let (work1, xstore) = xstore.split_at(m as usize);
-    // this.work1 = Vec::from(work1);
-    this.work1 = vec![0.0; m as usize];
-    // xptr += m;
-    // let (col_pivot, xstore) = xstore.split_at(m as usize);
-    // this.col_pivot = Vec::from(col_pivot);
-    this.col_pivot = vec![0.0; m as usize];
-    // xptr += m;
-    // let (row_pivot, _) = xstore.split_at(m as usize);
-    // this.row_pivot = Vec::from(row_pivot);
-    this.row_pivot = vec![0.0; m as usize];
-    // xptr += m;
-
-    // Reset @marked if increasing @marker by four causes overflow.
-    if this.marker > LU_INT_MAX - 4 {
-        // memset(this.marked, 0, m * sizeof(lu_int));
-        this.marked.as_mut().unwrap().fill(0);
-        this.marker = 0;
-    }
-
-    // One past the final position in @Wend must hold the file size.
-    // The file has 2*m lines while factorizing and m lines otherwise.
-    let Wend = this.Wend.as_mut().unwrap();
-    if this.nupdate >= 0 {
-        Wend[m as usize] = this.Wmem;
-    } else {
-        Wend[2 * m as usize] = this.Wmem;
-    }
+    // // partition istore for factorize
+    // this.colcount_flink = vec![0; 2 * m as usize + 2];
+    // this.pivotcol = vec![];
+    // // iptr += 2 * m + 2;
+    // this.colcount_blink = Some(vec![0; 2 * m as usize + 2]);
+    // // iptr += 2 * m + 2;
+    // this.rowcount_flink = Some(vec![0; 2 * m as usize + 2]);
+    // // iptr += 2 * m + 2;
+    // this.rowcount_blink = Some(vec![0; 2 * m as usize + 2]);
+    // // iptr += 2 * m + 2;
+    // this.Wbegin = Some(vec![0; 2 * m as usize + 2]);
+    // // iptr += 2 * m + 1;
+    // this.Wend = Some(vec![0; 2 * m as usize + 2]);
+    // // iptr += 2 * m + 1;
+    // this.Wflink = Some(vec![0; 2 * m as usize + 2]);
+    // // iptr += 2 * m + 1;
+    // this.Wblink = Some(vec![0; 2 * m as usize + 2]);
+    // // iptr += 2 * m + 1;
+    // this.pinv = Some(vec![0; m as usize]);
+    // // iptr += m;
+    // this.qinv = Some(vec![0; m as usize]);
+    // // iptr += m;
+    // this.Lbegin_p = vec![0; m as usize + 1];
+    // // iptr += m + 1;
+    // this.Ubegin = vec![0; m as usize + 1];
+    // // iptr += m + 1;
+    // this.iwork0 = Some(vec![0; m as usize]);
+    // // iptr += m;
+    //
+    // // share istore memory for solve/update
+    // swap(&mut this.pivotcol, &mut this.colcount_flink);
+    // this.pivotrow = this.colcount_blink.take();
+    // this.Rbegin = this.rowcount_flink.take(); // FIXME: [..m+1]
+    //                                           // this.eta_row = this.rowcount_flink + m + 1;
+    //                                           // this.eta_row = this.rowcount_flink[m as usize + 1..].to_vec();
+    // this.eta_row = vec![0; m as usize + 1]; // FIXME: rowcount_flink[m+1..]
+    // this.iwork1 = this.rowcount_blink.take();
+    // // this.Lbegin = this.Wbegin + m + 1;
+    // // this.Lbegin = this.Wbegin[m as usize + 1..].to_vec();
+    // this.Lbegin = this.Wbegin.take(); // [m+1..]
+    //                                   // this.Ltbegin = this.Wend + m + 1;
+    //                                   // this.Ltbegin = this.Wend[m as usize + 1..].to_vec();
+    // this.Ltbegin = this.Wend.take(); // [m+1..]
+    //                                  // this.Ltbegin_p = this.Wflink + m + 1;
+    //                                  // this.Ltbegin_p = this.Wflink[m as usize + 1..].to_vec();
+    // this.Ltbegin_p = this.Wflink.take(); // [m+1..]
+    //                                      // this.p = this.Wblink + m + 1;
+    //                                      // this.p = this.Wblink[m as usize + 1..].to_vec();
+    // this.p = this.Wblink.take(); // [m+1..]
+    // this.pmap = this.pinv.take();
+    // this.qmap = this.qinv.take();
+    // this.marked = this.iwork0.take();
+    //
+    // // partition xstore for factorize and update
+    // // let xptr = xstore + 512;
+    // // let (_, xstore) = xstore.split_at(512);
+    // // let (work0, xstore) = xstore.split_at(m as usize);
+    // this.work0 = vec![0.0; m as usize];
+    // // xptr += m;
+    // let (work1, xstore) = xstore.split_at(m as usize);
+    // // this.work1 = Vec::from(work1);
+    // this.work1 = vec![0.0; m as usize];
+    // // xptr += m;
+    // // let (col_pivot, xstore) = xstore.split_at(m as usize);
+    // // this.col_pivot = Vec::from(col_pivot);
+    // this.col_pivot = vec![0.0; m as usize];
+    // // xptr += m;
+    // // let (row_pivot, _) = xstore.split_at(m as usize);
+    // // this.row_pivot = Vec::from(row_pivot);
+    // this.row_pivot = vec![0.0; m as usize];
+    // // xptr += m;
+    //
+    // // Reset @marked if increasing @marker by four causes overflow.
+    // if this.marker > LU_INT_MAX - 4 {
+    //     // memset(this.marked, 0, m * sizeof(lu_int));
+    //     this.marked.as_mut().unwrap().fill(0);
+    //     this.marker = 0;
+    // }
+    //
+    // // One past the final position in @Wend must hold the file size.
+    // // The file has 2*m lines while factorizing and m lines otherwise.
+    // let Wend = this.Wend.as_mut().unwrap();
+    // if this.nupdate >= 0 {
+    //     Wend[m as usize] = this.Wmem;
+    // } else {
+    //     Wend[2 * m as usize] = this.Wmem;
+    // }
 
     BASICLU_OK
 }
@@ -570,18 +532,15 @@ pub(crate) fn lu_reset(this: &mut lu) {
 
     // One past the final position in @Wend must hold the file size.
     // The file has 2*m lines during factorization.
-    if let Some(Wend) = this.Wend.as_mut() {
-        Wend[2 * this.m as usize] = this.Wmem;
-    }
+    this.factor.Wend[2 * this.m as usize] = this.Wmem;
 
     // The integer workspace iwork0 must be zeroed for a new factorization.
     // The double workspace work0 actually needs only be zeroed once in the
     // initialization of xstore. However, it is easier and more consistent
     // to do that here as well.
     // memset(this.iwork0, 0, this.m);
-    if let Some(iwork0) = this.iwork0.as_mut() {
-        iwork0.fill(0);
-    }
+    this.factor.iwork0.fill(0);
+
     // memset(this.work0, 0, this.m);
-    this.work0.fill(0.0);
+    this.xstore.work0.fill(0.0);
 }

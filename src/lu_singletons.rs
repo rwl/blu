@@ -95,11 +95,11 @@ pub(crate) fn lu_singletons(
     let Wmem = this.Wmem;
     let abstol = this.abstol;
     let nzbias = this.nzbias;
-    let pinv = this.pinv.as_mut().unwrap();
-    let qinv = this.qinv.as_mut().unwrap();
-    let Lbegin_p = &mut this.Lbegin_p;
-    let Ubegin = &mut this.Ubegin;
-    let col_pivot = &mut this.col_pivot;
+    let pinv = &mut this.factor.pinv;
+    let qinv = &mut this.factor.qinv;
+    let Lbegin_p = &mut this.factor.Lbegin_p;
+    let Ubegin = &mut this.factor.Ubegin;
+    let col_pivot = &mut this.xstore.col_pivot;
     let Lindex = Li;
     let Lvalue = Lx;
     let Uindex = Ui;
@@ -110,11 +110,9 @@ pub(crate) fn lu_singletons(
     // let Uvalue = this.Uvalue.as_mut().unwrap();
     // let iwork1 = &mut this.iwork1;
     // let iwork2 = iwork1 + m;
-    let (iwork1, iwork2) = this.iwork1.as_mut().unwrap().split_at_mut(m as usize);
+    let (iwork1, iwork2) = this.solve.iwork1.split_at_mut(m as usize);
 
-    let Btp = this.Wbegin.as_mut().unwrap(); // build B rowwise in W
-                                             // let Bti = this.Windex.as_mut().unwrap();
-                                             // let Btx = this.Wvalue.as_mut().unwrap();
+    let Btp = &mut this.factor.Wbegin; // build B rowwise in W
     let Bti = Wi;
     let Btx = Wx;
 

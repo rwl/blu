@@ -21,18 +21,18 @@ pub(crate) fn lu_solve_dense(
 
     let m = this.m;
     let nforrest = this.nforrest;
-    let p = this.p.as_ref().unwrap();
-    let eta_row = &this.eta_row;
-    let pivotcol = this.pivotcol.as_ref().unwrap();
-    let pivotrow = this.pivotrow.as_ref().unwrap();
-    let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
-    let Ubegin = &this.Ubegin;
-    let Rbegin = this.Rbegin.as_ref().unwrap();
-    let Wbegin = this.Wbegin.as_ref().unwrap();
-    let Wend = this.Wend.as_ref().unwrap();
-    let col_pivot = &this.col_pivot;
-    let row_pivot = &this.row_pivot;
+    let p = &this.solve.p;
+    let eta_row = &this.solve.eta_row;
+    let pivotcol = &this.solve.pivotcol;
+    let pivotrow = &this.solve.pivotrow;
+    let Lbegin_p = &this.solve.Lbegin_p;
+    let Ltbegin_p = &this.solve.Ltbegin_p;
+    let Ubegin = &this.solve.Ubegin;
+    let Rbegin = &this.solve.Rbegin;
+    let Wbegin = &this.factor.Wbegin;
+    let Wend = &this.factor.Wend;
+    let col_pivot = &this.xstore.col_pivot;
+    let row_pivot = &this.xstore.row_pivot;
     let Lindex = Li;
     let Lvalue = Lx;
     let Uindex = Ui;
@@ -45,7 +45,7 @@ pub(crate) fn lu_solve_dense(
     // let Uvalue = this.Uvalue.as_ref().unwrap();
     // let Windex = this.Windex.as_ref().unwrap();
     // let Wvalue = this.Wvalue.as_ref().unwrap();
-    let work1 = &mut this.work1;
+    let work1 = &mut this.xstore.work1;
 
     if trans == 't' || trans == 'T' {
         // Solve transposed system

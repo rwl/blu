@@ -15,9 +15,9 @@ use crate::lu_internal::lu;
 pub(crate) fn lu_garbage_perm(this: &mut lu) {
     let m = this.m;
     let pivotlen = this.pivotlen;
-    let pivotcol = this.pivotcol.as_mut().unwrap();
-    let pivotrow = this.pivotrow.as_mut().unwrap();
-    let marked = this.marked.as_mut().unwrap();
+    let pivotcol = &mut this.solve.pivotcol;
+    let pivotrow = &mut this.solve.pivotrow;
+    let marked = &mut this.solve.marked;
 
     if pivotlen > m {
         // marker = ++this.marker;

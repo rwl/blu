@@ -123,13 +123,11 @@ pub fn basiclu_get_factors(
 
     if let Some(rowperm) = rowperm {
         // memcpy(rowperm, this.pivotrow, m * sizeof(lu_int));
-        let pivotrow = this.pivotrow.as_mut().unwrap();
-        pivotrow.copy_from_slice(rowperm);
+        this.solve.pivotrow.copy_from_slice(rowperm);
     }
     if let Some(colperm) = colperm {
         // memcpy(colperm, this.pivotcol, m * sizeof(lu_int));
-        let pivotcol = this.pivotcol.as_mut().unwrap();
-        pivotcol.copy_from_slice(colperm);
+        this.solve.pivotcol.copy_from_slice(colperm);
     }
 
     if Lcolptr.is_some() && Lrowidx.is_some() && Lvalue_.is_some() {
@@ -137,14 +135,14 @@ pub fn basiclu_get_factors(
         let Lrowidx = Lrowidx.unwrap();
         let Lvalue_ = Lvalue_.unwrap();
 
-        let Lbegin_p = &this.Lbegin_p;
-        let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
+        let Lbegin_p = &this.solve.Lbegin_p;
+        let Ltbegin_p = &this.solve.Ltbegin_p;
         // let Lindex = this.Lindex.as_ref().unwrap();
         // let Lvalue = this.Lvalue.as_ref().unwrap();
         let Lindex = Li;
         let Lvalue = Lx;
-        let p = this.p.as_ref().unwrap();
-        let colptr = this.iwork1.as_mut().unwrap(); // size m workspace
+        let p = &this.solve.p;
+        let colptr = &mut this.solve.iwork1; // size m workspace
 
         // L[:,k] will hold the elimination factors from the k-th pivot step.
         // First set the column pointers and store the unit diagonal elements
@@ -188,15 +186,15 @@ pub fn basiclu_get_factors(
         let Urowidx = Urowidx.unwrap();
         let Uvalue_ = Uvalue_.unwrap();
 
-        let Wbegin = this.Wbegin.as_ref().unwrap();
-        let Wend = this.Wend.as_ref().unwrap();
+        let Wbegin = &this.factor.Wbegin;
+        let Wend = &this.factor.Wend;
         // let Windex = this.Windex.as_ref().unwrap();
         // let Wvalue = this.Wvalue.as_ref().unwrap();
         let Windex = Wi;
         let Wvalue = Wx;
-        let col_pivot = &this.col_pivot;
-        let pivotcol = this.pivotcol.as_ref().unwrap();
-        let colptr = this.iwork1.as_mut().unwrap(); // size m workspace
+        let col_pivot = &this.xstore.col_pivot;
+        let pivotcol = &this.solve.pivotcol;
+        let colptr = &mut this.solve.iwork1; // size m workspace
 
         // U[:,k] will hold the column of B from the k-th pivot step.
         // First set the column pointers and store the pivot element at the end

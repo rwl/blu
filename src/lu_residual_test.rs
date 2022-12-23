@@ -27,13 +27,13 @@ pub(crate) fn lu_residual_test(
 ) {
     let m = this.m;
     let rank = this.rank;
-    let p = this.p.as_ref().unwrap();
-    let pivotcol = this.pivotcol.as_ref().unwrap();
-    let pivotrow = this.pivotrow.as_ref().unwrap();
-    let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = this.Ltbegin_p.as_ref().unwrap();
-    let Ubegin = &this.Ubegin;
-    let row_pivot = &this.row_pivot;
+    let p = &this.solve.p;
+    let pivotcol = &this.solve.pivotcol;
+    let pivotrow = &this.solve.pivotrow;
+    let Lbegin_p = &this.solve.Lbegin_p;
+    let Ltbegin_p = &this.solve.Ltbegin_p;
+    let Ubegin = &this.solve.Ubegin;
+    let row_pivot = &this.xstore.row_pivot;
     let Lindex = Li;
     let Lvalue = Lx;
     let Uindex = Ui;
@@ -42,8 +42,8 @@ pub(crate) fn lu_residual_test(
     // let Lvalue = this.Lvalue.as_ref().unwrap();
     // let Uindex = this.Uindex.as_ref().unwrap();
     // let Uvalue = this.Uvalue.as_ref().unwrap();
-    let rhs = &mut this.work0;
-    let lhs = &mut this.work1;
+    let rhs = &mut this.xstore.work0;
+    let lhs = &mut this.xstore.work1;
 
     // lu_int i, k, ipivot, jpivot, pos;
     // double norm_ftran, norm_ftran_res, norm_btran, norm_btran_res, d;
@@ -159,6 +159,6 @@ pub(crate) fn lu_residual_test(
     // reset workspace
     for i in 0..m {
         // rhs[i as usize] = 0.0;
-        this.work0[i as usize] = 0.0;
+        this.xstore.work0[i as usize] = 0.0;
     }
 }
