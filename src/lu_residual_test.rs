@@ -27,12 +27,12 @@ pub(crate) fn lu_residual_test(
 ) {
     let m = this.m;
     let rank = this.rank;
-    let p = &this.solve.p;
-    let pivotcol = &this.solve.pivotcol;
-    let pivotrow = &this.solve.pivotrow;
-    let Lbegin_p = &this.solve.Lbegin_p;
-    let Ltbegin_p = &this.solve.Ltbegin_p;
-    let Ubegin = &this.solve.Ubegin;
+    let p = this.p();
+    let pivotcol = this.pivotcol();
+    let pivotrow = this.pivotrow();
+    let Lbegin_p = &this.Lbegin_p;
+    let Ltbegin_p = this.Ltbegin_p();
+    let Ubegin = &this.Ubegin;
     let row_pivot = &this.xstore.row_pivot;
     let Lindex = Li;
     let Lvalue = Lx;

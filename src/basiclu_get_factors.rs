@@ -123,11 +123,11 @@ pub fn basiclu_get_factors(
 
     if let Some(rowperm) = rowperm {
         // memcpy(rowperm, this.pivotrow, m * sizeof(lu_int));
-        this.solve.pivotrow.copy_from_slice(rowperm);
+        this.pivotrow_mut().copy_from_slice(rowperm);
     }
     if let Some(colperm) = colperm {
         // memcpy(colperm, this.pivotcol, m * sizeof(lu_int));
-        this.solve.pivotcol.copy_from_slice(colperm);
+        this.pivotcol_mut().copy_from_slice(colperm);
     }
 
     if Lcolptr.is_some() && Lrowidx.is_some() && Lvalue_.is_some() {
@@ -135,14 +135,14 @@ pub fn basiclu_get_factors(
         let Lrowidx = Lrowidx.unwrap();
         let Lvalue_ = Lvalue_.unwrap();
 
-        let Lbegin_p = &this.solve.Lbegin_p;
-        let Ltbegin_p = &this.solve.Ltbegin_p;
+        let Lbegin_p = &this.Lbegin_p;
+        let Ltbegin_p = this.Ltbegin_p();
         // let Lindex = this.Lindex.as_ref().unwrap();
         // let Lvalue = this.Lvalue.as_ref().unwrap();
         let Lindex = Li;
         let Lvalue = Lx;
-        let p = &this.solve.p;
-        let colptr = &mut this.solve.iwork1; // size m workspace
+        let p = this.p();
+        let colptr = || this.iwork1_mut(); // size m workspace
 
         // L[:,k] will hold the elimination factors from the k-th pivot step.
         // First set the column pointers and store the unit diagonal elements
@@ -154,7 +154,7 @@ pub fn basiclu_get_factors(
             Lrowidx[put as usize] = k;
             Lvalue_[put as usize] = 1.0;
             put += 1;
-            colptr[p[k as usize] as usize] = put; // next free position in column
+            colptr()[p[k as usize] as usize] = put; // next free position in column
             put += Lbegin_p[(k + 1) as usize] - Lbegin_p[k as usize] - 1;
             // subtract 1 because internal storage uses (-1) terminators
         }
@@ -166,8 +166,8 @@ pub fn basiclu_get_factors(
             while Lindex[pos as usize] >= 0 {
                 let i = Lindex[pos as usize];
                 // put = colptr[i]++; TODO: check
-                put = colptr[i as usize];
-                colptr[i as usize] += 1;
+                put = colptr()[i as usize];
+                colptr()[i as usize] += 1;
                 Lrowidx[put as usize] = k;
                 Lvalue_[put as usize] = Lvalue[pos as usize];
                 pos += 1;
@@ -176,7 +176,7 @@ pub fn basiclu_get_factors(
 
         if cfg!(feature = "debug") {
             for k in 0..m {
-                assert_eq!(colptr[p[k as usize] as usize], Lcolptr[(k + 1) as usize]);
+                assert_eq!(colptr()[p[k as usize] as usize], Lcolptr[(k + 1) as usize]);
             }
         }
     }
@@ -186,25 +186,25 @@ pub fn basiclu_get_factors(
         let Urowidx = Urowidx.unwrap();
         let Uvalue_ = Uvalue_.unwrap();
 
-        let Wbegin = &this.factor.Wbegin;
-        let Wend = &this.factor.Wend;
+        let Wbegin = &this.Wbegin;
+        let Wend = &this.Wend;
         // let Windex = this.Windex.as_ref().unwrap();
         // let Wvalue = this.Wvalue.as_ref().unwrap();
         let Windex = Wi;
         let Wvalue = Wx;
         let col_pivot = &this.xstore.col_pivot;
-        let pivotcol = &this.solve.pivotcol;
-        let colptr = &mut this.solve.iwork1; // size m workspace
+        let pivotcol = this.pivotcol();
+        let colptr = || this.iwork1_mut(); // size m workspace
 
         // U[:,k] will hold the column of B from the k-th pivot step.
         // First set the column pointers and store the pivot element at the end
         // of each column. Then scatter each row of U' into the columnwise U so
         // that the row indices become sorted.
         // memset(colptr, 0, m*sizeof(lu_int)); /* column counts */
-        colptr.fill(0); // column counts
+        colptr().fill(0); // column counts
         for j in 0..m {
             for pos in Wbegin[j as usize]..Wend[j as usize] {
-                colptr[Windex[pos as usize] as usize] += 1;
+                colptr()[Windex[pos as usize] as usize] += 1;
             }
         }
         let mut put = 0;
@@ -212,8 +212,8 @@ pub fn basiclu_get_factors(
             // set column pointers
             let j = pivotcol[k as usize];
             Ucolptr[k as usize] = put;
-            put += colptr[j as usize];
-            colptr[j as usize] = Ucolptr[k as usize]; // next free position in column
+            put += colptr()[j as usize];
+            colptr()[j as usize] = Ucolptr[k as usize]; // next free position in column
             Urowidx[put as usize] = k;
             Uvalue_[put as usize] = col_pivot[j as usize];
             put += 1;
@@ -225,8 +225,8 @@ pub fn basiclu_get_factors(
             let j = pivotcol[k as usize];
             for pos in Wbegin[j as usize]..Wend[j as usize] {
                 // put = colptr[Windex[pos]]++;  TODO: check
-                put = colptr[Windex[pos as usize] as usize];
-                colptr[Windex[pos as usize] as usize] += 1;
+                put = colptr()[Windex[pos as usize] as usize];
+                colptr()[Windex[pos as usize] as usize] += 1;
                 Urowidx[put as usize] = k;
                 Uvalue_[put as usize] = Wvalue[pos as usize];
             }
@@ -235,7 +235,7 @@ pub fn basiclu_get_factors(
         if cfg!(feature = "debug") {
             for k in 0..m {
                 assert_eq!(
-                    colptr[pivotcol[k as usize] as usize],
+                    colptr()[pivotcol[k as usize] as usize],
                     Ucolptr[(k + 1) as usize] - 1
                 );
             }

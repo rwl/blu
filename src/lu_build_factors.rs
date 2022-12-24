@@ -124,22 +124,22 @@ pub(crate) fn lu_build_factors(
     let Wmem = this.Wmem;
     let pad = this.pad;
     let stretch = this.stretch as lu_int;
-    let pinv = &mut this.factor.pinv;
-    let qinv = &mut this.factor.qinv;
-    let pmap = &mut this.solve.pmap; // shares memory with pinv
-    let qmap = &mut this.solve.qmap; // shares memory with qinv
-    let pivotcol = &mut this.solve.pivotcol;
-    let pivotrow = &mut this.solve.pivotrow;
-    let Lbegin = &mut this.solve.Lbegin;
-    let Lbegin_p = &mut this.solve.Lbegin_p;
-    let Ltbegin = &mut this.solve.Ltbegin;
-    let Ltbegin_p = &mut this.solve.Ltbegin_p;
-    let Ubegin = &mut this.solve.Ubegin;
-    let Rbegin = &mut this.solve.Rbegin;
-    let Wbegin = &mut this.factor.Wbegin;
-    let Wend = &mut this.factor.Wend;
-    let Wflink = &mut this.factor.Wflink;
-    let Wblink = &mut this.factor.Wblink;
+    let pinv = &mut this.pinv;
+    let qinv = &mut this.qinv;
+    let pmap = this.pmap_mut(); // shares memory with pinv
+    let qmap = this.qmap_mut(); // shares memory with qinv
+    let pivotcol = this.pivotcol_mut();
+    let pivotrow = this.pivotrow_mut();
+    let Lbegin = this.Lbegin_mut();
+    let Lbegin_p = &mut this.Lbegin_p;
+    let Ltbegin = this.Ltbegin_mut();
+    let Ltbegin_p = this.Ltbegin_p_mut();
+    let Ubegin = &mut this.Ubegin;
+    let Rbegin = this.Rbegin_mut();
+    let Wbegin = &mut this.Wbegin;
+    let Wend = &mut this.Wend;
+    let Wflink = &mut this.Wflink;
+    let Wblink = &mut this.Wblink;
     let col_pivot = &mut this.xstore.col_pivot;
     let row_pivot = &mut this.xstore.row_pivot;
     let Lindex = Li;
@@ -148,7 +148,7 @@ pub(crate) fn lu_build_factors(
     let Uvalue = Ux;
     let Windex = Wi;
     let Wvalue = Wx;
-    let iwork1 = &mut this.solve.iwork1;
+    let iwork1 = this.iwork1_mut();
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;
     // double pivot, min_pivot, max_pivot;
@@ -412,7 +412,7 @@ pub(crate) fn lu_build_factors(
     }
 
     // memcpy(this.p, pivotrow, m*sizeof(lu_int));
-    this.solve.p.copy_from_slice(pivotrow); // TODO: check
+    this.p_mut().copy_from_slice(pivotrow); // TODO: check
 
     this.min_pivot = min_pivot;
     this.max_pivot = max_pivot;

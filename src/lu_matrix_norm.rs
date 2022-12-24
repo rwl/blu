@@ -15,8 +15,8 @@ pub(crate) fn lu_matrix_norm(
 ) {
     let m = this.m;
     let rank = this.rank;
-    let pivotcol = &this.solve.pivotcol;
-    let pivotrow = &this.solve.pivotrow;
+    let pivotcol = this.pivotcol();
+    let pivotrow = this.pivotrow();
     let rowsum = &mut this.xstore.work1;
 
     assert_eq!(this.nupdate, 0);

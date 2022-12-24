@@ -21,16 +21,16 @@ pub(crate) fn lu_solve_dense(
 
     let m = this.m;
     let nforrest = this.nforrest;
-    let p = &this.solve.p;
-    let eta_row = &this.solve.eta_row;
-    let pivotcol = &this.solve.pivotcol;
-    let pivotrow = &this.solve.pivotrow;
-    let Lbegin_p = &this.solve.Lbegin_p;
-    let Ltbegin_p = &this.solve.Ltbegin_p;
-    let Ubegin = &this.solve.Ubegin;
-    let Rbegin = &this.solve.Rbegin;
-    let Wbegin = &this.factor.Wbegin;
-    let Wend = &this.factor.Wend;
+    let p = this.p();
+    let eta_row = this.eta_row();
+    let pivotcol = this.pivotcol();
+    let pivotrow = this.pivotrow();
+    let Lbegin_p = &this.Lbegin_p;
+    let Ltbegin_p = this.Ltbegin_p();
+    let Ubegin = &this.Ubegin;
+    let Rbegin = this.Rbegin();
+    let Wbegin = &this.Wbegin;
+    let Wend = &this.Wend;
     let col_pivot = &this.xstore.col_pivot;
     let row_pivot = &this.xstore.row_pivot;
     let Lindex = Li;
