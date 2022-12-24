@@ -42,8 +42,6 @@ pub(crate) fn lu_setup_bump(
     Bend: &[lu_int],
     Bi: &[lu_int],
     Bx: &[f64],
-    Wi: &mut [lu_int],
-    Wx: &mut [f64],
 ) -> lu_int {
     let m = this.m;
     let rank = this.rank;
@@ -68,10 +66,8 @@ pub(crate) fn lu_setup_bump(
     let (Wend, Wend2) = this.Wend.split_at_mut(m as usize);
     let Wflink = &mut this.Wflink;
     let Wblink = &mut this.Wblink;
-    // let Windex = this.Windex.as_mut().unwrap();
-    // let Wvalue = this.Wvalue.as_mut().unwrap();
-    let Windex = Wi;
-    let Wvalue = Wx;
+    let Windex = &mut this.Windex;
+    let Wvalue = &mut this.Wvalue;
     let colmax = &mut this.col_pivot;
     let iwork0 = &mut this.iwork0;
 

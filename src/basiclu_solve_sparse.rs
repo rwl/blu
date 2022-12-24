@@ -154,9 +154,7 @@ pub fn basiclu_solve_sparse(
     };
 
     if status == BASICLU_OK {
-        lu_solve_sparse(
-            &mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans, Li, Lx, Ui, Ux, Wi, Wx,
-        );
+        lu_solve_sparse(&mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
     lu_save(&this, /*istore,*/ xstore, status)

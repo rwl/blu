@@ -5,15 +5,7 @@ use crate::lu_markowitz::lu_markowitz;
 use crate::lu_pivot::lu_pivot;
 
 /// Bump factorization driver routine.
-pub(crate) fn lu_factorize_bump(
-    this: &mut lu,
-    Li: &mut [lu_int],
-    Lx: &mut [f64],
-    Ui: &mut [lu_int],
-    Ux: &mut [f64],
-    Wi: &mut [lu_int],
-    Wx: &mut [f64],
-) -> lu_int {
+pub(crate) fn lu_factorize_bump(this: &mut lu) -> lu_int {
     let m = this.m;
     let mut status = BASICLU_OK;
 
@@ -22,7 +14,7 @@ pub(crate) fn lu_factorize_bump(
         // previous call to lu_pivot() returned for reallocation. In this case
         // this.pivot_col is valid.
         if this.pivot_col < 0 {
-            lu_markowitz(this, Wi, Wx);
+            lu_markowitz(this);
         }
         assert!(this.pivot_col >= 0);
 
@@ -39,7 +31,7 @@ pub(crate) fn lu_factorize_bump(
             // Eliminate pivot. This may require reallocation.
             assert_eq!(this.pinv[this.pivot_row as usize], -1);
             assert_eq!(this.qinv[this.pivot_col as usize], -1);
-            status = lu_pivot(this, Li, Lx, Ui, Ux, Wi, Wx);
+            status = lu_pivot(this);
             if status != BASICLU_OK {
                 break;
             }

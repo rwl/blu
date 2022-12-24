@@ -16,12 +16,6 @@ pub(crate) fn lu_solve_sparse(
     ilhs: &mut [lu_int],
     xlhs: &mut [f64],
     trans: char,
-    Li: &[lu_int],
-    Lx: &[f64],
-    Ui: &[lu_int],
-    Ux: &[f64],
-    Wi: &[lu_int],
-    Wx: &[f64],
 ) {
     let m = this.m;
     let nforrest = this.nforrest;
@@ -43,18 +37,12 @@ pub(crate) fn lu_solve_sparse(
     let Wend = &this.Wend;
     let col_pivot = &this.col_pivot;
     let row_pivot = &this.row_pivot;
-    let Lindex = Li;
-    let Lvalue = Lx;
-    let Uindex = Ui;
-    let Uvalue = Ux;
-    let Windex = Wi;
-    let Wvalue = Wx;
-    // let Lindex = this.Lindex.as_ref().unwrap();
-    // let Lvalue = this.Lvalue.as_ref().unwrap();
-    // let Uindex = this.Uindex.as_ref().unwrap();
-    // let Uvalue = this.Uvalue.as_ref().unwrap();
-    // let Windex = this.Windex.as_ref().unwrap();
-    // let Wvalue = this.Wvalue.as_ref().unwrap();
+    let Lindex = &this.Lindex;
+    let Lvalue = &this.Lvalue;
+    let Uindex = &this.Uindex;
+    let Uvalue = &this.Uvalue;
+    let Windex = &this.Windex;
+    let Wvalue = &this.Wvalue;
     let marked = &mut marked!(this);
 
     let (mut Lflops, mut Uflops, mut Rflops) = (0, 0, 0);

@@ -107,6 +107,15 @@ pub struct lu {
     pub(crate) min_colnz: lu_int, // colcount lists 1..min_colnz-1 are empty
     pub(crate) min_rownz: lu_int, // rowcount lists 1..min_rownz-1 are empty
 
+    // aliases to user arrays //
+    pub(crate) Lindex: Vec<lu_int>,
+    pub(crate) Uindex: Vec<lu_int>,
+    pub(crate) Windex: Vec<lu_int>,
+
+    pub(crate) Lvalue: Vec<f64>,
+    pub(crate) Uvalue: Vec<f64>,
+    pub(crate) Wvalue: Vec<f64>,
+
     pub(crate) colcount_flink: Vec<lu_int>,
     // pub(crate) pivotcol: Vec<lu_int>,
     pub(crate) colcount_blink: Vec<lu_int>,

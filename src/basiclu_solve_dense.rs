@@ -102,7 +102,7 @@ pub fn basiclu_solve_dense(
         return lu_save(&this, /*istore,*/ xstore, status);
     }
 
-    lu_solve_dense(&mut this, rhs, lhs, trans, Li, Lx, Ui, Ux, Wi, Wx);
+    lu_solve_dense(&mut this, rhs, lhs, trans);
 
     lu_save(&this, /*istore,*/ xstore, status)
 }

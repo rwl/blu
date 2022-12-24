@@ -16,12 +16,6 @@ pub(crate) fn lu_solve_for_update(
     ilhs: Option<&mut [lu_int]>,
     xlhs: Option<&mut [f64]>,
     trans: char,
-    Li: &mut [lu_int],
-    Lx: &mut [f64],
-    Ui: &mut [lu_int],
-    Ux: &mut [f64],
-    Wi: &mut [lu_int],
-    Wx: &mut [f64],
 ) -> lu_int {
     let m = this.m;
     let nforrest = this.nforrest;
@@ -43,18 +37,12 @@ pub(crate) fn lu_solve_for_update(
     let Wend = &this.Wend;
     let col_pivot = &this.col_pivot;
     let row_pivot = &this.row_pivot;
-    let Lindex = Li;
-    let Lvalue = Lx;
-    let Uindex = Ui;
-    let Uvalue = Ux;
-    let Windex = Wi;
-    let Wvalue = Wx;
-    // let Lindex = this.Lindex.as_mut().unwrap();
-    // let Lvalue = this.Lvalue.as_mut().unwrap();
-    // let Uindex = this.Uindex.as_mut().unwrap();
-    // let Uvalue = this.Uvalue.as_mut().unwrap();
-    // let Windex = this.Windex.as_mut().unwrap();
-    // let Wvalue = this.Wvalue.as_mut().unwrap();
+    let Lindex = &mut this.Lindex;
+    let Lvalue = &mut this.Lvalue;
+    let Uindex = &mut this.Uindex;
+    let Uvalue = &mut this.Uvalue;
+    let Windex = &mut this.Windex;
+    let Wvalue = &mut this.Wvalue;
     let marked = &mut marked!(this);
 
     // lu_int i, j, k, n, t, top, pos, put, ipivot, jpivot, nz, nz_symb, M,

@@ -150,7 +150,7 @@ pub fn basiclu_update(
     let status = if this.nupdate < 0 || this.ftran_for_update < 0 || this.btran_for_update < 0 {
         BASICLU_ERROR_invalid_call
     } else {
-        lu_update(&mut this, xtbl, Li, Lx, Ui, Ux, Wi, Wx)
+        lu_update(&mut this, xtbl)
     };
     lu_save(&mut this, /*istore,*/ xstore, status)
 }

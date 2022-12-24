@@ -298,39 +298,39 @@ pub fn basiclu_factorize(
     match this.task {
         SINGLETONS => {
             // this.task = SINGLETONS;
-            let status = lu_singletons(&mut this, Bbegin, Bend, Bi, Bx, Li, Lx, Ui, Ux, Wi, Wx);
+            let status = lu_singletons(&mut this, Bbegin, Bend, Bi, Bx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
 
             this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx, Wi, Wx);
+            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
 
             this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
+            let status = lu_factorize_bump(&mut this);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
         }
         SETUP_BUMP => {
             // this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx, Wi, Wx);
+            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
 
             this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
+            let status = lu_factorize_bump(&mut this);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
         }
         FACTORIZE_BUMP => {
             // this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
+            let status = lu_factorize_bump(&mut this);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
@@ -343,7 +343,7 @@ pub fn basiclu_factorize(
     };
 
     this.task = BUILD_FACTORS;
-    let status = lu_build_factors(&mut this, Li, Lx, Ui, Ux, Wi, Wx);
+    let status = lu_build_factors(&mut this);
     if status != BASICLU_OK {
         return return_to_caller(tic, &mut this, istore, xstore, status);
     }
@@ -385,7 +385,7 @@ pub fn basiclu_factorize(
     );
 
     // measure numerical stability of the factorization
-    lu_residual_test(&mut this, Bbegin, Bend, Bi, Bx, Li, Lx, Ui, Ux);
+    lu_residual_test(&mut this, Bbegin, Bend, Bi, Bx);
 
     // factor_cost is a deterministic measure of the factorization cost.
     // The parameters have been adjusted such that (on my computer)

@@ -223,9 +223,7 @@ pub fn basiclu_solve_for_update(
 
     if status == BASICLU_OK {
         // may request reallocation
-        status = lu_solve_for_update(
-            &mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans, Li, Lx, Ui, Ux, Wi, Wx,
-        );
+        status = lu_solve_for_update(&mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
     lu_save(&this, /*istore,*/ xstore, status)
