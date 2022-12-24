@@ -72,7 +72,7 @@ pub(crate) fn lu_setup_bump(
     // let Wvalue = this.Wvalue.as_mut().unwrap();
     let Windex = Wi;
     let Wvalue = Wx;
-    let colmax = &mut this.xstore.col_pivot;
+    let colmax = &mut this.col_pivot;
     let iwork0 = &mut this.iwork0;
 
     let mut bump_nz = Bnz - Lnz - Unz - rank; // will change if columns are dropped

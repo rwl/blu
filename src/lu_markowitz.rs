@@ -41,7 +41,7 @@ pub(crate) fn lu_markowitz(this: &mut lu, Wi: &[lu_int], Wx: &[f64]) -> lu_int {
     let colcount_flink = &this.colcount_flink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &this.xstore.col_pivot;
+    let colmax = &this.col_pivot;
     let abstol = this.abstol;
     let reltol = this.reltol;
     let maxsearch = this.maxsearch;

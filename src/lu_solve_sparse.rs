@@ -28,21 +28,21 @@ pub(crate) fn lu_solve_sparse(
     let pivotlen = this.pivotlen;
     let nz_sparse = (this.sparse_thres as lu_int) * m;
     let droptol = this.droptol;
-    let p = this.p();
-    let pmap = this.pmap();
-    let qmap = this.qmap();
-    let eta_row = this.eta_row();
-    let pivotcol = this.pivotcol();
-    let pivotrow = this.pivotrow();
-    let Lbegin = this.Lbegin();
-    let Ltbegin = this.Ltbegin();
-    let Ltbegin_p = this.Ltbegin_p();
+    let p = &this.p;
+    let pmap = &this.pmap;
+    let qmap = &this.qmap;
+    let eta_row = &this.eta_row;
+    let pivotcol = &this.pivotcol;
+    let pivotrow = &this.pivotrow;
+    let Lbegin = &this.Lbegin;
+    let Ltbegin = &this.Ltbegin;
+    let Ltbegin_p = &this.Ltbegin_p;
     let Ubegin = &this.Ubegin;
-    let Rbegin = this.Rbegin();
+    let Rbegin = &this.Rbegin;
     let Wbegin = &this.Wbegin;
     let Wend = &this.Wend;
-    let col_pivot = &this.xstore.col_pivot;
-    let row_pivot = &this.xstore.row_pivot;
+    let col_pivot = &this.col_pivot;
+    let row_pivot = &this.row_pivot;
     let Lindex = Li;
     let Lvalue = Lx;
     let Uindex = Ui;
@@ -55,7 +55,7 @@ pub(crate) fn lu_solve_sparse(
     // let Uvalue = this.Uvalue.as_ref().unwrap();
     // let Windex = this.Windex.as_ref().unwrap();
     // let Wvalue = this.Wvalue.as_ref().unwrap();
-    let marked = this.marked_mut();
+    let marked = &mut this.marked;
 
     let (mut Lflops, mut Uflops, mut Rflops) = (0, 0, 0);
     let tic = Instant::now();
@@ -65,10 +65,10 @@ pub(crate) fn lu_solve_sparse(
 
         // let pattern_symb = &mut this.iwork1;
         // let pattern = &mut this.iwork1[m as usize..];
-        let (pattern_symb, pattern) = this.iwork1_mut().split_at_mut(m as usize);
-        let work = &mut this.xstore.work0;
+        let (pattern_symb, pattern) = this.iwork1.split_at_mut(m as usize);
+        let work = &mut this.work0;
         // lu_int *pstack = (void *) this.work1;
-        let pstack = &mut this.xstore.work1;
+        let pstack = &mut this.work1;
         assert!(size_of::<lu_int>() <= size_of::<f64>());
 
         // Sparse triangular solve with U'.
@@ -207,10 +207,10 @@ pub(crate) fn lu_solve_sparse(
 
         // let pattern_symb = &mut this.iwork1;
         // let pattern = &mut this.iwork1[m as usize..];
-        let (pattern_symb, pattern) = this.iwork1_mut().split_at_mut(m as usize);
-        let work = &mut this.xstore.work0;
+        let (pattern_symb, pattern) = this.iwork1.split_at_mut(m as usize);
+        let work = &mut this.work0;
         // lu_int *pstack       = (void *) this.work1;
-        let pstack = &mut this.xstore.work1;
+        let pstack = &mut this.work1;
         assert!(size_of::<lu_int>() <= size_of::<f64>());
 
         // Sparse triangular solve with L.

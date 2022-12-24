@@ -110,9 +110,7 @@ pub(crate) fn lu_pivot(
         for pos in this.Ubegin[rank as usize]..this.Ubegin[(rank + 1) as usize] {
             let j = Ui[pos as usize];
             assert_ne!(j, pivot_col);
-            if this.xstore.col_pivot[j as usize] == 0.0
-                || this.xstore.col_pivot[j as usize] < this.abstol
-            {
+            if this.col_pivot[j as usize] == 0.0 || this.col_pivot[j as usize] < this.abstol {
                 lu_remove_col(this, j, Wi);
             }
         }
@@ -143,7 +141,7 @@ fn lu_pivot_any(
     let colcount_blink = &mut this.colcount_blink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.xstore.col_pivot;
+    let colmax = &mut this.col_pivot;
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
     let Wbegin = &mut this.Wbegin;
@@ -163,7 +161,7 @@ fn lu_pivot_any(
     // let Windex = this.Windex.as_mut().unwrap();
     // let Wvalue = this.Wvalue.as_mut().unwrap();
     let marked = &mut this.iwork0;
-    let work = &mut this.xstore.work0;
+    let work = &mut this.work0;
 
     let mut cbeg = Wbegin[pivot_col as usize]; // changed by file compression
     let mut cend = Wend[pivot_col as usize];
@@ -484,7 +482,7 @@ fn lu_pivot_small(
     let colcount_blink = &mut this.colcount_blink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.xstore.col_pivot;
+    let colmax = &mut this.col_pivot;
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
     let Wbegin = &mut this.Wbegin;
@@ -504,9 +502,9 @@ fn lu_pivot_small(
     // let Windex = this.Windex.as_mut().unwrap();
     // let Wvalue = this.Wvalue.as_mut().unwrap();
     let marked = &mut this.iwork0;
-    let work = &mut this.xstore.work0;
+    let work = &mut this.work0;
     // int64_t *cancelled      = (void *) this.row_pivot;
-    let cancelled = &mut this.xstore.row_pivot;
+    let cancelled = &mut this.row_pivot;
 
     let mut cbeg = Wbegin[pivot_col as usize]; // changed by file compression
     let mut cend = Wend[pivot_col as usize];
@@ -852,7 +850,7 @@ fn lu_pivot_singleton_row(
     let colcount_blink = &mut this.colcount_blink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.xstore.col_pivot;
+    let colmax = &mut this.col_pivot;
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
     let Wbegin = &mut this.Wbegin;
@@ -957,7 +955,7 @@ fn lu_pivot_singleton_col(
     let colcount_blink = &mut this.colcount_blink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.xstore.col_pivot;
+    let colmax = &mut this.col_pivot;
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
     let Wbegin = &mut this.Wbegin;
@@ -1071,7 +1069,7 @@ fn lu_pivot_doubleton_col(
     let colcount_blink = &mut this.colcount_blink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.xstore.col_pivot;
+    let colmax = &mut this.col_pivot;
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
     let Wbegin = &mut this.Wbegin;
@@ -1384,7 +1382,7 @@ fn lu_remove_col(this: &mut lu, j: lu_int, Wi: &mut [lu_int]) {
     let colcount_blink = &mut this.colcount_blink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.xstore.col_pivot;
+    let colmax = &mut this.col_pivot;
     let Wbegin = &mut this.Wbegin;
     let Wend = &mut this.Wend;
     // let Windex = this.Windex.as_mut().unwrap();

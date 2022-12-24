@@ -185,15 +185,15 @@ fn permute(
     Wi: &mut [lu_int],
     Wx: &mut [f64],
 ) {
-    let pmap = this.pmap_mut();
-    let qmap = this.qmap_mut();
+    let pmap = &mut this.pmap;
+    let qmap = &mut this.qmap;
     let Ubegin = &mut this.Ubegin;
     let Wbegin = &mut this.Wbegin;
     let Wend = &mut this.Wend;
     let Wflink = &mut this.Wflink;
     let Wblink = &mut this.Wblink;
-    let col_pivot = &mut this.xstore.col_pivot;
-    let row_pivot = &mut this.xstore.row_pivot;
+    let col_pivot = &mut this.col_pivot;
+    let row_pivot = &mut this.row_pivot;
     let Uindex = Ui;
     let Uvalue = Ux;
     let Windex = Wi;
@@ -440,8 +440,8 @@ pub(crate) fn lu_update(
     // let work1 = &mut this.work1;
 
     let jpivot = this.btran_for_update;
-    let ipivot = this.pmap()[jpivot as usize];
-    let oldpiv = this.xstore.col_pivot[jpivot as usize];
+    let ipivot = this.pmap[jpivot as usize];
+    let oldpiv = this.col_pivot[jpivot as usize];
     let mut status = BASICLU_OK;
 
     let mut ipivot_vec = vec![ipivot]; // FIXME
@@ -487,7 +487,7 @@ pub(crate) fn lu_update(
     }
     let nz_spike = put - this.Ubegin[m as usize]; // nz excluding diagonal
 
-    let nz_roweta = this.Rbegin()[(nforrest + 1) as usize] - this.Rbegin()[nforrest as usize];
+    let nz_roweta = this.Rbegin[(nforrest + 1) as usize] - this.Rbegin[nforrest as usize];
 
     // Compute pivot //
 
@@ -511,10 +511,10 @@ pub(crate) fn lu_update(
     // M = ++this.marker;
     this.marker += 1;
     let M = this.marker;
-    for pos in this.Rbegin()[nforrest as usize]..this.Rbegin()[(nforrest + 1) as usize] {
+    for pos in this.Rbegin[nforrest as usize]..this.Rbegin[(nforrest + 1) as usize] {
         let i = Lindex[pos as usize];
-        this.marked_mut()[i as usize] = M;
-        this.xstore.work1[i as usize] = Lvalue[pos as usize];
+        this.marked[i as usize] = M;
+        this.work1[i as usize] = Lvalue[pos as usize];
     }
 
     // compute newpiv and count intersection
@@ -523,8 +523,8 @@ pub(crate) fn lu_update(
     for pos in this.Ubegin[m as usize]..this.Ubegin[m as usize] + nz_spike {
         let i = Uindex[pos as usize];
         assert_ne!(i, ipivot);
-        if this.marked()[i as usize] == M {
-            newpiv -= Uvalue[pos as usize] * this.xstore.work1[i as usize];
+        if this.marked[i as usize] == M {
+            newpiv -= Uvalue[pos as usize] * this.work1[i as usize];
             intersect += 1;
         }
     }
@@ -545,7 +545,7 @@ pub(crate) fn lu_update(
     for pos in this.Ubegin[m as usize]..(this.Ubegin[m as usize] + nz_spike) {
         let i = Uindex[pos as usize];
         assert_ne!(i, ipivot);
-        let j = this.qmap()[i as usize];
+        let j = this.qmap[i as usize];
         let jnext = this.Wflink[j as usize];
         if this.Wend[j as usize] == this.Wbegin[jnext as usize] {
             let nz = this.Wend[j as usize] - this.Wbegin[j as usize];
@@ -568,7 +568,7 @@ pub(crate) fn lu_update(
     pos = this.Ubegin[ipivot as usize];
     while Uindex[pos as usize] >= 0 {
         let i = Uindex[pos as usize];
-        let j = this.qmap()[i as usize];
+        let j = this.qmap[i as usize];
         // end = Wend[j]--;
         let end = this.Wend[j as usize];
         this.Wend[j as usize] -= 1;
@@ -601,7 +601,7 @@ pub(crate) fn lu_update(
     pos = this.Ubegin[ipivot as usize];
     while Uindex[pos as usize] >= 0 {
         let i = Uindex[pos as usize];
-        let j = this.qmap()[i as usize];
+        let j = this.qmap[i as usize];
         let jnext = this.Wflink[j as usize];
         if this.Wend[j as usize] == this.Wbegin[jnext as usize] {
             nz = this.Wend[j as usize] - this.Wbegin[j as usize];
@@ -628,8 +628,8 @@ pub(crate) fn lu_update(
     Unz += nz_spike;
 
     // insert diagonal
-    this.xstore.col_pivot[jpivot as usize] = spike_diag;
-    this.xstore.row_pivot[ipivot as usize] = spike_diag;
+    this.col_pivot[jpivot as usize] = spike_diag;
+    this.row_pivot[ipivot as usize] = spike_diag;
 
     // Test triangularity //
 
@@ -662,12 +662,12 @@ pub(crate) fn lu_update(
             let mut col_reach = vec![0; nreach as usize - 1];
             row_reach[0] = ipivot;
             col_reach[0] = jpivot;
-            pos = this.Rbegin()[nforrest as usize];
+            pos = this.Rbegin[nforrest as usize];
             for n in 1..nreach {
                 let i = Lindex[pos as usize];
                 pos += 1;
                 row_reach[n as usize] = i;
-                col_reach[n as usize] = this.qmap()[i as usize];
+                col_reach[n as usize] = this.qmap[i as usize];
             }
             this.nsymperm_total += 1;
 
@@ -692,7 +692,7 @@ pub(crate) fn lu_update(
         // nodes. The path must exist because otherwise the spiked matrix was
         // structurally singular and the singularity test above had failed.
         let top = {
-            let (iwork1, iwork2) = this.iwork1_mut().split_at_mut(m as usize);
+            let (iwork1, iwork2) = this.iwork1.split_at_mut(m as usize);
             // lu_int *path = iwork1, top;
             // let path = iwork1;
             let path = iwork1;
@@ -708,7 +708,7 @@ pub(crate) fn lu_update(
                 &this.Wend,
                 Windex,
                 path,
-                this.marked_mut(),
+                &mut this.marked,
                 iwork2,
             );
             assert!(top < m - 1);
@@ -735,10 +735,10 @@ pub(crate) fn lu_update(
         //
         //    reach[rtop..m-1].
         let (mut istriangular, mut rtop) = {
-            let (iwork1, iwork2) = this.iwork1_mut().split_at_mut(m as usize);
+            let (iwork1, iwork2) = this.iwork1.split_at_mut(m as usize);
             let path = iwork1;
             let reach = iwork2;
-            let pstack = &mut this.xstore.work1;
+            let pstack = &mut this.work1;
 
             let mut istriangular = true;
             let mut rtop = m;
@@ -768,13 +768,13 @@ pub(crate) fn lu_update(
                     rtop,
                     reach,
                     pstack,
-                    this.marked_mut(),
+                    &mut this.marked,
                     M,
                 );
                 assert_eq!(reach[rtop as usize], j);
                 reach[rtop as usize] = jnext;
                 Windex[where_ as usize] = jnext; /* restore */
-                istriangular = this.marked()[jnext as usize] != M;
+                istriangular = this.marked[jnext as usize] != M;
             }
             (istriangular, rtop)
         };
@@ -786,10 +786,10 @@ pub(crate) fn lu_update(
         // U is then permuted triangular iff the combined reach does not
         // intersect the spike pattern except in the final path index.
         if istriangular {
-            let (iwork1, iwork2) = this.iwork1_mut().split_at_mut(m as usize);
+            let (iwork1, iwork2) = this.iwork1.split_at_mut(m as usize);
             let path = iwork1;
             let reach = iwork2;
-            let pstack = &mut this.xstore.work1;
+            let pstack = &mut this.work1;
 
             let j = path[(m - 1) as usize];
             rtop = lu_dfs(
@@ -800,22 +800,22 @@ pub(crate) fn lu_update(
                 rtop,
                 reach,
                 pstack,
-                this.marked_mut(),
+                &mut this.marked,
                 M,
             );
             assert_eq!(reach[rtop as usize], j);
             reach[rtop as usize] = jpivot;
-            this.marked_mut()[j as usize] -= 1; // unmark for a moment
-                                                // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
+            this.marked[j as usize] -= 1; // unmark for a moment
+                                          // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
             pos = this.Ubegin[ipivot as usize];
             while Uindex[pos as usize] >= 0 {
                 let i = Uindex[pos as usize];
-                if this.marked()[this.qmap()[i as usize] as usize] == M {
+                if this.marked[this.qmap[i as usize] as usize] == M {
                     istriangular = false;
                 }
                 pos += 1;
             }
-            this.marked_mut()[j as usize] += 1; /* restore */
+            this.marked[j as usize] += 1; /* restore */
         }
 
         // If U is permuted triangular, then permute to zero-free diagonal.
@@ -827,7 +827,7 @@ pub(crate) fn lu_update(
             // permute(this, &path[top as usize..], nswap);
             permute(
                 this,
-                &this.iwork1()[top as usize..(top + nswap) as usize].to_vec(),
+                &this.iwork1[top as usize..(top + nswap) as usize].to_vec(),
                 nswap,
                 Uindex,
                 Uvalue,
@@ -836,7 +836,7 @@ pub(crate) fn lu_update(
             ); // usually nswap is a small number
             Unz -= 1;
 
-            let (iwork1, iwork2) = this.iwork1_mut().split_at_mut(m as usize);
+            let (iwork1, iwork2) = this.iwork1.split_at_mut(m as usize);
             // let path = iwork1;
             let reach = iwork2;
 
@@ -848,7 +848,7 @@ pub(crate) fn lu_update(
             // FIXME: iwork1
             let mut row_reach = iwork1[rtop as usize..(rtop + nreach) as usize].to_vec();
             for n in 0..nreach {
-                row_reach[n as usize] = this.pmap()[col_reach[n as usize] as usize];
+                row_reach[n as usize] = this.pmap[col_reach[n as usize] as usize];
             }
             (istriangular, Some(nreach), Some(row_reach), Some(col_reach))
         } else {
@@ -867,7 +867,7 @@ pub(crate) fn lu_update(
             assert_ne!(j, jpivot);
             let mut where_ = -1;
             // for (end = Ubegin[pmap[j]]; (i = Uindex[end]) >= 0; end++)
-            let mut end = this.Ubegin[this.pmap()[j as usize] as usize];
+            let mut end = this.Ubegin[this.pmap[j as usize] as usize];
             while Uindex[end as usize] >= 0 {
                 let i = Uindex[end as usize];
                 if i == ipivot {
@@ -887,16 +887,16 @@ pub(crate) fn lu_update(
         this.Wend[jpivot as usize] = this.Wbegin[jpivot as usize];
 
         // replace pivot
-        this.xstore.col_pivot[jpivot as usize] = newpiv;
-        this.xstore.row_pivot[ipivot as usize] = newpiv;
+        this.col_pivot[jpivot as usize] = newpiv;
+        this.row_pivot[ipivot as usize] = newpiv;
         this.min_pivot = f64::min(this.min_pivot, newpiv.abs());
         this.max_pivot = f64::max(this.max_pivot, newpiv.abs());
 
         // drop zeros from row eta; update max entry of row etas
         nz = 0;
-        put = this.Rbegin()[nforrest as usize];
+        put = this.Rbegin[nforrest as usize];
         let mut max_eta = 0.0;
-        for pos in put..this.Rbegin()[(nforrest + 1) as usize] {
+        for pos in put..this.Rbegin[(nforrest + 1) as usize] {
             if Lvalue[pos as usize] != 0.0 {
                 max_eta = f64::max(max_eta, Lvalue[pos as usize].abs());
                 Lindex[put as usize] = Lindex[pos as usize];
@@ -905,7 +905,7 @@ pub(crate) fn lu_update(
                 nz += 1;
             }
         }
-        this.Rbegin_mut()[(nforrest + 1) as usize] = put;
+        this.Rbegin[(nforrest + 1) as usize] = put;
         this.Rnz += nz;
         this.max_eta = f64::max(this.max_eta, max_eta);
 
@@ -936,14 +936,14 @@ pub(crate) fn lu_update(
     // append row indices row_reach[0..nreach-1] to end of pivot sequence
     put = this.pivotlen;
     for n in 0..nreach {
-        this.pivotrow_mut()[put as usize] = row_reach[n as usize];
+        this.pivotrow[put as usize] = row_reach[n as usize];
         put += 1;
     }
 
     // append col indices col_reach[0..nreach-1] to end of pivot sequence
     put = this.pivotlen;
     for n in 0..nreach {
-        this.pivotcol_mut()[put as usize] = col_reach[n as usize];
+        this.pivotcol[put as usize] = col_reach[n as usize];
         put += 1;
     }
 

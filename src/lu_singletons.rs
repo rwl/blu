@@ -99,7 +99,7 @@ pub(crate) fn lu_singletons(
     let qinv = &mut this.qinv;
     let Lbegin_p = &mut this.Lbegin_p;
     let Ubegin = &mut this.Ubegin;
-    let col_pivot = &mut this.xstore.col_pivot;
+    let col_pivot = &mut this.col_pivot;
     let Lindex = Li;
     let Lvalue = Lx;
     let Uindex = Ui;
@@ -110,7 +110,7 @@ pub(crate) fn lu_singletons(
     // let Uvalue = this.Uvalue.as_mut().unwrap();
     // let iwork1 = &mut this.iwork1;
     // let iwork2 = iwork1 + m;
-    let (iwork1, iwork2) = this.iwork1_mut().split_at_mut(m as usize);
+    let (iwork1, iwork2) = this.iwork1.split_at_mut(m as usize);
 
     let Btp = &mut this.Wbegin; // build B rowwise in W
     let Bti = Wi;

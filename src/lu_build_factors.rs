@@ -124,31 +124,31 @@ pub(crate) fn lu_build_factors(
     let Wmem = this.Wmem;
     let pad = this.pad;
     let stretch = this.stretch as lu_int;
-    let pinv = &mut this.pinv;
-    let qinv = &mut this.qinv;
-    let pmap = this.pmap_mut(); // shares memory with pinv
-    let qmap = this.qmap_mut(); // shares memory with qinv
-    let pivotcol = this.pivotcol_mut();
-    let pivotrow = this.pivotrow_mut();
-    let Lbegin = this.Lbegin_mut();
-    let Lbegin_p = &mut this.Lbegin_p;
-    let Ltbegin = this.Ltbegin_mut();
-    let Ltbegin_p = this.Ltbegin_p_mut();
-    let Ubegin = &mut this.Ubegin;
-    let Rbegin = this.Rbegin_mut();
-    let Wbegin = &mut this.Wbegin;
-    let Wend = &mut this.Wend;
-    let Wflink = &mut this.Wflink;
-    let Wblink = &mut this.Wblink;
-    let col_pivot = &mut this.xstore.col_pivot;
-    let row_pivot = &mut this.xstore.row_pivot;
+    // let pinv = &mut this.pinv;
+    // let qinv = &mut this.qinv;
+    let pmap = &mut this.pmap; // shares memory with pinv
+    let qmap = &mut this.qmap; // shares memory with qinv
+    let pivotcol = &mut this.pivotcol;
+    let pivotrow = &mut this.pivotrow;
+    let Lbegin = &mut this.Lbegin;
+    // let Lbegin_p = &mut this.Lbegin_p;
+    let Ltbegin = &mut this.Ltbegin;
+    let Ltbegin_p = &mut this.Ltbegin_p;
+    // let Ubegin = &mut this.Ubegin;
+    let Rbegin = &mut this.Rbegin;
+    // let Wbegin = &mut this.Wbegin;
+    // let Wend = &mut this.Wend;
+    // let Wflink = &mut this.Wflink;
+    // let Wblink = &mut this.Wblink;
+    // let col_pivot = &mut this.xstore.col_pivot;
+    // let row_pivot = &mut this.xstore.row_pivot;
     let Lindex = Li;
     let Lvalue = Lx;
     let Uindex = Ui;
     let Uvalue = Ux;
     let Windex = Wi;
     let Wvalue = Wx;
-    let iwork1 = this.iwork1_mut();
+    let iwork1 = &mut this.iwork1;
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;
     // double pivot, min_pivot, max_pivot;
@@ -158,9 +158,9 @@ pub(crate) fn lu_build_factors(
     // in Uindex, Uvalue. The factorization has computed rank columns of L
     // and rank rows of U. If rank < m, then the columns which have not been
     // pivotal will be removed from U.
-    let mut Lnz = Lbegin_p[rank as usize];
+    let mut Lnz = this.Lbegin_p[rank as usize];
     Lnz -= rank; // because each column is terminated by -1
-    let mut Unz = Ubegin[rank as usize]; // might be decreased when rank < m
+    let mut Unz = this.Ubegin[rank as usize]; // might be decreased when rank < m
 
     // Calculate memory and reallocate. The rowwise and columnwise storage of
     // L both need space for Lnz nonzeros + m terminators. The same for the
@@ -201,20 +201,20 @@ pub(crate) fn lu_build_factors(
 
     let mut lrank = rank;
     for i in 0..m as usize {
-        if pinv[i] < 0 {
-            pinv[i] = lrank;
+        if this.pinv[i] < 0 {
+            this.pinv[i] = lrank;
             lrank += 1;
         }
-        pivotrow[pinv[i] as usize] = i as lu_int;
+        pivotrow[this.pinv[i] as usize] = i as lu_int;
     }
     assert_eq!(lrank, m);
     let mut lrank = rank;
     for j in 0..m as usize {
-        if qinv[j] < 0 {
-            qinv[j] = lrank;
+        if this.qinv[j] < 0 {
+            this.qinv[j] = lrank;
             lrank += 1;
         }
-        pivotcol[qinv[j] as usize] = j as lu_int;
+        pivotcol[this.qinv[j] as usize] = j as lu_int;
     }
     assert_eq!(lrank, m);
 
@@ -229,22 +229,22 @@ pub(crate) fn lu_build_factors(
 
     // Dependent columns get unit pivot elements.
     for k in rank..m {
-        col_pivot[pivotcol[k as usize] as usize] = 1.0;
+        this.col_pivot[pivotcol[k as usize] as usize] = 1.0;
     }
 
     // Lower triangular factor //
 
     // L columnwise. If rank < m, then complete with unit columns (no
     // off-diagonals, so nothing to store here).
-    let mut put = Lbegin_p[rank as usize];
+    let mut put = this.Lbegin_p[rank as usize];
     for k in rank..m {
         Lindex[put as usize] = -1;
         put += 1;
-        Lbegin_p[k as usize + 1] = put;
+        this.Lbegin_p[k as usize + 1] = put;
     }
-    assert_eq!(Lbegin_p[m as usize], Lnz + m);
+    assert_eq!(this.Lbegin_p[m as usize], Lnz + m);
     for i in 0..m as usize {
-        Lbegin[i] = Lbegin_p[pinv[i] as usize];
+        Lbegin[i] = this.Lbegin_p[this.pinv[i] as usize];
     }
 
     // L rowwise.
@@ -271,7 +271,7 @@ pub(crate) fn lu_build_factors(
         // fill rows
         let ipivot = pivotrow[k];
         // for (get = Lbegin_p[k]; (i = Lindex[get]) >= 0; get++)
-        let mut get = Lbegin_p[k] as usize;
+        let mut get = this.Lbegin_p[k] as usize;
         while Lindex[get] >= 0 {
             // put = iwork1[i]++;  /* put into row i */
             put = iwork1[Lindex[get] as usize]; // put into row i
@@ -292,7 +292,14 @@ pub(crate) fn lu_build_factors(
     // Upper triangular factor //
 
     // U rowwise.
-    lu_file_empty(m, Wbegin, Wend, Wflink, Wblink, Wmem);
+    lu_file_empty(
+        m,
+        &mut this.Wbegin,
+        &mut this.Wend,
+        &mut this.Wflink,
+        &mut this.Wblink,
+        Wmem,
+    );
     // memset(iwork1, 0, m*sizeof(lu_int)); /* column counts */
     iwork1.fill(0); // column counts
     put = 0;
@@ -302,9 +309,9 @@ pub(crate) fn lu_build_factors(
     if rank == m {
         for k in 0..m as usize {
             let jpivot = pivotcol[k];
-            Wbegin[jpivot as usize] = put;
+            this.Wbegin[jpivot as usize] = put;
             let mut nz = 0;
-            for pos in Ubegin[k]..Ubegin[k + 1] {
+            for pos in this.Ubegin[k]..this.Ubegin[k + 1] {
                 let j = Uindex[pos as usize];
                 Windex[put as usize] = j;
                 // Wvalue[put++] = Uvalue[pos];
@@ -314,19 +321,19 @@ pub(crate) fn lu_build_factors(
                 iwork1[j as usize] += 1;
                 nz += 1;
             }
-            Wend[jpivot as usize] = put;
+            this.Wend[jpivot as usize] = put;
             put += stretch * nz + pad;
-            lu_list_move(jpivot, 0, Wflink, Wblink, m, None);
+            lu_list_move(jpivot, 0, &mut this.Wflink, &mut this.Wblink, m, None);
         }
     } else {
         Unz = 0; // actual number of nonzeros
         for k in 0..rank as usize {
             let jpivot = pivotcol[k];
-            Wbegin[jpivot as usize] = put;
+            this.Wbegin[jpivot as usize] = put;
             let mut nz = 0;
-            for pos in Ubegin[k]..Ubegin[k + 1] {
+            for pos in this.Ubegin[k]..this.Ubegin[k + 1] {
                 let j = Uindex[pos as usize];
-                if qinv[j as usize] < rank {
+                if this.qinv[j as usize] < rank {
                     Windex[put as usize] = j;
                     // Wvalue[put++] = Uvalue[pos];
                     let put0 = put;
@@ -336,21 +343,21 @@ pub(crate) fn lu_build_factors(
                     nz += 1;
                 }
             }
-            Wend[jpivot as usize] = put;
+            this.Wend[jpivot as usize] = put;
             put += stretch * nz + pad;
-            lu_list_move(jpivot, 0, Wflink, Wblink, m, None);
+            lu_list_move(jpivot, 0, &mut this.Wflink, &mut this.Wblink, m, None);
             Unz += nz;
         }
         for k in rank..m {
             let jpivot = pivotcol[k as usize];
-            Wbegin[jpivot as usize] = put;
-            Wend[jpivot as usize] = put;
+            this.Wbegin[jpivot as usize] = put;
+            this.Wend[jpivot as usize] = put;
             put += pad;
-            lu_list_move(jpivot, 0, Wflink, Wblink, m, None);
+            lu_list_move(jpivot, 0, &mut this.Wflink, &mut this.Wblink, m, None);
         }
     }
-    assert!(put <= Wend[m as usize]);
-    Wbegin[m as usize] = put; // beginning of free space
+    assert!(put <= this.Wend[m as usize]);
+    this.Wbegin[m as usize] = put; // beginning of free space
 
     // U columnwise.
     Uindex[0] = -1;
@@ -361,21 +368,21 @@ pub(crate) fn lu_build_factors(
         let i = pivotrow[k] as usize;
         let nz = iwork1[j];
         if nz == 0 {
-            Ubegin[i] = 0; // empty columns all in position 0
+            this.Ubegin[i] = 0; // empty columns all in position 0
         } else {
-            Ubegin[i] = put;
+            this.Ubegin[i] = put;
             put += nz;
             Uindex[put as usize] = -1; // terminate column
             put += 1;
         }
-        iwork1[j] = Ubegin[i];
+        iwork1[j] = this.Ubegin[i];
     }
-    Ubegin[m as usize] = put;
+    this.Ubegin[m as usize] = put;
     for k in 0..m as usize {
         // fill columns
         let jpivot = pivotcol[k] as usize;
         let i = pivotrow[k];
-        for pos in Wbegin[jpivot]..Wend[jpivot] {
+        for pos in this.Wbegin[jpivot]..this.Wend[jpivot] {
             let j = Windex[pos as usize] as usize;
             put = iwork1[j];
             iwork1[j] += 1;
@@ -405,14 +412,14 @@ pub(crate) fn lu_build_factors(
     let mut max_pivot = 0.0;
     let mut min_pivot = f64::INFINITY;
     for i in 0..m as usize {
-        row_pivot[i] = col_pivot[qmap[i] as usize];
-        let pivot = row_pivot[i].abs();
+        this.row_pivot[i] = this.col_pivot[qmap[i] as usize];
+        let pivot = this.row_pivot[i].abs();
         max_pivot = f64::max(pivot, max_pivot);
         min_pivot = f64::min(pivot, min_pivot);
     }
 
     // memcpy(this.p, pivotrow, m*sizeof(lu_int));
-    this.p_mut().copy_from_slice(pivotrow); // TODO: check
+    this.p.copy_from_slice(pivotrow); // TODO: check
 
     this.min_pivot = min_pivot;
     this.max_pivot = max_pivot;

@@ -109,113 +109,43 @@ pub struct lu {
     pub(crate) min_rownz: lu_int, // rowcount lists 1..min_rownz-1 are empty
 
     pub(crate) colcount_flink: Vec<lu_int>,
+    pub(crate) pivotcol: Vec<lu_int>,
+
     pub(crate) colcount_blink: Vec<lu_int>,
+    pub(crate) pivotrow: Vec<lu_int>,
+
     pub(crate) rowcount_flink: Vec<lu_int>,
+    pub(crate) Rbegin: Vec<lu_int>,
+    pub(crate) eta_row: Vec<lu_int>,
+
     pub(crate) rowcount_blink: Vec<lu_int>,
+    pub(crate) iwork1: Vec<lu_int>,
 
     pub(crate) Wbegin: Vec<lu_int>,
+    pub(crate) Lbegin: Vec<lu_int>, // + Wbegin reused
+
     pub(crate) Wend: Vec<lu_int>,
+    pub(crate) Ltbegin: Vec<lu_int>, // + Wend   reused
+
     pub(crate) Wflink: Vec<lu_int>,
+    pub(crate) Ltbegin_p: Vec<lu_int>, // + Wflink reused
+
     pub(crate) Wblink: Vec<lu_int>,
+    pub(crate) p: Vec<lu_int>, // + Wblink reused
 
     pub(crate) pinv: Vec<lu_int>,
+    pub(crate) pmap: Vec<lu_int>,
+
     pub(crate) qinv: Vec<lu_int>,
+    pub(crate) qmap: Vec<lu_int>,
 
     pub(crate) Lbegin_p: Vec<lu_int>, // Lbegin_p reused
     pub(crate) Ubegin: Vec<lu_int>,   // Ubegin   reused
-    pub(crate) iwork0: Vec<lu_int>,   // size m workspace, zeroed
 
-    pub(crate) xstore: XStore,
-}
-
-impl lu {
-    pub(crate) fn pivotcol<'a>(&self) -> &'a [lu_int] {
-        &self.colcount_flink
-    }
-    pub(crate) fn pivotcol_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.colcount_flink
-    }
-
-    pub(crate) fn pivotrow<'a>(&self) -> &'a [lu_int] {
-        &self.colcount_blink
-    }
-    pub(crate) fn pivotrow_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.colcount_blink
-    }
-
-    pub(crate) fn Rbegin<'a>(&self) -> &'a [lu_int] {
-        &self.colcount_flink
-    }
-    pub(crate) fn Rbegin_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.colcount_flink
-    }
-
-    pub(crate) fn eta_row<'a>(&self) -> &'a [lu_int] {
-        &self.colcount_flink
-    }
-    pub(crate) fn eta_row_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.colcount_flink
-    }
-
-    pub(crate) fn iwork1<'a>(&self) -> &'a [lu_int] {
-        &self.colcount_blink[self.m as usize + 1..]
-    }
-    pub(crate) fn iwork1_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.colcount_blink[self.m as usize + 1..]
-    }
-
-    pub(crate) fn Lbegin<'a>(&self) -> &'a [lu_int] {
-        &self.Wbegin[self.m as usize + 1..]
-    }
-    pub(crate) fn Lbegin_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.Wbegin[self.m as usize + 1..]
-    }
-
-    pub(crate) fn Ltbegin<'a>(&self) -> &'a [lu_int] {
-        &self.Wend[self.m as usize + 1..]
-    }
-    pub(crate) fn Ltbegin_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.Wend[self.m as usize + 1..]
-    }
-
-    pub(crate) fn Ltbegin_p<'a>(&self) -> &'a [lu_int] {
-        &self.Wflink[self.m as usize + 1..]
-    }
-    pub(crate) fn Ltbegin_p_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.Wflink[self.m as usize + 1..]
-    }
-
-    pub(crate) fn p<'a>(&self) -> &'a [lu_int] {
-        &self.Wblink[self.m as usize + 1..]
-    }
-    pub(crate) fn p_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.Wblink[self.m as usize + 1..]
-    }
-
-    pub(crate) fn pmap<'a>(&self) -> &'a [lu_int] {
-        &self.pinv
-    }
-    pub(crate) fn pmap_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.pinv
-    }
-
-    pub(crate) fn qmap<'a>(&self) -> &'a [lu_int] {
-        &self.qinv
-    }
-    pub(crate) fn qmap_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.qinv
-    }
-
-    pub(crate) fn marked<'a>(&self) -> &'a [lu_int] {
-        &self.iwork0
-    }
-    pub(crate) fn marked_mut<'a>(&mut self) -> &'a mut [lu_int] {
-        &mut self.iwork0
-    }
-}
-
-#[derive(Default)]
-pub struct XStore {
+    pub(crate) iwork0: Vec<lu_int>,
+    pub(crate) marked: Vec<lu_int>,
+    // iwork0: size m workspace, zeroed
+    // marked: size m workspace, 0 <= marked[i] <= @marker
     pub(crate) work0: Vec<f64>,     // size m workspace, zeroed
     pub(crate) work1: Vec<f64>,     // size m workspace, uninitialized
     pub(crate) col_pivot: Vec<f64>, // pivot elements by column index
@@ -598,5 +528,5 @@ pub(crate) fn lu_reset(this: &mut lu) {
     this.iwork0.fill(0);
 
     // memset(this.work0, 0, this.m);
-    this.xstore.work0.fill(0.0);
+    this.work0.fill(0.0);
 }
