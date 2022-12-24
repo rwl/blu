@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::basiclu::*;
-use crate::lu_internal::{lu, lu_load, lu_save};
+use crate::lu_internal::*;
 
 /// Purpose:
 ///
@@ -123,11 +123,11 @@ pub fn basiclu_get_factors(
 
     if let Some(rowperm) = rowperm {
         // memcpy(rowperm, this.pivotrow, m * sizeof(lu_int));
-        this.pivotrow.copy_from_slice(rowperm);
+        pivotrow!(this).copy_from_slice(rowperm);
     }
     if let Some(colperm) = colperm {
         // memcpy(colperm, this.pivotcol, m * sizeof(lu_int));
-        this.pivotcol.copy_from_slice(colperm);
+        pivotcol!(this).copy_from_slice(colperm);
     }
 
     if Lcolptr.is_some() && Lrowidx.is_some() && Lvalue_.is_some() {
@@ -136,13 +136,13 @@ pub fn basiclu_get_factors(
         let Lvalue_ = Lvalue_.unwrap();
 
         // let Lbegin_p = &this.Lbegin_p;
-        let Ltbegin_p = &this.Ltbegin_p;
+        let Ltbegin_p = &Ltbegin_p!(this);
         // let Lindex = this.Lindex.as_ref().unwrap();
         // let Lvalue = this.Lvalue.as_ref().unwrap();
         let Lindex = Li;
         let Lvalue = Lx;
-        let p = &this.p;
-        let colptr = &mut this.iwork1; // size m workspace
+        let p = &p!(this);
+        let colptr = &mut iwork1!(this); // size m workspace
 
         // L[:,k] will hold the elimination factors from the k-th pivot step.
         // First set the column pointers and store the unit diagonal elements
@@ -193,8 +193,8 @@ pub fn basiclu_get_factors(
         let Windex = Wi;
         let Wvalue = Wx;
         // let col_pivot = &this.xstore.col_pivot;
-        let pivotcol = &this.pivotcol;
-        let colptr = &mut this.iwork1; // size m workspace
+        let pivotcol = &pivotcol!(this);
+        let colptr = &mut iwork1!(this); // size m workspace
 
         // U[:,k] will hold the column of B from the k-th pivot step.
         // First set the column pointers and store the pivot element at the end

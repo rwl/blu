@@ -4,7 +4,7 @@
 // factorized. Unit cols inserted by the factorization are handled implicitly.
 
 use crate::basiclu::lu_int;
-use crate::lu_internal::lu;
+use crate::lu_internal::*;
 
 pub(crate) fn lu_matrix_norm(
     this: &mut lu,
@@ -15,8 +15,8 @@ pub(crate) fn lu_matrix_norm(
 ) {
     let m = this.m;
     let rank = this.rank;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
+    let pivotcol = &pivotcol!(this);
+    let pivotrow = &pivotrow!(this);
     let rowsum = &mut this.work1;
 
     assert_eq!(this.nupdate, 0);

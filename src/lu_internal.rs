@@ -2,7 +2,6 @@
 
 use crate::basiclu::*;
 use crate::lu_def::{BASICLU_HASH, NO_TASK};
-use std::mem::swap;
 
 // private entries in xstore
 pub(crate) const BASICLU_TASK: usize = 256;
@@ -109,41 +108,31 @@ pub struct lu {
     pub(crate) min_rownz: lu_int, // rowcount lists 1..min_rownz-1 are empty
 
     pub(crate) colcount_flink: Vec<lu_int>,
-    pub(crate) pivotcol: Vec<lu_int>,
-
+    // pub(crate) pivotcol: Vec<lu_int>,
     pub(crate) colcount_blink: Vec<lu_int>,
-    pub(crate) pivotrow: Vec<lu_int>,
-
+    // pub(crate) pivotrow: Vec<lu_int>,
     pub(crate) rowcount_flink: Vec<lu_int>,
-    pub(crate) Rbegin: Vec<lu_int>,
-    pub(crate) eta_row: Vec<lu_int>,
-
+    // pub(crate) Rbegin: Vec<lu_int>,
+    // pub(crate) eta_row: Vec<lu_int>,
     pub(crate) rowcount_blink: Vec<lu_int>,
-    pub(crate) iwork1: Vec<lu_int>,
-
+    // pub(crate) iwork1: Vec<lu_int>,
     pub(crate) Wbegin: Vec<lu_int>,
-    pub(crate) Lbegin: Vec<lu_int>, // + Wbegin reused
-
+    // pub(crate) Lbegin: Vec<lu_int>, // + Wbegin reused
     pub(crate) Wend: Vec<lu_int>,
-    pub(crate) Ltbegin: Vec<lu_int>, // + Wend   reused
-
+    // pub(crate) Ltbegin: Vec<lu_int>, // + Wend   reused
     pub(crate) Wflink: Vec<lu_int>,
-    pub(crate) Ltbegin_p: Vec<lu_int>, // + Wflink reused
-
+    // pub(crate) Ltbegin_p: Vec<lu_int>, // + Wflink reused
     pub(crate) Wblink: Vec<lu_int>,
-    pub(crate) p: Vec<lu_int>, // + Wblink reused
-
+    // pub(crate) p: Vec<lu_int>, // + Wblink reused
     pub(crate) pinv: Vec<lu_int>,
-    pub(crate) pmap: Vec<lu_int>,
-
+    // pub(crate) pmap: Vec<lu_int>,
     pub(crate) qinv: Vec<lu_int>,
-    pub(crate) qmap: Vec<lu_int>,
-
+    // pub(crate) qmap: Vec<lu_int>,
     pub(crate) Lbegin_p: Vec<lu_int>, // Lbegin_p reused
     pub(crate) Ubegin: Vec<lu_int>,   // Ubegin   reused
 
     pub(crate) iwork0: Vec<lu_int>,
-    pub(crate) marked: Vec<lu_int>,
+    // pub(crate) marked: Vec<lu_int>,
     // iwork0: size m workspace, zeroed
     // marked: size m workspace, 0 <= marked[i] <= @marker
     pub(crate) work0: Vec<f64>,     // size m workspace, zeroed
@@ -151,6 +140,72 @@ pub struct lu {
     pub(crate) col_pivot: Vec<f64>, // pivot elements by column index
     pub(crate) row_pivot: Vec<f64>, // pivot elements by row index
 }
+
+macro_rules! pivotcol {
+    ($this:ident) => {
+        $this.colcount_flink
+    };
+}
+
+macro_rules! pivotrow {
+    ($this:ident) => {
+        $this.colcount_blink
+    };
+}
+macro_rules! Rbegin {
+    ($this:ident) => {
+        $this.rowcount_flink
+    };
+}
+macro_rules! eta_row {
+    ($this:ident) => {
+        $this.rowcount_flink
+    };
+}
+macro_rules! iwork1 {
+    ($this:ident) => {
+        $this.rowcount_blink
+    };
+}
+macro_rules! Lbegin {
+    ($this:ident) => {
+        $this.Wbegin[$this.m as usize + 1..]
+    };
+}
+macro_rules! Ltbegin {
+    ($this:ident) => {
+        $this.Wend[$this.m as usize + 1..]
+    };
+}
+macro_rules! Ltbegin_p {
+    ($this:ident) => {
+        $this.Wflink[$this.m as usize + 1..]
+    };
+}
+macro_rules! p {
+    ($this:ident) => {
+        $this.Wblink[$this.m as usize + 1..]
+    };
+}
+macro_rules! pmap {
+    ($this:ident) => {
+        $this.pinv
+    };
+}
+macro_rules! qmap {
+    ($this:ident) => {
+        $this.qinv
+    };
+}
+macro_rules! marked {
+    ($this:ident) => {
+        $this.iwork0
+    };
+}
+
+pub(crate) use {
+    eta_row, iwork1, marked, p, pivotcol, pivotrow, pmap, qmap, Lbegin, Ltbegin, Ltbegin_p, Rbegin,
+};
 
 /// Initialize @this from @istore, @xstore if these are a valid BASICLU
 /// instance. The remaining arguments are copied only and can be NULL.

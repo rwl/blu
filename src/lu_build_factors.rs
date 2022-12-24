@@ -99,7 +99,7 @@
 
 use crate::basiclu::{lu_int, BASICLU_OK, BASICLU_REALLOCATE};
 use crate::lu_file::lu_file_empty;
-use crate::lu_internal::lu;
+use crate::lu_internal::*;
 use crate::lu_list::lu_list_move;
 
 /// lu_build_factors() - build data structures for L, R, U and permutations
@@ -126,16 +126,16 @@ pub(crate) fn lu_build_factors(
     let stretch = this.stretch as lu_int;
     // let pinv = &mut this.pinv;
     // let qinv = &mut this.qinv;
-    let pmap = &mut this.pmap; // shares memory with pinv
-    let qmap = &mut this.qmap; // shares memory with qinv
-    let pivotcol = &mut this.pivotcol;
-    let pivotrow = &mut this.pivotrow;
-    let Lbegin = &mut this.Lbegin;
+    // let pmap = &mut pmap!(this); // shares memory with pinv
+    // let qmap = &mut qmap!(this); // shares memory with qinv
+    let pivotcol = &mut pivotcol!(this);
+    let pivotrow = &mut pivotrow!(this);
+    let Lbegin = &mut Lbegin!(this);
     // let Lbegin_p = &mut this.Lbegin_p;
-    let Ltbegin = &mut this.Ltbegin;
-    let Ltbegin_p = &mut this.Ltbegin_p;
+    let Ltbegin = &mut Ltbegin!(this);
+    let Ltbegin_p = &mut Ltbegin_p!(this);
     // let Ubegin = &mut this.Ubegin;
-    let Rbegin = &mut this.Rbegin;
+    let Rbegin = &mut Rbegin!(this);
     // let Wbegin = &mut this.Wbegin;
     // let Wend = &mut this.Wend;
     // let Wflink = &mut this.Wflink;
@@ -148,7 +148,7 @@ pub(crate) fn lu_build_factors(
     let Uvalue = Ux;
     let Windex = Wi;
     let Wvalue = Wx;
-    let iwork1 = &mut this.iwork1;
+    let iwork1 = &mut iwork1!(this);
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;
     // double pivot, min_pivot, max_pivot;
@@ -404,22 +404,22 @@ pub(crate) fn lu_build_factors(
     for k in 0..m as usize {
         let i = pivotrow[k];
         let j = pivotcol[k];
-        pmap[j as usize] = i;
-        qmap[i as usize] = j;
+        pmap!(this)[j as usize] = i;
+        qmap!(this)[i as usize] = j;
     }
 
     // Build pivots by row index.
     let mut max_pivot = 0.0;
     let mut min_pivot = f64::INFINITY;
     for i in 0..m as usize {
-        this.row_pivot[i] = this.col_pivot[qmap[i] as usize];
+        this.row_pivot[i] = this.col_pivot[qmap![this][i] as usize];
         let pivot = this.row_pivot[i].abs();
         max_pivot = f64::max(pivot, max_pivot);
         min_pivot = f64::min(pivot, min_pivot);
     }
 
     // memcpy(this.p, pivotrow, m*sizeof(lu_int));
-    this.p.copy_from_slice(pivotrow); // TODO: check
+    p!(this).copy_from_slice(pivotrow); // TODO: check
 
     this.min_pivot = min_pivot;
     this.max_pivot = max_pivot;

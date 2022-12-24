@@ -3,7 +3,7 @@ use crate::lu_build_factors::lu_build_factors;
 use crate::lu_condest::lu_condest;
 use crate::lu_def::*;
 use crate::lu_factorize_bump::lu_factorize_bump;
-use crate::lu_internal::{lu, lu_load, lu_reset, lu_save};
+use crate::lu_internal::*;
 use crate::lu_residual_test::lu_residual_test;
 use crate::lu_setup_bump::lu_setup_bump;
 use crate::lu_singletons::lu_singletons;
@@ -357,13 +357,13 @@ pub fn basiclu_factorize(
 
     this.condestL = lu_condest(
         this.m,
-        &this.Lbegin,
+        &Lbegin!(this),
         // this.Lindex.as_ref().unwrap(),
         // this.Lvalue.as_ref().unwrap(),
         Li,
         Lx,
         None,
-        Some(&this.p),
+        Some(&p!(this)),
         0,
         &mut this.work1,
         &mut this.normL,
@@ -377,7 +377,7 @@ pub fn basiclu_factorize(
         Ui,
         Ux,
         Some(&this.row_pivot),
-        Some(&this.p),
+        Some(&p!(this)),
         1,
         &mut this.work1,
         &mut this.normU,

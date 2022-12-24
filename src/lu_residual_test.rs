@@ -3,7 +3,7 @@
 // Stability test of fresh LU factorization based on relative residual.
 
 use crate::basiclu::lu_int;
-use crate::lu_internal::lu;
+use crate::lu_internal::*;
 use crate::lu_matrix_norm::lu_matrix_norm;
 
 fn lu_onenorm(m: lu_int, x: &[f64]) -> f64 {
@@ -27,11 +27,11 @@ pub(crate) fn lu_residual_test(
 ) {
     let m = this.m;
     let rank = this.rank;
-    let p = &this.p;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
+    let p = &p!(this);
+    let pivotcol = &pivotcol!(this);
+    let pivotrow = &pivotrow!(this);
     let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = &this.Ltbegin_p;
+    let Ltbegin_p = &Ltbegin_p!(this);
     let Ubegin = &this.Ubegin;
     let row_pivot = &this.row_pivot;
     let Lindex = Li;

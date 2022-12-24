@@ -2,7 +2,7 @@
 
 use crate::basiclu::lu_int;
 use crate::lu_garbage_perm::lu_garbage_perm;
-use crate::lu_internal::lu;
+use crate::lu_internal::*;
 
 pub(crate) fn lu_solve_dense(
     this: &mut lu,
@@ -21,14 +21,14 @@ pub(crate) fn lu_solve_dense(
 
     let m = this.m;
     let nforrest = this.nforrest;
-    let p = &this.p;
-    let eta_row = &this.eta_row;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
+    let p = &p!(this);
+    let eta_row = &eta_row!(this);
+    let pivotcol = &pivotcol!(this);
+    let pivotrow = &pivotrow!(this);
     let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = &this.Ltbegin_p;
+    let Ltbegin_p = &Ltbegin_p!(this);
     let Ubegin = &this.Ubegin;
-    let Rbegin = &this.Rbegin;
+    let Rbegin = &Rbegin!(this);
     let Wbegin = &this.Wbegin;
     let Wend = &this.Wend;
     let col_pivot = &this.col_pivot;

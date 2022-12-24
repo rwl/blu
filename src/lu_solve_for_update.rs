@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::basiclu::*;
-use crate::lu_internal::lu;
+use crate::lu_internal::*;
 use crate::lu_solve_symbolic::lu_solve_symbolic;
 use crate::lu_solve_triangular::lu_solve_triangular;
 use std::mem::size_of;
@@ -28,17 +28,17 @@ pub(crate) fn lu_solve_for_update(
     let pivotlen = this.pivotlen;
     let nz_sparse = (this.sparse_thres as lu_int) * m;
     let droptol = this.droptol;
-    let p = &this.p;
-    let pmap = &this.pmap;
-    let qmap = &this.qmap;
-    let eta_row = &mut this.eta_row;
-    let pivotcol = &this.pivotcol;
-    let pivotrow = &this.pivotrow;
-    let Lbegin = &this.Lbegin;
-    let Ltbegin = &this.Ltbegin;
-    let Ltbegin_p = &this.Ltbegin_p;
+    let p = &p!(this);
+    let pmap = &pmap!(this);
+    let qmap = &qmap!(this);
+    // let eta_row = &mut eta_row!(this);
+    let pivotcol = &pivotcol!(this);
+    let pivotrow = &pivotrow!(this);
+    let Lbegin = &Lbegin!(this);
+    let Ltbegin = &Ltbegin!(this);
+    let Ltbegin_p = &Ltbegin_p!(this);
     let Ubegin = &this.Ubegin;
-    let Rbegin = &mut this.Rbegin;
+    // let Rbegin = &mut Rbegin!(this);
     let Wbegin = &this.Wbegin;
     let Wend = &this.Wend;
     let col_pivot = &this.col_pivot;
@@ -55,7 +55,7 @@ pub(crate) fn lu_solve_for_update(
     // let Uvalue = this.Uvalue.as_mut().unwrap();
     // let Windex = this.Windex.as_mut().unwrap();
     // let Wvalue = this.Wvalue.as_mut().unwrap();
-    let marked = &mut this.marked;
+    let marked = &mut marked!(this);
 
     // lu_int i, j, k, n, t, top, pos, put, ipivot, jpivot, nz, nz_symb, M,
     //     room, need, jbegin, jend;
@@ -71,7 +71,7 @@ pub(crate) fn lu_solve_for_update(
 
         // let pattern_symb = &mut this.iwork1;
         // let pattern = &mut this.iwork1[m as usize..];
-        let (pattern_symb, pattern) = this.iwork1.split_at_mut(m as usize);
+        let (pattern_symb, pattern) = iwork1!(this).split_at_mut(m as usize);
         let work = &mut this.work0;
         // lu_int *pstack       = (void *) this.work1;
         let pstack = &mut this.work1;
@@ -106,7 +106,7 @@ pub(crate) fn lu_solve_for_update(
         let nz_symb = m - top;
 
         // reallocate if not enough memory in Li, Lx (where we store R)
-        let room = this.Lmem - Rbegin[nforrest as usize];
+        let room = this.Lmem - Rbegin!(this)[nforrest as usize];
         if room < nz_symb {
             this.addmemL = nz_symb - room;
             return BASICLU_REALLOCATE;
@@ -131,7 +131,7 @@ pub(crate) fn lu_solve_for_update(
 
         // Compress row eta into L, pattern mapped from column to row indices.
         // The triangularity test in lu_update requires the symbolic pattern.
-        let mut put = Rbegin[nforrest as usize];
+        let mut put = Rbegin!(this)[nforrest as usize];
         for t in top..m {
             let j = pattern_symb[t as usize];
             let i = pmap[j as usize];
@@ -140,8 +140,8 @@ pub(crate) fn lu_solve_for_update(
             put += 1;
             work[j as usize] = 0.0;
         }
-        Rbegin[nforrest as usize + 1] = put;
-        eta_row[nforrest as usize] = ipivot;
+        Rbegin!(this)[nforrest as usize + 1] = put;
+        eta_row!(this)[nforrest as usize] = ipivot;
         this.btran_for_update = jpivot;
 
         if !want_solution {
@@ -164,7 +164,7 @@ pub(crate) fn lu_solve_for_update(
 
         let xdrop = droptol * pivot.abs();
         let mut nz: lu_int = 1;
-        for pos in Rbegin[nforrest as usize]..Rbegin[(nforrest + 1) as usize] {
+        for pos in Rbegin!(this)[nforrest as usize]..Rbegin!(this)[(nforrest + 1) as usize] {
             if Lvalue[pos as usize].abs() > xdrop {
                 let i = Lindex[pos as usize];
                 pattern[nz as usize] = i;
@@ -178,10 +178,10 @@ pub(crate) fn lu_solve_for_update(
         // Append fill-in to pattern.
         // for (t = nforrest-1; t >= 0; t--)
         for t in (0..nforrest as usize).rev() {
-            let ipivot = eta_row[t];
+            let ipivot = eta_row!(this)[t];
             if xlhs[ipivot as usize] != 0.0 {
                 let x = xlhs[ipivot as usize];
-                for pos in Rbegin[t]..Rbegin[t + 1] {
+                for pos in Rbegin!(this)[t]..Rbegin!(this)[t + 1] {
                     let i = Lindex[pos as usize];
                     if marked[i as usize] != M {
                         marked[i as usize] = M;
@@ -258,7 +258,7 @@ pub(crate) fn lu_solve_for_update(
 
         // let pattern_symb = &mut this.iwork1;
         // let pattern = &mut this.iwork1[m as usize..];
-        let (pattern_symb, pattern) = this.iwork1.split_at_mut(m as usize);
+        let (pattern_symb, pattern) = iwork1!(this).split_at_mut(m as usize);
         let work = &mut this.work0;
         // lu_int *pstack       = (void *) this.work1;
         let pstack = &mut this.work1;
@@ -321,11 +321,11 @@ pub(crate) fn lu_solve_for_update(
 
         // Solve with update etas.
         // Append fill-in to pattern.
-        let mut pos = Rbegin[0];
+        let mut pos = Rbegin!(this)[0];
         for t in 0..nforrest as usize {
-            let ipivot = eta_row[t];
+            let ipivot = eta_row!(this)[t];
             let mut x = 0.0;
-            while pos < Rbegin[t + 1] {
+            while pos < Rbegin!(this)[t + 1] {
                 x += work[Lindex[pos as usize] as usize] * Lvalue[pos as usize];
                 pos += 1;
             }
@@ -336,7 +336,7 @@ pub(crate) fn lu_solve_for_update(
                 nz += 1;
             }
         }
-        Rflops += Rbegin[nforrest as usize] - Rbegin[0];
+        Rflops += Rbegin!(this)[nforrest as usize] - Rbegin!(this)[0];
 
         // reallocate if not enough memory in U
         let room = this.Umem - Ubegin[m as usize];

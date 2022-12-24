@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::lu_internal::lu;
+use crate::lu_internal::*;
 
 // The sequence of pivot columns and pivot rows is stored in
 //
@@ -15,9 +15,9 @@ use crate::lu_internal::lu;
 pub(crate) fn lu_garbage_perm(this: &mut lu) {
     let m = this.m;
     let pivotlen = this.pivotlen;
-    let pivotcol = &mut this.pivotcol;
-    let pivotrow = &mut this.pivotrow;
-    let marked = &mut this.marked;
+    let pivotcol = &mut pivotcol!(this);
+    let pivotrow = &mut pivotrow!(this);
+    let marked = &mut marked!(this);
 
     if pivotlen > m {
         // marker = ++this.marker;

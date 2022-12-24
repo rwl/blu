@@ -1,5 +1,5 @@
 use crate::basiclu::*;
-use crate::lu_internal::lu;
+use crate::lu_internal::*;
 use std::time::Instant;
 
 /// lu_singletons()
@@ -110,7 +110,7 @@ pub(crate) fn lu_singletons(
     // let Uvalue = this.Uvalue.as_mut().unwrap();
     // let iwork1 = &mut this.iwork1;
     // let iwork2 = iwork1 + m;
-    let (iwork1, iwork2) = this.iwork1.split_at_mut(m as usize);
+    let (iwork1, iwork2) = iwork1!(this).split_at_mut(m as usize);
 
     let Btp = &mut this.Wbegin; // build B rowwise in W
     let Bti = Wi;
