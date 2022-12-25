@@ -25,37 +25,37 @@ pub(crate) const BASICLU_PIVOTLEN: usize = 269;
 /// of istore, xstore and the user arrays Li, Lx, Ui, Ux, Wi, Wx are aliased by
 /// pointers in struct lu.
 #[derive(Default)]
-pub struct lu {
+pub struct LU {
     // user parameters, not modified //
-    pub Lmem: lu_int,
-    pub Umem: lu_int,
-    pub Wmem: lu_int,
+    pub l_mem: LUInt,
+    pub u_mem: LUInt,
+    pub w_mem: LUInt,
     pub droptol: f64,
     pub abstol: f64,
     pub reltol: f64,
-    pub nzbias: lu_int,
-    pub maxsearch: lu_int,
-    pub pad: lu_int,
+    pub nzbias: LUInt,
+    pub maxsearch: LUInt,
+    pub pad: LUInt,
     pub stretch: f64,
     pub compress_thres: f64,
     pub sparse_thres: f64,
-    pub search_rows: lu_int,
+    pub search_rows: LUInt,
 
     // user readable //
-    pub m: lu_int,
-    pub addmemL: lu_int,
-    pub addmemU: lu_int,
-    pub addmemW: lu_int,
+    pub m: LUInt,
+    pub addmem_l: LUInt,
+    pub addmem_u: LUInt,
+    pub addmem_w: LUInt,
 
-    pub nupdate: lu_int,
-    pub nforrest: lu_int,
-    pub nfactorize: lu_int,
-    pub nupdate_total: lu_int,
-    pub nforrest_total: lu_int,
-    pub nsymperm_total: lu_int,
-    pub Lnz: lu_int, // nz in L excluding diagonal
-    pub Unz: lu_int, // nz in U excluding diagonal
-    pub Rnz: lu_int, // nz in update etas excluding diagonal
+    pub nupdate: LUInt,
+    pub nforrest: LUInt,
+    pub nfactorize: LUInt,
+    pub nupdate_total: LUInt,
+    pub nforrest_total: LUInt,
+    pub nsymperm_total: LUInt,
+    pub l_nz: LUInt, // nz in L excluding diagonal
+    pub u_nz: LUInt, // nz in U excluding diagonal
+    pub r_nz: LUInt, // nz in update etas excluding diagonal
     pub min_pivot: f64,
     pub max_pivot: f64,
     pub max_eta: f64,
@@ -67,27 +67,27 @@ pub struct lu {
     pub time_factorize_total: f64,
     pub time_solve_total: f64,
     pub time_update_total: f64,
-    pub Lflops: lu_int,
-    pub Uflops: lu_int,
-    pub Rflops: lu_int,
-    pub condestL: f64,
-    pub condestU: f64,
-    pub normL: f64,
-    pub normU: f64,
-    pub normestLinv: f64,
-    pub normestUinv: f64,
+    pub l_flops: LUInt,
+    pub u_flops: LUInt,
+    pub r_flops: LUInt,
+    pub condest_l: f64,
+    pub condest_u: f64,
+    pub norm_l: f64,
+    pub norm_u: f64,
+    pub normest_l_inv: f64,
+    pub normest_u_inv: f64,
     pub onenorm: f64,       // 1-norm and inf-norm of matrix after fresh
     pub infnorm: f64,       // factorization with dependent cols replaced
     pub residual_test: f64, // computed by lu_residual_test()
 
-    pub matrix_nz: lu_int, // nz in basis matrix when factorized
-    pub rank: lu_int,      // rank of basis matrix when factorized
-    pub bump_size: lu_int,
-    pub bump_nz: lu_int,
-    pub nsearch_pivot: lu_int, // # rows/cols searched for pivot
-    pub nexpand: lu_int,       // # rows/cols expanded in factorize
-    pub ngarbage: lu_int,      // # garbage collections in factorize
-    pub factor_flops: lu_int,  // # flops in factorize
+    pub matrix_nz: LUInt, // nz in basis matrix when factorized
+    pub rank: LUInt,      // rank of basis matrix when factorized
+    pub bump_size: LUInt,
+    pub bump_nz: LUInt,
+    pub nsearch_pivot: LUInt, // # rows/cols searched for pivot
+    pub nexpand: LUInt,       // # rows/cols expanded in factorize
+    pub ngarbage: LUInt,      // # garbage collections in factorize
+    pub factor_flops: LUInt,  // # flops in factorize
     pub time_singletons: f64,
     pub time_search_pivot: f64,
     pub time_elim_pivot: f64,
@@ -95,52 +95,52 @@ pub struct lu {
     pub pivot_error: f64, // error estimate for pivot in last update
 
     // private //
-    pub(crate) task: lu_int,      // the part of factorization in progress
-    pub(crate) pivot_row: lu_int, // chosen pivot row
-    pub(crate) pivot_col: lu_int, // chosen pivot column
-    pub(crate) ftran_for_update: lu_int, // >= 0 if FTRAN prepared for update
-    pub(crate) btran_for_update: lu_int, // >= 0 if BTRAN prepared for update
-    pub(crate) marker: lu_int,    // see @marked, below
-    pub(crate) pivotlen: lu_int,  // length of @pivotcol, @pivotrow; <= 2*m
-    pub(crate) rankdef: lu_int,   // # columns removed from active submatrix
+    pub(crate) task: LUInt,      // the part of factorization in progress
+    pub(crate) pivot_row: LUInt, // chosen pivot row
+    pub(crate) pivot_col: LUInt, // chosen pivot column
+    pub(crate) ftran_for_update: LUInt, // >= 0 if FTRAN prepared for update
+    pub(crate) btran_for_update: LUInt, // >= 0 if BTRAN prepared for update
+    pub(crate) marker: LUInt,    // see @marked, below
+    pub(crate) pivotlen: LUInt,  // length of @pivotcol, @pivotrow; <= 2*m
+    pub(crate) rankdef: LUInt,   // # columns removed from active submatrix
     // because maximum was 0 or < abstol
-    pub(crate) min_colnz: lu_int, // colcount lists 1..min_colnz-1 are empty
-    pub(crate) min_rownz: lu_int, // rowcount lists 1..min_rownz-1 are empty
+    pub(crate) min_colnz: LUInt, // colcount lists 1..min_colnz-1 are empty
+    pub(crate) min_rownz: LUInt, // rowcount lists 1..min_rownz-1 are empty
 
     // aliases to user arrays //
-    pub(crate) Lindex: Vec<lu_int>,
-    pub(crate) Uindex: Vec<lu_int>,
-    pub(crate) Windex: Vec<lu_int>,
+    pub(crate) l_index: Vec<LUInt>,
+    pub(crate) u_index: Vec<LUInt>,
+    pub(crate) w_index: Vec<LUInt>,
 
-    pub(crate) Lvalue: Vec<f64>,
-    pub(crate) Uvalue: Vec<f64>,
-    pub(crate) Wvalue: Vec<f64>,
+    pub(crate) l_value: Vec<f64>,
+    pub(crate) u_value: Vec<f64>,
+    pub(crate) w_value: Vec<f64>,
 
-    pub(crate) colcount_flink: Vec<lu_int>,
+    pub(crate) colcount_flink: Vec<LUInt>,
     // pub(crate) pivotcol: Vec<lu_int>,
-    pub(crate) colcount_blink: Vec<lu_int>,
+    pub(crate) colcount_blink: Vec<LUInt>,
     // pub(crate) pivotrow: Vec<lu_int>,
-    pub(crate) rowcount_flink: Vec<lu_int>,
-    // pub(crate) Rbegin: Vec<lu_int>,
+    pub(crate) rowcount_flink: Vec<LUInt>,
+    // pub(crate) r_begin: Vec<lu_int>,
     // pub(crate) eta_row: Vec<lu_int>,
-    pub(crate) rowcount_blink: Vec<lu_int>,
+    pub(crate) rowcount_blink: Vec<LUInt>,
     // pub(crate) iwork1: Vec<lu_int>,
-    pub(crate) Wbegin: Vec<lu_int>,
-    // pub(crate) Lbegin: Vec<lu_int>, // + Wbegin reused
-    pub(crate) Wend: Vec<lu_int>,
-    // pub(crate) Ltbegin: Vec<lu_int>, // + Wend   reused
-    pub(crate) Wflink: Vec<lu_int>,
-    // pub(crate) Ltbegin_p: Vec<lu_int>, // + Wflink reused
-    pub(crate) Wblink: Vec<lu_int>,
+    pub(crate) w_begin: Vec<LUInt>,
+    // pub(crate) l_begin: Vec<lu_int>, // + Wbegin reused
+    pub(crate) w_end: Vec<LUInt>,
+    // pub(crate) lt_begin: Vec<lu_int>, // + Wend   reused
+    pub(crate) w_flink: Vec<LUInt>,
+    // pub(crate) lt_begin_p: Vec<lu_int>, // + Wflink reused
+    pub(crate) w_blink: Vec<LUInt>,
     // pub(crate) p: Vec<lu_int>, // + Wblink reused
-    pub(crate) pinv: Vec<lu_int>,
+    pub(crate) pinv: Vec<LUInt>,
     // pub(crate) pmap: Vec<lu_int>,
-    pub(crate) qinv: Vec<lu_int>,
+    pub(crate) qinv: Vec<LUInt>,
     // pub(crate) qmap: Vec<lu_int>,
-    pub(crate) Lbegin_p: Vec<lu_int>, // Lbegin_p reused
-    pub(crate) Ubegin: Vec<lu_int>,   // Ubegin   reused
+    pub(crate) l_begin_p: Vec<LUInt>, // Lbegin_p reused
+    pub(crate) u_begin: Vec<LUInt>,   // Ubegin   reused
 
-    pub(crate) iwork0: Vec<lu_int>,
+    pub(crate) iwork0: Vec<LUInt>,
     // pub(crate) marked: Vec<lu_int>,
     // iwork0: size m workspace, zeroed
     // marked: size m workspace, 0 <= marked[i] <= @marker
@@ -161,7 +161,7 @@ macro_rules! pivotrow {
         $this.colcount_blink
     };
 }
-macro_rules! Rbegin {
+macro_rules! r_begin {
     ($this:ident) => {
         $this.rowcount_flink
     };
@@ -176,17 +176,17 @@ macro_rules! iwork1 {
         $this.rowcount_blink
     };
 }
-macro_rules! Lbegin {
+macro_rules! l_begin {
     ($this:ident) => {
         $this.Wbegin[$this.m as usize + 1..]
     };
 }
-macro_rules! Ltbegin {
+macro_rules! lt_begin {
     ($this:ident) => {
         $this.Wend[$this.m as usize + 1..]
     };
 }
-macro_rules! Ltbegin_p {
+macro_rules! lt_begin_p {
     ($this:ident) => {
         $this.Wflink[$this.m as usize + 1..]
     };
@@ -213,15 +213,16 @@ macro_rules! marked {
 }
 
 pub(crate) use {
-    eta_row, iwork1, marked, p, pivotcol, pivotrow, pmap, qmap, Lbegin, Ltbegin, Ltbegin_p, Rbegin,
+    eta_row, iwork1, l_begin, lt_begin, lt_begin_p, marked, p, pivotcol, pivotrow, pmap, qmap,
+    r_begin,
 };
 
 /// Initialize @this from @istore, @xstore if these are a valid BASICLU
 /// instance. The remaining arguments are copied only and can be NULL.
 ///
-/// Return `BASICLU_OK` or `BASICLU_ERROR_invalid_store`
+/// Return `BASICLU_OK` or `BASICLU_ERROR_INVALID_STORE`
 pub(crate) fn lu_load(
-    this: &mut lu,
+    this: &mut LU,
     // istore: &[lu_int],
     xstore: &[f64],
     // Li: Option<&[lu_int]>,
@@ -230,24 +231,24 @@ pub(crate) fn lu_load(
     // Ux: Option<&[f64]>,
     // Wi: Option<&[lu_int]>,
     // Wx: Option<&[f64]>,
-) -> lu_int {
+) -> LUInt {
     if
     /*istore[0] != BASICLU_HASH ||*/
     xstore[0] != BASICLU_HASH as f64 {
-        return BASICLU_ERROR_invalid_store;
+        return BASICLU_ERROR_INVALID_STORE;
     }
 
     // user parameters
-    this.Lmem = xstore[BASICLU_MEMORYL] as lu_int;
-    this.Umem = xstore[BASICLU_MEMORYU] as lu_int;
-    this.Wmem = xstore[BASICLU_MEMORYW] as lu_int;
+    this.l_mem = xstore[BASICLU_MEMORYL] as LUInt;
+    this.u_mem = xstore[BASICLU_MEMORYU] as LUInt;
+    this.w_mem = xstore[BASICLU_MEMORYW] as LUInt;
     this.droptol = xstore[BASICLU_DROP_TOLERANCE];
     this.abstol = xstore[BASICLU_ABS_PIVOT_TOLERANCE];
     this.reltol = xstore[BASICLU_REL_PIVOT_TOLERANCE];
     this.reltol = f64::min(this.reltol, 1.0);
-    this.nzbias = xstore[BASICLU_BIAS_NONZEROS] as lu_int;
-    this.maxsearch = xstore[BASICLU_MAXN_SEARCH_PIVOT] as lu_int;
-    this.pad = xstore[BASICLU_PAD] as lu_int;
+    this.nzbias = xstore[BASICLU_BIAS_NONZEROS] as LUInt;
+    this.maxsearch = xstore[BASICLU_MAXN_SEARCH_PIVOT] as LUInt;
+    this.pad = xstore[BASICLU_PAD] as LUInt;
     this.stretch = xstore[BASICLU_STRETCH];
     this.compress_thres = xstore[BASICLU_COMPRESSION_THRESHOLD];
     this.sparse_thres = xstore[BASICLU_SPARSE_THRESHOLD];
@@ -259,20 +260,20 @@ pub(crate) fn lu_load(
 
     // user readable
     let m = xstore[BASICLU_DIM];
-    this.m = m as lu_int;
-    this.addmemL = 0;
-    this.addmemU = 0;
-    this.addmemW = 0;
+    this.m = m as LUInt;
+    this.addmem_l = 0;
+    this.addmem_u = 0;
+    this.addmem_w = 0;
 
-    this.nupdate = xstore[BASICLU_NUPDATE] as lu_int;
-    this.nforrest = xstore[BASICLU_NFORREST] as lu_int;
-    this.nfactorize = xstore[BASICLU_NFACTORIZE] as lu_int;
-    this.nupdate_total = xstore[BASICLU_NUPDATE_TOTAL] as lu_int;
-    this.nforrest_total = xstore[BASICLU_NFORREST_TOTAL] as lu_int;
-    this.nsymperm_total = xstore[BASICLU_NSYMPERM_TOTAL] as lu_int;
-    this.Lnz = xstore[BASICLU_LNZ] as lu_int;
-    this.Unz = xstore[BASICLU_UNZ] as lu_int;
-    this.Rnz = xstore[BASICLU_RNZ] as lu_int;
+    this.nupdate = xstore[BASICLU_NUPDATE] as LUInt;
+    this.nforrest = xstore[BASICLU_NFORREST] as LUInt;
+    this.nfactorize = xstore[BASICLU_NFACTORIZE] as LUInt;
+    this.nupdate_total = xstore[BASICLU_NUPDATE_TOTAL] as LUInt;
+    this.nforrest_total = xstore[BASICLU_NFORREST_TOTAL] as LUInt;
+    this.nsymperm_total = xstore[BASICLU_NSYMPERM_TOTAL] as LUInt;
+    this.l_nz = xstore[BASICLU_LNZ] as LUInt;
+    this.u_nz = xstore[BASICLU_UNZ] as LUInt;
+    this.r_nz = xstore[BASICLU_RNZ] as LUInt;
     this.min_pivot = xstore[BASICLU_MIN_PIVOT];
     this.max_pivot = xstore[BASICLU_MAX_PIVOT];
     this.max_eta = xstore[BASICLU_MAX_ETA];
@@ -284,27 +285,27 @@ pub(crate) fn lu_load(
     this.time_factorize_total = xstore[BASICLU_TIME_FACTORIZE_TOTAL];
     this.time_solve_total = xstore[BASICLU_TIME_SOLVE_TOTAL];
     this.time_update_total = xstore[BASICLU_TIME_UPDATE_TOTAL];
-    this.Lflops = xstore[BASICLU_LFLOPS] as lu_int;
-    this.Uflops = xstore[BASICLU_UFLOPS] as lu_int;
-    this.Rflops = xstore[BASICLU_RFLOPS] as lu_int;
-    this.condestL = xstore[BASICLU_CONDEST_L];
-    this.condestU = xstore[BASICLU_CONDEST_U];
-    this.normL = xstore[BASICLU_NORM_L];
-    this.normU = xstore[BASICLU_NORM_U];
-    this.normestLinv = xstore[BASICLU_NORMEST_LINV];
-    this.normestUinv = xstore[BASICLU_NORMEST_UINV];
+    this.l_flops = xstore[BASICLU_LFLOPS] as LUInt;
+    this.u_flops = xstore[BASICLU_UFLOPS] as LUInt;
+    this.r_flops = xstore[BASICLU_RFLOPS] as LUInt;
+    this.condest_l = xstore[BASICLU_CONDEST_L];
+    this.condest_u = xstore[BASICLU_CONDEST_U];
+    this.norm_l = xstore[BASICLU_NORM_L];
+    this.norm_u = xstore[BASICLU_NORM_U];
+    this.normest_l_inv = xstore[BASICLU_NORMEST_LINV];
+    this.normest_u_inv = xstore[BASICLU_NORMEST_UINV];
     this.onenorm = xstore[BASICLU_MATRIX_ONENORM];
     this.infnorm = xstore[BASICLU_MATRIX_INFNORM];
     this.residual_test = xstore[BASICLU_RESIDUAL_TEST];
 
-    this.matrix_nz = xstore[BASICLU_MATRIX_NZ] as lu_int;
-    this.rank = xstore[BASICLU_RANK] as lu_int;
-    this.bump_size = xstore[BASICLU_BUMP_SIZE] as lu_int;
-    this.bump_nz = xstore[BASICLU_BUMP_NZ] as lu_int;
-    this.nsearch_pivot = xstore[BASICLU_NSEARCH_PIVOT] as lu_int;
-    this.nexpand = xstore[BASICLU_NEXPAND] as lu_int;
-    this.ngarbage = xstore[BASICLU_NGARBAGE] as lu_int;
-    this.factor_flops = xstore[BASICLU_FACTOR_FLOPS] as lu_int;
+    this.matrix_nz = xstore[BASICLU_MATRIX_NZ] as LUInt;
+    this.rank = xstore[BASICLU_RANK] as LUInt;
+    this.bump_size = xstore[BASICLU_BUMP_SIZE] as LUInt;
+    this.bump_nz = xstore[BASICLU_BUMP_NZ] as LUInt;
+    this.nsearch_pivot = xstore[BASICLU_NSEARCH_PIVOT] as LUInt;
+    this.nexpand = xstore[BASICLU_NEXPAND] as LUInt;
+    this.ngarbage = xstore[BASICLU_NGARBAGE] as LUInt;
+    this.factor_flops = xstore[BASICLU_FACTOR_FLOPS] as LUInt;
     this.time_singletons = xstore[BASICLU_TIME_SINGLETONS];
     this.time_search_pivot = xstore[BASICLU_TIME_SEARCH_PIVOT];
     this.time_elim_pivot = xstore[BASICLU_TIME_ELIM_PIVOT];
@@ -312,16 +313,16 @@ pub(crate) fn lu_load(
     this.pivot_error = xstore[BASICLU_PIVOT_ERROR];
 
     // private
-    this.task = xstore[BASICLU_TASK] as lu_int;
-    this.pivot_row = xstore[BASICLU_PIVOT_ROW] as lu_int;
-    this.pivot_col = xstore[BASICLU_PIVOT_COL] as lu_int;
-    this.ftran_for_update = xstore[BASICLU_FTCOLUMN_IN] as lu_int;
-    this.btran_for_update = xstore[BASICLU_FTCOLUMN_OUT] as lu_int;
-    this.marker = xstore[BASICLU_MARKER] as lu_int;
-    this.pivotlen = xstore[BASICLU_PIVOTLEN] as lu_int;
-    this.rankdef = xstore[BASICLU_RANKDEF] as lu_int;
-    this.min_colnz = xstore[BASICLU_MIN_COLNZ] as lu_int;
-    this.min_rownz = xstore[BASICLU_MIN_ROWNZ] as lu_int;
+    this.task = xstore[BASICLU_TASK] as LUInt;
+    this.pivot_row = xstore[BASICLU_PIVOT_ROW] as LUInt;
+    this.pivot_col = xstore[BASICLU_PIVOT_COL] as LUInt;
+    this.ftran_for_update = xstore[BASICLU_FTCOLUMN_IN] as LUInt;
+    this.btran_for_update = xstore[BASICLU_FTCOLUMN_OUT] as LUInt;
+    this.marker = xstore[BASICLU_MARKER] as LUInt;
+    this.pivotlen = xstore[BASICLU_PIVOTLEN] as LUInt;
+    this.rankdef = xstore[BASICLU_RANKDEF] as LUInt;
+    this.min_colnz = xstore[BASICLU_MIN_COLNZ] as LUInt;
+    this.min_rownz = xstore[BASICLU_MIN_ROWNZ] as LUInt;
 
     // aliases to user arrays
     // this.Lindex = Li;
@@ -387,20 +388,20 @@ pub(crate) fn lu_load(
     // // share istore memory for solve/update
     // swap(&mut this.pivotcol, &mut this.colcount_flink);
     // this.pivotrow = this.colcount_blink.take();
-    // this.Rbegin = this.rowcount_flink.take(); // FIXME: [..m+1]
+    // this.r_begin = this.rowcount_flink.take(); // FIXME: [..m+1]
     //                                           // this.eta_row = this.rowcount_flink + m + 1;
     //                                           // this.eta_row = this.rowcount_flink[m as usize + 1..].to_vec();
     // this.eta_row = vec![0; m as usize + 1]; // FIXME: rowcount_flink[m+1..]
     // this.iwork1 = this.rowcount_blink.take();
-    // // this.Lbegin = this.Wbegin + m + 1;
-    // // this.Lbegin = this.Wbegin[m as usize + 1..].to_vec();
-    // this.Lbegin = this.Wbegin.take(); // [m+1..]
-    //                                   // this.Ltbegin = this.Wend + m + 1;
-    //                                   // this.Ltbegin = this.Wend[m as usize + 1..].to_vec();
-    // this.Ltbegin = this.Wend.take(); // [m+1..]
-    //                                  // this.Ltbegin_p = this.Wflink + m + 1;
-    //                                  // this.Ltbegin_p = this.Wflink[m as usize + 1..].to_vec();
-    // this.Ltbegin_p = this.Wflink.take(); // [m+1..]
+    // // this.l_begin = this.Wbegin + m + 1;
+    // // this.l_begin = this.Wbegin[m as usize + 1..].to_vec();
+    // this.l_begin = this.Wbegin.take(); // [m+1..]
+    //                                   // this.lt_begin = this.Wend + m + 1;
+    //                                   // this.lt_begin = this.Wend[m as usize + 1..].to_vec();
+    // this.lt_begin = this.Wend.take(); // [m+1..]
+    //                                  // this.lt_begin_p = this.Wflink + m + 1;
+    //                                  // this.lt_begin_p = this.Wflink[m as usize + 1..].to_vec();
+    // this.lt_begin_p = this.Wflink.take(); // [m+1..]
     //                                      // this.p = this.Wblink + m + 1;
     //                                      // this.p = this.Wblink[m as usize + 1..].to_vec();
     // this.p = this.Wblink.take(); // [m+1..]
@@ -438,9 +439,9 @@ pub(crate) fn lu_load(
     // // The file has 2*m lines while factorizing and m lines otherwise.
     // let Wend = this.Wend.as_mut().unwrap();
     // if this.nupdate >= 0 {
-    //     Wend[m as usize] = this.Wmem;
+    //     Wend[m as usize] = this.wmem;
     // } else {
-    //     Wend[2 * m as usize] = this.Wmem;
+    //     Wend[2 * m as usize] = this.wmem;
     // }
 
     BASICLU_OK
@@ -451,16 +452,16 @@ pub(crate) fn lu_load(
 ///
 /// Return @status
 pub(crate) fn lu_save(
-    this: &lu,
+    this: &LU,
     // _istore: &mut [lu_int],
     xstore: &mut [f64],
-    status: lu_int,
-) -> lu_int {
+    status: LUInt,
+) -> LUInt {
     // user readable
     xstore[BASICLU_STATUS] = status as f64;
-    xstore[BASICLU_ADD_MEMORYL] = this.addmemL as f64;
-    xstore[BASICLU_ADD_MEMORYU] = this.addmemU as f64;
-    xstore[BASICLU_ADD_MEMORYW] = this.addmemW as f64;
+    xstore[BASICLU_ADD_MEMORYL] = this.addmem_l as f64;
+    xstore[BASICLU_ADD_MEMORYU] = this.addmem_u as f64;
+    xstore[BASICLU_ADD_MEMORYW] = this.addmem_w as f64;
 
     xstore[BASICLU_NUPDATE] = this.nupdate as f64;
     xstore[BASICLU_NFORREST] = this.nforrest as f64;
@@ -468,9 +469,9 @@ pub(crate) fn lu_save(
     xstore[BASICLU_NUPDATE_TOTAL] = this.nupdate_total as f64;
     xstore[BASICLU_NFORREST_TOTAL] = this.nforrest_total as f64;
     xstore[BASICLU_NSYMPERM_TOTAL] = this.nsymperm_total as f64;
-    xstore[BASICLU_LNZ] = this.Lnz as f64;
-    xstore[BASICLU_UNZ] = this.Unz as f64;
-    xstore[BASICLU_RNZ] = this.Rnz as f64;
+    xstore[BASICLU_LNZ] = this.l_nz as f64;
+    xstore[BASICLU_UNZ] = this.u_nz as f64;
+    xstore[BASICLU_RNZ] = this.r_nz as f64;
     xstore[BASICLU_MIN_PIVOT] = this.min_pivot;
     xstore[BASICLU_MAX_PIVOT] = this.max_pivot;
     xstore[BASICLU_MAX_ETA] = this.max_eta;
@@ -483,15 +484,15 @@ pub(crate) fn lu_save(
     xstore[BASICLU_TIME_FACTORIZE_TOTAL] = this.time_factorize_total;
     xstore[BASICLU_TIME_SOLVE_TOTAL] = this.time_solve_total;
     xstore[BASICLU_TIME_UPDATE_TOTAL] = this.time_update_total;
-    xstore[BASICLU_LFLOPS] = this.Lflops as f64;
-    xstore[BASICLU_UFLOPS] = this.Uflops as f64;
-    xstore[BASICLU_RFLOPS] = this.Rflops as f64;
-    xstore[BASICLU_CONDEST_L] = this.condestL;
-    xstore[BASICLU_CONDEST_U] = this.condestU;
-    xstore[BASICLU_NORM_L] = this.normL;
-    xstore[BASICLU_NORM_U] = this.normU;
-    xstore[BASICLU_NORMEST_LINV] = this.normestLinv;
-    xstore[BASICLU_NORMEST_UINV] = this.normestUinv;
+    xstore[BASICLU_LFLOPS] = this.l_flops as f64;
+    xstore[BASICLU_UFLOPS] = this.u_flops as f64;
+    xstore[BASICLU_RFLOPS] = this.r_flops as f64;
+    xstore[BASICLU_CONDEST_L] = this.condest_l;
+    xstore[BASICLU_CONDEST_U] = this.condest_u;
+    xstore[BASICLU_NORM_L] = this.norm_l;
+    xstore[BASICLU_NORM_U] = this.norm_u;
+    xstore[BASICLU_NORMEST_LINV] = this.normest_l_inv;
+    xstore[BASICLU_NORMEST_UINV] = this.normest_u_inv;
     xstore[BASICLU_MATRIX_ONENORM] = this.onenorm;
     xstore[BASICLU_MATRIX_INFNORM] = this.infnorm;
     xstore[BASICLU_RESIDUAL_TEST] = this.residual_test;
@@ -526,13 +527,13 @@ pub(crate) fn lu_save(
 }
 
 /// Reset @this for a new factorization. Invalidate current factorization.
-pub(crate) fn lu_reset(this: &mut lu) {
+pub(crate) fn lu_reset(this: &mut LU) {
     // user readable
     this.nupdate = -1; // invalidate factorization
     this.nforrest = 0;
-    this.Lnz = 0;
-    this.Unz = 0;
-    this.Rnz = 0;
+    this.l_nz = 0;
+    this.u_nz = 0;
+    this.r_nz = 0;
     this.min_pivot = 0.0;
     this.max_pivot = 0.0;
     this.max_eta = 0.0;
@@ -541,15 +542,15 @@ pub(crate) fn lu_reset(this: &mut lu) {
     this.time_factorize = 0.0;
     this.time_solve = 0.0;
     this.time_update = 0.0;
-    this.Lflops = 0;
-    this.Uflops = 0;
-    this.Rflops = 0;
-    this.condestL = 0.0;
-    this.condestU = 0.0;
-    this.normL = 0.0;
-    this.normU = 0.0;
-    this.normestLinv = 0.0;
-    this.normestUinv = 0.0;
+    this.l_flops = 0;
+    this.u_flops = 0;
+    this.r_flops = 0;
+    this.condest_l = 0.0;
+    this.condest_u = 0.0;
+    this.norm_l = 0.0;
+    this.norm_u = 0.0;
+    this.normest_l_inv = 0.0;
+    this.normest_u_inv = 0.0;
     this.onenorm = 0.0;
     this.infnorm = 0.0;
     this.residual_test = 0.0;
@@ -582,7 +583,7 @@ pub(crate) fn lu_reset(this: &mut lu) {
 
     // One past the final position in @Wend must hold the file size.
     // The file has 2*m lines during factorization.
-    this.Wend[2 * this.m as usize] = this.Wmem;
+    this.w_end[2 * this.m as usize] = this.w_mem;
 
     // The integer workspace iwork0 must be zeroed for a new factorization.
     // The double workspace work0 actually needs only be zeroed once in the

@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 use crate::lu_internal::*;
 use crate::lu_solve_symbolic::lu_solve_symbolic;
 use crate::lu_solve_triangular::lu_solve_triangular;
@@ -8,19 +8,19 @@ use std::mem::size_of;
 use std::time::Instant;
 
 pub(crate) fn lu_solve_sparse(
-    this: &mut lu,
-    nrhs: lu_int,
-    irhs: &[lu_int],
+    this: &mut LU,
+    nrhs: LUInt,
+    irhs: &[LUInt],
     xrhs: &[f64],
-    p_nlhs: &mut lu_int,
-    ilhs: &mut [lu_int],
+    p_nlhs: &mut LUInt,
+    ilhs: &mut [LUInt],
     xlhs: &mut [f64],
     trans: char,
 ) {
     let m = this.m;
     let nforrest = this.nforrest;
     let pivotlen = this.pivotlen;
-    let nz_sparse = (this.sparse_thres as lu_int) * m;
+    let nz_sparse = (this.sparse_thres as LUInt) * m;
     let droptol = this.droptol;
     let p = &p!(this);
     let pmap = &pmap!(this);
@@ -28,24 +28,24 @@ pub(crate) fn lu_solve_sparse(
     let eta_row = &eta_row!(this);
     let pivotcol = &pivotcol!(this);
     let pivotrow = &pivotrow!(this);
-    let Lbegin = &Lbegin!(this);
-    let Ltbegin = &Ltbegin!(this);
-    let Ltbegin_p = &Ltbegin_p!(this);
-    let Ubegin = &this.Ubegin;
-    let Rbegin = &Rbegin!(this);
-    let Wbegin = &this.Wbegin;
-    let Wend = &this.Wend;
+    let l_begin = &l_begin!(this);
+    let lt_begin = &lt_begin!(this);
+    let lt_begin_p = &lt_begin_p!(this);
+    let u_begin = &this.u_begin;
+    let r_begin = &r_begin!(this);
+    let w_begin = &this.w_begin;
+    let w_end = &this.w_end;
     let col_pivot = &this.col_pivot;
     let row_pivot = &this.row_pivot;
-    let Lindex = &this.Lindex;
-    let Lvalue = &this.Lvalue;
-    let Uindex = &this.Uindex;
-    let Uvalue = &this.Uvalue;
-    let Windex = &this.Windex;
-    let Wvalue = &this.Wvalue;
+    let l_index = &this.l_index;
+    let l_value = &this.l_value;
+    let u_index = &this.u_index;
+    let u_value = &this.u_value;
+    let w_index = &this.w_index;
+    let w_value = &this.w_value;
     let marked = &mut marked!(this);
 
-    let (mut Lflops, mut Uflops, mut Rflops) = (0, 0, 0);
+    let (mut l_flops, mut u_flops, mut r_flops) = (0, 0, 0);
     let tic = Instant::now();
 
     if trans == 't' || trans == 'T' {
@@ -57,24 +57,24 @@ pub(crate) fn lu_solve_sparse(
         let work = &mut this.work0;
         // lu_int *pstack = (void *) this.work1;
         let pstack = &mut this.work1;
-        assert!(size_of::<lu_int>() <= size_of::<f64>());
+        assert!(size_of::<LUInt>() <= size_of::<f64>());
 
         // Sparse triangular solve with U'.
         // Solution scattered into work, indices in pattern[0..nz-1].
         // M = ++this.marker;
         this.marker += 1;
-        let M = this.marker;
+        let marker = this.marker;
         let top = lu_solve_symbolic(
             m,
-            Wbegin,
-            Some(Wend),
-            Windex,
+            w_begin,
+            Some(w_end),
+            w_index,
             nrhs,
             irhs,
             pattern_symb,
             pstack,
             marked,
-            M,
+            marker,
         );
         let nz_symb = m - top;
 
@@ -84,29 +84,29 @@ pub(crate) fn lu_solve_sparse(
         let mut nz = lu_solve_triangular(
             nz_symb,
             &pattern_symb[top as usize..],
-            Wbegin,
-            Some(Wend),
-            Windex,
-            Wvalue,
+            w_begin,
+            Some(w_end),
+            w_index,
+            w_value,
             Some(col_pivot),
             droptol,
             work,
             pattern,
-            &mut Uflops,
+            &mut u_flops,
         );
 
         // Permute solution into xlhs.
         // Map pattern from column indices to row indices.
         // M = ++this.marker;
         this.marker += 1;
-        let M = this.marker;
+        let marker = this.marker;
         for n in 0..nz {
             let j = pattern[n as usize];
             let i = pmap[j as usize];
             pattern[n as usize] = i;
             xlhs[i as usize] = work[j as usize];
             work[j as usize] = 0.0;
-            marked[i as usize] = M;
+            marked[i as usize] = marker;
         }
 
         // Solve with update etas.
@@ -116,15 +116,15 @@ pub(crate) fn lu_solve_sparse(
             let ipivot = eta_row[t];
             if xlhs[ipivot as usize] != 0.0 {
                 let x = xlhs[ipivot as usize];
-                for pos in Rbegin[t]..Rbegin[t + 1] {
-                    let i = Lindex[pos as usize];
-                    if marked[i as usize] != M {
-                        marked[i as usize] = M;
+                for pos in r_begin[t]..r_begin[t + 1] {
+                    let i = l_index[pos as usize];
+                    if marked[i as usize] != marker {
+                        marked[i as usize] = marker;
                         pattern[nz as usize] = i;
                         nz += 1;
                     }
-                    xlhs[i as usize] -= x * Lvalue[pos as usize];
-                    Rflops += 1;
+                    xlhs[i as usize] -= x * l_value[pos as usize];
+                    r_flops += 1;
                 }
             }
         }
@@ -134,33 +134,33 @@ pub(crate) fn lu_solve_sparse(
             // Solution scattered into xlhs, indices in ilhs[0..nz-1].
             // M = ++this.marker;
             this.marker += 1;
-            let M = this.marker;
+            let marker = this.marker;
             let top = lu_solve_symbolic(
                 m,
-                Ltbegin,
+                lt_begin,
                 None,
-                Lindex,
+                l_index,
                 nz,
                 pattern,
                 pattern_symb,
                 pstack,
                 marked,
-                M,
+                marker,
             );
             let nz_symb = m - top;
 
             nz = lu_solve_triangular(
                 nz_symb,
                 &pattern_symb[top as usize..],
-                Ltbegin,
+                lt_begin,
                 None,
-                Lindex,
-                Lvalue,
+                l_index,
+                l_value,
                 None,
                 droptol,
                 xlhs,
                 ilhs,
-                &mut Lflops,
+                &mut l_flops,
             );
             *p_nlhs = nz;
         } else {
@@ -172,12 +172,12 @@ pub(crate) fn lu_solve_sparse(
                 let ipivot = p[k as usize];
                 if xlhs[ipivot as usize] != 0.0 {
                     let x = xlhs[ipivot as usize];
-                    // for (pos = Ltbegin_p[k]; (i = Lindex[pos]) >= 0; pos++)
-                    let mut pos = Ltbegin_p[k as usize];
-                    while Lindex[pos as usize] >= 0 {
-                        let i = Lindex[pos as usize];
-                        xlhs[i as usize] -= x * Lvalue[pos as usize];
-                        Lflops += 1;
+                    // for (pos = lt_begin_p[k]; (i = Lindex[pos]) >= 0; pos++)
+                    let mut pos = lt_begin_p[k as usize];
+                    while l_index[pos as usize] >= 0 {
+                        let i = l_index[pos as usize];
+                        xlhs[i as usize] -= x * l_value[pos as usize];
+                        l_flops += 1;
                         pos += 1;
                     }
                     if x.abs() > droptol {
@@ -199,24 +199,24 @@ pub(crate) fn lu_solve_sparse(
         let work = &mut this.work0;
         // lu_int *pstack       = (void *) this.work1;
         let pstack = &mut this.work1;
-        assert!(size_of::<lu_int>() <= size_of::<f64>());
+        assert!(size_of::<LUInt>() <= size_of::<f64>());
 
         // Sparse triangular solve with L.
         // Solution scattered into work, indices in pattern[0..nz-1].
         // M = ++this.marker;
         this.marker += 1;
-        let M = this.marker;
+        let marker = this.marker;
         let top = lu_solve_symbolic(
             m,
-            Lbegin,
+            l_begin,
             None,
-            Lindex,
+            l_index,
             nrhs,
             irhs,
             pattern_symb,
             pstack,
             marked,
-            M,
+            marker,
         );
         let nz_symb = m - top;
 
@@ -226,15 +226,15 @@ pub(crate) fn lu_solve_sparse(
         let mut nz = lu_solve_triangular(
             nz_symb,
             &pattern_symb[top as usize..],
-            Lbegin,
+            l_begin,
             None,
-            Lindex,
-            Lvalue,
+            l_index,
+            l_value,
             None,
             droptol,
             work,
             pattern,
-            &mut Lflops,
+            &mut l_flops,
         );
 
         // unmark cancellation
@@ -258,55 +258,55 @@ pub(crate) fn lu_solve_sparse(
 
         // Solve with update etas.
         // Append fill-in to pattern.
-        let mut pos = Rbegin[0];
+        let mut pos = r_begin[0];
         for t in 0..nforrest as usize {
             let ipivot = eta_row[t];
             let mut x = 0.0;
-            while pos < Rbegin[t + 1] {
-                x += work[Lindex[pos as usize] as usize] * Lvalue[pos as usize];
+            while pos < r_begin[t + 1] {
+                x += work[l_index[pos as usize] as usize] * l_value[pos as usize];
                 pos += 1;
             }
             work[ipivot as usize] -= x;
-            if x != 0.0 && marked[ipivot as usize] != M {
-                marked[ipivot as usize] = M;
+            if x != 0.0 && marked[ipivot as usize] != marker {
+                marked[ipivot as usize] = marker;
                 pattern[nz as usize] = ipivot;
                 nz += 1;
             }
         }
-        Rflops += Rbegin[nforrest as usize] - Rbegin[0];
+        r_flops += r_begin[nforrest as usize] - r_begin[0];
 
         if nz <= nz_sparse {
             // Sparse triangular solve with U.
             // Solution scattered into work, indices in ilhs[0..nz-1].
             // M = ++this.marker;
             this.marker += 1;
-            let M = this.marker;
+            let marker = this.marker;
             let top = lu_solve_symbolic(
                 m,
-                Ubegin,
+                u_begin,
                 None,
-                Uindex,
+                u_index,
                 nz,
                 pattern,
                 pattern_symb,
                 pstack,
                 marked,
-                M,
+                marker,
             );
             let nz_symb = m - top;
 
             nz = lu_solve_triangular(
                 nz_symb,
                 &pattern_symb[top as usize..],
-                Ubegin,
+                u_begin,
                 None,
-                Uindex,
-                Uvalue,
+                u_index,
+                u_value,
                 Some(row_pivot),
                 droptol,
                 work,
                 ilhs,
-                &mut Uflops,
+                &mut u_flops,
             );
 
             // Permute solution into xlhs.
@@ -331,11 +331,11 @@ pub(crate) fn lu_solve_sparse(
                     let x = work[ipivot as usize] / row_pivot[ipivot as usize];
                     work[ipivot as usize] = 0.0;
                     // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-                    let mut pos = Ubegin[ipivot as usize];
-                    while Uindex[pos as usize] >= 0 {
-                        let i = Uindex[pos as usize];
-                        work[i as usize] -= x * Uvalue[pos as usize];
-                        Uflops += 1;
+                    let mut pos = u_begin[ipivot as usize];
+                    while u_index[pos as usize] >= 0 {
+                        let i = u_index[pos as usize];
+                        work[i as usize] -= x * u_value[pos as usize];
+                        u_flops += 1;
                         pos += 1;
                     }
                     if x.abs() > droptol {
@@ -352,8 +352,8 @@ pub(crate) fn lu_solve_sparse(
     let elapsed = tic.elapsed().as_secs_f64();
     this.time_solve += elapsed;
     this.time_solve_total += elapsed;
-    this.Lflops += Lflops;
-    this.Uflops += Uflops;
-    this.Rflops += Rflops;
-    this.update_cost_numer += Rflops as f64;
+    this.l_flops += l_flops;
+    this.u_flops += u_flops;
+    this.r_flops += r_flops;
+    this.update_cost_numer += r_flops as f64;
 }

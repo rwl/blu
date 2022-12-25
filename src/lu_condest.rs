@@ -2,7 +2,7 @@
 //
 // LINPACK condition number estimate
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 
 /// Given m-by-m matrix U such that U[perm,perm] is upper triangular,
 /// return estimate for 1-norm condition number of U.
@@ -12,42 +12,42 @@ use crate::basiclu::lu_int;
 ///  
 /// The other function arguments are the same as in lu_normest().
 pub(crate) fn lu_condest(
-    m: lu_int,
-    Ubegin: &[lu_int],
-    Ui: &[lu_int],
-    Ux: &[f64],
+    m: LUInt,
+    u_begin: &[LUInt],
+    u_i: &[LUInt],
+    u_x: &[f64],
     pivot: Option<&[f64]>,
-    perm: Option<&[lu_int]>,
+    perm: Option<&[LUInt]>,
     upper: i32,
     work: &mut [f64],
     norm: &mut f64,
     norminv: &mut f64,
 ) -> f64 {
     // compute 1-norm of U
-    let mut Unorm = 0.0;
+    let mut u_norm = 0.0;
     for j in 0..m as usize {
         let mut colsum: f64 = if let Some(pivot) = pivot {
             pivot[j].abs()
         } else {
             1.0
         };
-        let mut p = Ubegin[j] as usize;
-        while Ui[p] >= 0 {
-            colsum += Ux[p].abs();
+        let mut p = u_begin[j] as usize;
+        while u_i[p] >= 0 {
+            colsum += u_x[p].abs();
             p += 1;
         }
-        Unorm = f64::max(Unorm, colsum);
+        u_norm = f64::max(u_norm, colsum);
     }
 
     // estimate 1-norm of U^{-1}
-    let Uinvnorm = lu_normest(m, Ubegin, Ui, Ux, pivot, perm, upper, work);
+    let u_invnorm = lu_normest(m, u_begin, u_i, u_x, pivot, perm, upper, work);
 
     // if (norm) *norm = Unorm;
-    *norm = Unorm;
+    *norm = u_norm;
     // if (norminv) *norminv = Uinvnorm;
-    *norminv = Uinvnorm;
+    *norminv = u_invnorm;
 
-    Unorm * Uinvnorm
+    u_norm * u_invnorm
 }
 
 // Given m-by-m matrix U such that U[perm,perm] is triangular,
@@ -58,7 +58,7 @@ pub(crate) fn lu_condest(
 // where the entries of b are +/-1 chosen dynamically to make x large.
 // The method is described in [1].
 //
-// @Ubegin, @Ui, @Ux matrix U in compressed column format without pivots,
+// @u_begin, @u_i, @u_x matrix U in compressed column format without pivots,
 //                   columns are terminated by a negative index
 // @pivot pivot elements by column index of U; NULL if unit pivots
 // @perm permutation to triangular form; NULL if identity
@@ -69,18 +69,18 @@ pub(crate) fn lu_condest(
 //
 // [1] I. Duff, A. Erisman, J. Reid, "Direct Methods for Sparse Matrices"
 pub(crate) fn lu_normest(
-    m: lu_int,
-    Ubegin: &[lu_int],
-    Ui: &[lu_int],
-    Ux: &[f64],
+    m: LUInt,
+    u_begin: &[LUInt],
+    u_i: &[LUInt],
+    u_x: &[f64],
     pivot: Option<&[f64]>,
-    perm: Option<&[lu_int]>,
+    perm: Option<&[LUInt]>,
     upper: i32,
     work: &mut [f64],
 ) -> f64 {
     let mut x1norm = 0.0;
     let mut xinfnorm = 0.0;
-    let (kbeg, kend, kinc): (lu_int, lu_int, lu_int) = if upper != 0 {
+    let (kbeg, kend, kinc): (LUInt, LUInt, LUInt) = if upper != 0 {
         let kbeg = 0;
         let kend = m;
         let kinc = 1;
@@ -99,10 +99,10 @@ pub(crate) fn lu_normest(
             k as usize
         };
         let mut temp = 0.0;
-        // for (p = Ubegin[j]; (i = Ui[p]) >= 0; p++) {
-        let mut p = Ubegin[j] as usize;
-        while Ui[p] >= 0 {
-            temp -= work[Ui[p] as usize] * Ux[p];
+        // for (p = u_begin[j]; (i = u_i[p]) >= 0; p++) {
+        let mut p = u_begin[j] as usize;
+        while u_i[p] >= 0 {
+            temp -= work[u_i[p] as usize] * u_x[p];
             p += 1;
         }
         temp += if temp >= 0.0 { 1.0 } else { -1.0 }; // choose b[i] = 1 or b[i] = -1
@@ -116,7 +116,7 @@ pub(crate) fn lu_normest(
     }
 
     let mut y1norm = 0.0;
-    let (kbeg, kend, kinc): (lu_int, lu_int, lu_int) = if upper != 0 {
+    let (kbeg, kend, kinc): (LUInt, LUInt, LUInt) = if upper != 0 {
         let kbeg = m - 1;
         let kend = -1;
         let kinc = -1;
@@ -139,10 +139,10 @@ pub(crate) fn lu_normest(
             work[j] /= pivot[j];
         }
         let temp = work[j];
-        // for (p = Ubegin[j]; (i = Ui[p]) >= 0; p++) {
-        let mut p = Ubegin[j] as usize;
-        while Ui[p] >= 0 {
-            work[Ui[p] as usize] -= temp * Ux[p];
+        // for (p = u_begin[j]; (i = u_i[p]) >= 0; p++) {
+        let mut p = u_begin[j] as usize;
+        while u_i[p] >= 0 {
+            work[u_i[p] as usize] -= temp * u_x[p];
             p += 1;
         }
         y1norm += temp.abs();

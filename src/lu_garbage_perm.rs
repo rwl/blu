@@ -12,7 +12,7 @@ use crate::lu_internal::*;
 //
 // This routine removes duplicates and compresses the indices such that
 // pivotlen == m.
-pub(crate) fn lu_garbage_perm(this: &mut lu) {
+pub(crate) fn lu_garbage_perm(this: &mut LU) {
     let m = this.m;
     let pivotlen = this.pivotlen;
     let pivotcol = &mut pivotcol!(this);

@@ -1,6 +1,6 @@
 use crate::basiclu::*;
 use crate::lu_file::{lu_file_diff, lu_file_empty};
-use crate::lu_internal::lu;
+use crate::lu_internal::LU;
 use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
 
 /// The bump is composed of rows i and columns j for which pinv[i] < 0 and
@@ -37,18 +37,18 @@ use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
 ///  BASICLU_REALLOCATE  require more memory in W
 ///  BASICLU_OK
 pub(crate) fn lu_setup_bump(
-    this: &mut lu,
-    Bbegin: &[lu_int],
-    Bend: &[lu_int],
-    Bi: &[lu_int],
-    Bx: &[f64],
-) -> lu_int {
+    this: &mut LU,
+    b_begin: &[LUInt],
+    b_end: &[LUInt],
+    b_i: &[LUInt],
+    b_x: &[f64],
+) -> LUInt {
     let m = this.m;
     let rank = this.rank;
-    let Wmem = this.Wmem;
-    let Bnz = this.matrix_nz;
-    let Lnz = this.Lbegin_p[rank as usize] - rank;
-    let Unz = this.Ubegin[rank as usize];
+    let w_mem = this.w_mem;
+    let b_nz = this.matrix_nz;
+    let l_nz = this.l_begin_p[rank as usize] - rank;
+    let u_nz = this.u_begin[rank as usize];
     let abstol = this.abstol;
     let pad = this.pad;
     let stretch = this.stretch;
@@ -62,24 +62,24 @@ pub(crate) fn lu_setup_bump(
     // let Wend = &mut this.Wend;
     // let Wbegin2 = Wbegin + m; /* alias for row file */
     // let Wend2 = Wend + m;
-    let (Wbegin, Wbegin2) = this.Wbegin.split_at_mut(m as usize);
-    let (Wend, Wend2) = this.Wend.split_at_mut(m as usize);
-    let Wflink = &mut this.Wflink;
-    let Wblink = &mut this.Wblink;
-    let Windex = &mut this.Windex;
-    let Wvalue = &mut this.Wvalue;
+    let (w_begin, w_begin2) = this.w_begin.split_at_mut(m as usize);
+    let (w_end, w_end2) = this.w_end.split_at_mut(m as usize);
+    let w_flink = &mut this.w_flink;
+    let w_blink = &mut this.w_blink;
+    let w_index = &mut this.w_index;
+    let w_value = &mut this.w_value;
     let colmax = &mut this.col_pivot;
     let iwork0 = &mut this.iwork0;
 
-    let mut bump_nz = Bnz - Lnz - Unz - rank; // will change if columns are dropped
+    let mut bump_nz = b_nz - l_nz - u_nz - rank; // will change if columns are dropped
 
     // lu_int i, j, pos, put, cnz, rnz, need, min_rownz, min_colnz;
     // double cmx;
     let mut min_rownz = 0;
     let mut min_colnz = 0;
 
-    assert!(Lnz >= 0);
-    assert!(Unz >= 0);
+    assert!(l_nz >= 0);
+    assert!(u_nz >= 0);
     assert!(bump_nz >= 0);
     #[cfg(feature = "debug")]
     for i in 0..m {
@@ -88,14 +88,14 @@ pub(crate) fn lu_setup_bump(
 
     // Calculate memory and reallocate. For each row/column with nz nonzeros
     // add stretch*nz+pad elements extra space for fill-in.
-    let need = bump_nz + (stretch as lu_int) * bump_nz + (m - rank) * pad;
+    let need = bump_nz + (stretch as LUInt) * bump_nz + (m - rank) * pad;
     let need = 2 * need; // rowwise + columnwise
-    if need > Wmem {
-        this.addmemW = need - Wmem;
+    if need > w_mem {
+        this.addmem_w = need - w_mem;
         return BASICLU_REALLOCATE;
     }
 
-    lu_file_empty(2 * m, Wbegin, Wend, Wflink, Wblink, Wmem);
+    lu_file_empty(2 * m, w_begin, w_end, w_flink, w_blink, w_mem);
 
     // Build columnwise storage. Build row counts in iwork0.
     lu_list_init(
@@ -112,12 +112,12 @@ pub(crate) fn lu_setup_bump(
         }
         let mut cnz = 0; // count nz per column
         let mut cmx = 0.0; // find column maximum
-        for pos in Bbegin[j as usize]..Bend[j as usize] {
-            let i = Bi[pos as usize] as usize;
+        for pos in b_begin[j as usize]..b_end[j as usize] {
+            let i = b_i[pos as usize] as usize;
             if pinv[i] >= 0 {
                 continue;
             }
-            cmx = f64::max(cmx, Bx[pos as usize].abs());
+            cmx = f64::max(cmx, b_x[pos as usize].abs());
             cnz += 1;
         }
         if cmx == 0.0 || cmx < abstol {
@@ -143,21 +143,21 @@ pub(crate) fn lu_setup_bump(
                 m,
                 Some(&mut min_colnz),
             );
-            Wbegin[j as usize] = put;
-            for pos in Bbegin[j as usize]..Bend[j as usize] {
-                let i = Bi[pos as usize];
+            w_begin[j as usize] = put;
+            for pos in b_begin[j as usize]..b_end[j as usize] {
+                let i = b_i[pos as usize];
                 if pinv[i as usize] >= 0 {
                     continue;
                 }
-                Windex[put as usize] = i;
-                Wvalue[put as usize] = Bx[pos as usize];
+                w_index[put as usize] = i;
+                w_value[put as usize] = b_x[pos as usize];
                 put += 1;
                 iwork0[i as usize] += 1;
             }
-            Wend[j as usize] = put;
-            put += (stretch as lu_int) * cnz + pad;
+            w_end[j as usize] = put;
+            put += (stretch as LUInt) * cnz + pad;
             // reappend line to list end
-            lu_list_move(j, 0, Wflink, Wblink, 2 * m, None);
+            lu_list_move(j, 0, w_flink, w_blink, 2 * m, None);
         }
     }
 
@@ -184,30 +184,30 @@ pub(crate) fn lu_setup_bump(
             m,
             Some(&mut min_rownz),
         );
-        Wbegin2[i as usize] = put;
-        Wend2[i as usize] = put;
+        w_begin2[i as usize] = put;
+        w_end2[i as usize] = put;
         put += rnz;
         // reappend line to list end
-        lu_list_move(m + i, 0, Wflink, Wblink, 2 * m, None);
-        put += (stretch as lu_int) * rnz + pad;
+        lu_list_move(m + i, 0, w_flink, w_blink, 2 * m, None);
+        put += (stretch as LUInt) * rnz + pad;
     }
     for j in 0..m {
         // fill rows
-        for pos in Wbegin[j as usize]..Wend[j as usize] {
-            let i = Windex[pos as usize] as usize;
-            Windex[Wend2[i] as usize] = j;
-            Wend2[i] += 1;
+        for pos in w_begin[j as usize]..w_end[j as usize] {
+            let i = w_index[pos as usize] as usize;
+            w_index[w_end2[i] as usize] = j;
+            w_end2[i] += 1;
         }
     }
-    Wbegin[(2 * m) as usize] = put; // set beginning of free space
-    assert!(Wbegin[(2 * m) as usize] <= Wend[(2 * m) as usize]);
+    w_begin[(2 * m) as usize] = put; // set beginning of free space
+    assert!(w_begin[(2 * m) as usize] <= w_end[(2 * m) as usize]);
 
     assert_eq!(
-        lu_file_diff(m, Wbegin, Wend, Wbegin2, Wend2, Windex, None),
+        lu_file_diff(m, w_begin, w_end, w_begin2, w_end2, w_index, None),
         0
     );
     assert_eq!(
-        lu_file_diff(m, Wbegin2, Wend2, Wbegin, Wend, Windex, None),
+        lu_file_diff(m, w_begin2, w_end2, w_begin, w_end, w_index, None),
         0
     );
 

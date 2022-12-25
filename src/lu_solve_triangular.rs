@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 
 /// Substitution with triangular matrix.
 ///
@@ -24,19 +24,19 @@ use crate::basiclu::lu_int;
 ///
 /// When end is NULL, then each column must be terminated by a negative index.
 pub(crate) fn lu_solve_triangular(
-    nz_symb: lu_int,
-    pattern_symb: &[lu_int],
-    begin: &[lu_int],
-    end: Option<&[lu_int]>,
-    index: &[lu_int],
+    nz_symb: LUInt,
+    pattern_symb: &[LUInt],
+    begin: &[LUInt],
+    end: Option<&[LUInt]>,
+    index: &[LUInt],
     value: &[f64],
     pivot: Option<&[f64]>,
     droptol: f64,
     lhs: &mut [f64], // solution overwrites RHS
-    pattern: &mut [lu_int],
-    flops: &mut lu_int, // add flop count
-) -> lu_int {
-    let mut nz: lu_int = 0;
+    pattern: &mut [LUInt],
+    flops: &mut LUInt, // add flop count
+) -> LUInt {
+    let mut nz: LUInt = 0;
     let mut flop_count = 0;
 
     if pivot.is_some() && end.is_some() {

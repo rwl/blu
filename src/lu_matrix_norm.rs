@@ -3,15 +3,15 @@
 // Computes the 1-norm and infinity-norm of the matrix that was freshly
 // factorized. Unit cols inserted by the factorization are handled implicitly.
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 use crate::lu_internal::*;
 
 pub(crate) fn lu_matrix_norm(
-    this: &mut lu,
-    Bbegin: &[lu_int],
-    Bend: &[lu_int],
-    Bi: &[lu_int],
-    Bx: &[f64],
+    this: &mut LU,
+    b_begin: &[LUInt],
+    b_end: &[LUInt],
+    b_i: &[LUInt],
+    b_x: &[f64],
 ) {
     let m = this.m;
     let rank = this.rank;
@@ -29,9 +29,9 @@ pub(crate) fn lu_matrix_norm(
     for k in 0..rank {
         let jpivot = pivotcol[k as usize] as usize;
         let mut colsum = 0.0;
-        for pos in Bbegin[jpivot]..Bend[jpivot] {
-            colsum += Bx[pos as usize].abs();
-            rowsum[Bi[pos as usize] as usize] += Bx[pos as usize].abs();
+        for pos in b_begin[jpivot]..b_end[jpivot] {
+            colsum += b_x[pos as usize].abs();
+            rowsum[b_i[pos as usize] as usize] += b_x[pos as usize].abs();
         }
         onenorm = f64::max(onenorm, colsum);
     }

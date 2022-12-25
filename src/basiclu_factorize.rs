@@ -17,7 +17,7 @@ use std::time::Instant;
 ///
 /// Return:
 ///
-///     BASICLU_ERROR_invalid_store if istore, xstore do not hold a BASICLU
+///     BASICLU_ERROR_INVALID_STORE if istore, xstore do not hold a BASICLU
 ///     instance. In this case xstore[BASICLU_STATUS] is not set.
 ///
 ///     Otherwise return the status code. See xstore[BASICLU_STATUS] below.
@@ -30,39 +30,39 @@ use std::time::Instant;
 ///         BASICLU instance. The instance determines the dimension of matrix B
 ///         (stored in xstore[BASICLU_DIM]).
 ///
-///     lu_int Li[]
-///     double Lx[]
-///     lu_int Ui[]
-///     double Ux[]
-///     lu_int Wi[]
-///     double Wx[]
+///     lu_int l_i[]
+///     double l_x[]
+///     lu_int u_i[]
+///     double u_x[]
+///     lu_int w_i[]
+///     double w_x[]
 ///
 ///         Arrays used for workspace during the factorization and to store the
 ///         final factors. They must be allocated by the user and their length
 ///         must be provided as parameters:
 ///
-///             xstore[BASICLU_MEMORYL]: length of Li and Lx
-///             xstore[BASICLU_MEMORYU]: length of Ui and Ux
-///             xstore[BASICLU_MEMORYW]: length of Wi and Wx
+///             xstore[BASICLU_MEMORYL]: length of l_i and l_x
+///             xstore[BASICLU_MEMORYU]: length of u_i and u_x
+///             xstore[BASICLU_MEMORYW]: length of w_i and w_x
 ///
 ///         When the allocated length is insufficient to complete the factorization,
 ///         basiclu_factorize() returns to the caller for reallocation (see
 ///         xstore[BASICLU_STATUS] below). A successful factorization requires at
 ///         least nnz(B) length for each of the arrays.
 ///
-///     const lu_int Bbegin[]
-///     const lu_int Bend[]
-///     const lu_int Bi[]
-///     const double Bx[]
+///     const lu_int b_begin[]
+///     const lu_int b_end[]
+///     const lu_int b_i[]
+///     const double b_x[]
 ///
-///         Matrix B in packed column form. Bi and Bx are arrays of row indices
+///         Matrix B in packed column form. b_i and b_x are arrays of row indices
 ///         and nonzero values. Column j of matrix B contains elements
 ///
-///             Bi[Bbegin[j] .. Bend[j]-1], Bx[Bbegin[j] .. Bend[j]-1].
+///             b_i[b_begin[j] .. b_end[j]-1], b_x[b_begin[j] .. b_end[j]-1].
 ///
-///         The columns must not contain duplicate row indices. The arrays Bbegin
-///         and Bend may overlap, so that it is valid to pass Bp, Bp+1 for a matrix
-///         stored in compressed column form (Bp, Bi, Bx).
+///         The columns must not contain duplicate row indices. The arrays b_begin
+///         and b_end may overlap, so that it is valid to pass Bp, Bp+1 for a matrix
+///         stored in compressed column form (Bp, b_i, b_x).
 ///
 ///     lu_int c0ntinue
 ///
@@ -133,7 +133,7 @@ use std::time::Instant;
 ///
 ///             The factorization has successfully completed.
 ///
-///         BASICLU_WARNING_singular_matrix
+///         BASICLU_WARNING_SINGULAR_MATRIX
 ///
 ///             The factorization did xstore[BASICLU_RANK] < xstore[BASICLU_DIM]
 ///             pivot steps. The remaining elements in the active submatrix are zero
@@ -142,23 +142,23 @@ use std::time::Instant;
 ///             basiclu_get_factors() on how to get the indices of linearly
 ///             dependent columns.
 ///
-///         BASICLU_ERROR_argument_missing
+///         BASICLU_ERROR_ARGUMENT_MISSING
 ///
 ///             One or more of the pointer/array arguments are NULL.
 ///
-///         BASICLU_ERROR_invalid_call
+///         BASICLU_ERROR_INVALID_CALL
 ///
 ///             c0ntinue is nonzero, but the factorization was not started before.
 ///
-///         BASICLU_ERROR_invalid_argument
+///         BASICLU_ERROR_INVALID_ARGUMENT
 ///
 ///             The matrix is invalid (a column has a negative number of entries,
 ///             a row index is out of range, or a column has duplicate entries).
 ///
 ///         BASICLU_REALLOCATE
 ///
-///             Factorization requires more memory in Li,Lx and/or Ui,Ux and/or
-///             Wi,Wx. The number of additional elements in each of the array pairs
+///             Factorization requires more memory in l_i,l_x and/or u_i,u_x and/or
+///             w_i,w_x. The number of additional elements in each of the array pairs
 ///             required for the next pivot operation is given by:
 ///
 ///                 xstore[BASICLU_ADD_MEMORYL] >= 0
@@ -170,9 +170,9 @@ use std::time::Instant;
 ///             of additional elements plus some extra space (e.g. 0.5 times the
 ///             current array length). The new array lengths must be provided in
 ///
-///                 xstore[BASICLU_MEMORYL]: length of Li and Lx
-///                 xstore[BASICLU_MEMORYU]: length of Ui and Ux
-///                 xstore[BASICLU_MEMORYW]: length of Wi and Wx
+///                 xstore[BASICLU_MEMORYL]: length of l_i and l_x
+///                 xstore[BASICLU_MEMORYU]: length of u_i and u_x
+///                 xstore[BASICLU_MEMORYW]: length of w_i and w_x
 ///
 ///             basiclu_factorize() can be called again with c0ntinue not equal to
 ///             zero to continue the factorization.
@@ -212,7 +212,7 @@ use std::time::Instant;
 ///             An estimate for numerical stability of the factorization.
 ///             xstore[BASICLU_RESIDUAL_TEST] is the maximum of the scaled residuals
 ///
-///               ||b-Bx|| / (||b|| + ||B||*||x||)
+///               ||b-b_x|| / (||b|| + ||B||*||x||)
 ///
 ///             and
 ///
@@ -238,21 +238,21 @@ use std::time::Instant;
 ///     xstore[BASICLU_CONDEST_L]
 ///     xstore[BASICLU_CONDEST_U] Estimated 1-norm condition number of L and U.
 pub fn basiclu_factorize(
-    istore: &mut [lu_int],
+    istore: &mut [LUInt],
     xstore: &mut [f64],
-    Li: &mut [lu_int],
-    Lx: &mut [f64],
-    Ui: &mut [lu_int],
-    Ux: &mut [f64],
-    Wi: &mut [lu_int],
-    Wx: &mut [f64],
-    Bbegin: &[lu_int],
-    Bend: &[lu_int],
-    Bi: &[lu_int],
-    Bx: &[f64],
-    c0ntinue: lu_int,
-) -> lu_int {
-    let mut this = lu {
+    l_i: &mut [LUInt],
+    l_x: &mut [f64],
+    u_i: &mut [LUInt],
+    u_x: &mut [f64],
+    _w_i: &mut [LUInt],
+    _w_x: &mut [f64],
+    b_begin: &[LUInt],
+    b_end: &[LUInt],
+    b_i: &[LUInt],
+    b_x: &[f64],
+    c0ntinue: LUInt,
+) -> LUInt {
+    let mut this = LU {
         ..Default::default()
     };
     let tic = Instant::now();
@@ -261,19 +261,19 @@ pub fn basiclu_factorize(
         &mut this,
         // istore,
         xstore,
-        // Some(Li),
-        // Some(Lx),
-        // Some(Ui),
-        // Some(Ux),
-        // Some(Wi),
-        // Some(Wx),
+        // Some(l_i),
+        // Some(l_x),
+        // Some(u_i),
+        // Some(u_x),
+        // Some(w_i),
+        // Some(w_x),
     );
     if status != BASICLU_OK {
         return status;
     }
 
-    // if !(Li && Lx && Ui && Ux && Wi && Wx && Bbegin && Bend && Bi && Bx) {
-    //     let status = BASICLU_ERROR_argument_missing;
+    // if !(l_i && l_x && u_i && u_x && w_i && w_x && b_begin && b_end && b_i && b_x) {
+    //     let status = BASICLU_ERROR_ARGUMENT_MISSING;
     //     return lu_save(&this, istore, xstore, status);
     // }
     if c0ntinue == 0 {
@@ -283,11 +283,11 @@ pub fn basiclu_factorize(
 
     fn return_to_caller(
         tic: Instant,
-        this: &mut lu,
-        _istore: &mut [lu_int],
+        this: &mut LU,
+        _istore: &mut [LUInt],
         xstore: &mut [f64],
-        status: lu_int,
-    ) -> lu_int {
+        status: LUInt,
+    ) -> LUInt {
         let elapsed = tic.elapsed().as_secs_f64();
         this.time_factorize += elapsed;
         this.time_factorize_total += elapsed;
@@ -298,13 +298,13 @@ pub fn basiclu_factorize(
     match this.task {
         SINGLETONS => {
             // this.task = SINGLETONS;
-            let status = lu_singletons(&mut this, Bbegin, Bend, Bi, Bx);
+            let status = lu_singletons(&mut this, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
 
             this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx);
+            let status = lu_setup_bump(&mut this, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
@@ -317,7 +317,7 @@ pub fn basiclu_factorize(
         }
         SETUP_BUMP => {
             // this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, Bbegin, Bend, Bi, Bx);
+            let status = lu_setup_bump(&mut this, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
                 return return_to_caller(tic, &mut this, istore, xstore, status);
             }
@@ -337,7 +337,7 @@ pub fn basiclu_factorize(
         }
         BUILD_FACTORS => {}
         _ => {
-            let status = BASICLU_ERROR_invalid_call;
+            let status = BASICLU_ERROR_INVALID_CALL;
             return lu_save(&this, /*istore,*/ xstore, status);
         }
     };
@@ -355,37 +355,37 @@ pub fn basiclu_factorize(
     this.btran_for_update = -1;
     this.nfactorize += 1;
 
-    this.condestL = lu_condest(
+    this.condest_l = lu_condest(
         this.m,
-        &Lbegin!(this),
+        &l_begin!(this),
         // this.Lindex.as_ref().unwrap(),
         // this.Lvalue.as_ref().unwrap(),
-        Li,
-        Lx,
+        l_i,
+        l_x,
         None,
         Some(&p!(this)),
         0,
         &mut this.work1,
-        &mut this.normL,
-        &mut this.normestLinv,
+        &mut this.norm_l,
+        &mut this.normest_l_inv,
     );
-    this.condestU = lu_condest(
+    this.condest_u = lu_condest(
         this.m,
-        &this.Ubegin,
+        &this.u_begin,
         // this.Uindex.as_ref().unwrap(),
         // this.Uvalue.as_ref().unwrap(),
-        Ui,
-        Ux,
+        u_i,
+        u_x,
         Some(&this.row_pivot),
         Some(&p!(this)),
         1,
         &mut this.work1,
-        &mut this.normU,
-        &mut this.normestUinv,
+        &mut this.norm_u,
+        &mut this.normest_u_inv,
     );
 
     // measure numerical stability of the factorization
-    lu_residual_test(&mut this, Bbegin, Bend, Bi, Bx);
+    lu_residual_test(&mut this, b_begin, b_end, b_i, b_x);
 
     // factor_cost is a deterministic measure of the factorization cost.
     // The parameters have been adjusted such that (on my computer)
@@ -415,7 +415,7 @@ pub fn basiclu_factorize(
     }
 
     if this.rank < this.m {
-        let status = BASICLU_WARNING_singular_matrix;
+        let status = BASICLU_WARNING_SINGULAR_MATRIX;
         return_to_caller(tic, &mut this, istore, xstore, status);
     }
 

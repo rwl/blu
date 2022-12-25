@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2017  ERGO-Code
 
 use crate::basiclu::*;
-use crate::basiclu_object::basiclu_object;
+use crate::basiclu_object::BasicLUObject;
 use crate::{basiclu_obj_factorize, basiclu_obj_solve_for_update, basiclu_obj_update};
 
 /// Purpose:
@@ -21,29 +21,29 @@ use crate::{basiclu_obj_factorize, basiclu_obj_solve_for_update, basiclu_obj_upd
 ///
 /// Return:
 ///
-///     BASICLU_ERROR_invalid_argument when volumetol is less than 1.0.
-///     BASICLU_ERROR_out_of_memory when memory allocation in this function failed.
+///     BASICLU_ERROR_INVALID_ARGUMENT when volumetol is less than 1.0.
+///     BASICLU_ERROR_OUT_OF_MEMORY when memory allocation in this function failed.
 ///
 ///     The return code from a basiclu_obj_* function called when not BASICLU_OK.
-///     (Note that BASICLU_WARNING_singular_matrix means that the algorithm failed.)
+///     (Note that BASICLU_WARNING_SINGULAR_MATRIX means that the algorithm failed.)
 ///
 ///     BASICLU_OK otherwise.
 ///
 /// Arguments:
 ///
-///     struct basiclu_object *obj
+///     struct BasicLUObject *obj
 ///
 ///         Pointer to an initialized BASICLU object. The dimension of the object
 ///         specifies the number of rows of the matrix.
 ///
 ///     lu_int ncol
-///     const lu_int Ap[ncol+1]
-///     const lu_int Ai[]
-///     const double Ax[]
+///     const lu_int a_p[ncol+1]
+///     const lu_int a_i[]
+///     const double a_x[]
 ///
 ///         Matrix A in compressed sparse column format. Column j contains elements
 ///
-///             Ai[Ap[j] .. Ap[j+1]-1], Ax[Ap[j] .. Ap[j+1]-1].
+///             a_i[a_p[j] .. a_p[j+1]-1], a_x[a_p[j] .. a_p[j+1]-1].
 ///
 ///         The columns must not contain duplicate row indices. The row indices per
 ///         column need not be sorted.
@@ -53,7 +53,7 @@ use crate::{basiclu_obj_factorize, basiclu_obj_solve_for_update, basiclu_obj_upd
 ///         On entry holds the column indices of A that form the initial basis. On
 ///         return holds the updated basis. A basis defines a square nonsingular
 ///         submatrix of A. If the initial basis is (numerically) singular, then the
-///         initial LU factorization will fail and BASICLU_WARNING_singular_matrix
+///         initial LU factorization will fail and BASICLU_WARNING_SINGULAR_MATRIX
 ///         is returned.
 ///
 ///    lu_int isbasic[ncol]
@@ -85,16 +85,16 @@ use crate::{basiclu_obj_factorize, basiclu_obj_solve_for_update, basiclu_obj_upd
 ///         increment to obj.xstore[BASICLU_NUPDATE_TOTAL] caused by the call to
 ///         basiclu_obj_maxvolume().
 pub fn basiclu_obj_maxvolume(
-    obj: &mut basiclu_object,
-    ncol: lu_int,
-    Ap: &[lu_int],
-    Ai: &[lu_int],
-    Ax: &[f64],
-    basis: &mut [lu_int],
-    isbasic: &mut [lu_int],
+    obj: &mut BasicLUObject,
+    ncol: LUInt,
+    a_p: &[LUInt],
+    a_i: &[LUInt],
+    a_x: &[f64],
+    basis: &mut [LUInt],
+    isbasic: &mut [LUInt],
     volumetol: f64,
-    p_nupdate: Option<&mut lu_int>,
-) -> lu_int {
+    p_nupdate: Option<&mut LUInt>,
+) -> LUInt {
     // one pass over columns of A doing basis updates
     //
     // For each column a_j not in B, compute lhs = B^{-1}*a_j and find the maximum
@@ -106,7 +106,7 @@ pub fn basiclu_obj_maxvolume(
     let mut status = BASICLU_OK;
 
     if volumetol < 1.0 {
-        status = BASICLU_ERROR_invalid_argument;
+        status = BASICLU_ERROR_INVALID_ARGUMENT;
         // goto_cleanup();
         if let Some(p_nupdate) = p_nupdate {
             *p_nupdate = nupdate;
@@ -115,7 +115,7 @@ pub fn basiclu_obj_maxvolume(
     }
 
     // Compute initial factorization.
-    status = factorize(obj, Ap, Ai, Ax, basis);
+    status = factorize(obj, a_p, a_i, a_x, basis);
     if status != BASICLU_OK {
         // goto_cleanup;
         if let Some(p_nupdate) = p_nupdate {
@@ -130,9 +130,10 @@ pub fn basiclu_obj_maxvolume(
         }
 
         // compute B^{-1}*a_j
-        let nzrhs = Ap[(j + 1) as usize] - Ap[j as usize];
-        let begin = Ap[j as usize] as usize;
-        status = basiclu_obj_solve_for_update(obj, nzrhs, &Ai[begin..], Some(&Ax[begin..]), 'N', 1);
+        let nzrhs = a_p[(j + 1) as usize] - a_p[j as usize];
+        let begin = a_p[j as usize] as usize;
+        status =
+            basiclu_obj_solve_for_update(obj, nzrhs, &a_i[begin..], Some(&a_x[begin..]), 'N', 1);
         if status != BASICLU_OK {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
@@ -184,7 +185,7 @@ pub fn basiclu_obj_maxvolume(
             return status;
         }
 
-        status = refactorize_if_needed(obj, Ap, Ai, Ax, basis);
+        status = refactorize_if_needed(obj, a_p, a_i, a_x, basis);
         if status != BASICLU_OK {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
@@ -202,31 +203,31 @@ pub fn basiclu_obj_maxvolume(
 
 // factorize A[:,basis]
 fn factorize(
-    obj: &mut basiclu_object,
-    Ap: &[lu_int],
-    Ai: &[lu_int],
-    Ax: &[f64],
-    basis: &[lu_int],
-) -> lu_int {
+    obj: &mut BasicLUObject,
+    a_p: &[LUInt],
+    a_i: &[LUInt],
+    a_x: &[f64],
+    basis: &[LUInt],
+) -> LUInt {
     let xstore = &obj.xstore;
-    let m = xstore[BASICLU_DIM] as lu_int;
+    let m = xstore[BASICLU_DIM] as LUInt;
     // lu_int *begin = NULL;
     // lu_int *end = NULL;
     // lu_int i, status = BASICLU_OK;
-    let mut status = BASICLU_OK;
+    // let mut status = BASICLU_OK;
 
     let mut begin = vec![0; m as usize];
     let mut end = vec![0; m as usize];
     // if (!begin || !end) {
-    //     status = BASICLU_ERROR_out_of_memory;
+    //     status = BASICLU_ERROR_OUT_OF_MEMORY;
     //     goto cleanup;
     // }
     for i in 0..m {
-        begin[i as usize] = Ap[basis[i as usize] as usize];
-        end[i as usize] = Ap[basis[i as usize] as usize + 1];
+        begin[i as usize] = a_p[basis[i as usize] as usize];
+        end[i as usize] = a_p[basis[i as usize] as usize + 1];
     }
 
-    basiclu_obj_factorize(obj, &begin, &end, Ai, Ax)
+    basiclu_obj_factorize(obj, &begin, &end, a_i, a_x)
 }
 
 // refactorize the basis if required or favourable
@@ -240,12 +241,12 @@ fn factorize(
 //
 // Note: refactorize_if_needed() will not do an initial factorization.
 fn refactorize_if_needed(
-    obj: &mut basiclu_object,
-    Ap: &[lu_int],
-    Ai: &[lu_int],
-    Ax: &[f64],
-    basis: &[lu_int],
-) -> lu_int {
+    obj: &mut BasicLUObject,
+    a_p: &[LUInt],
+    a_i: &[LUInt],
+    a_x: &[f64],
+    basis: &[LUInt],
+) -> LUInt {
     let mut status = BASICLU_OK;
     let piverr_tol = 1e-8;
     let xstore = &obj.xstore;
@@ -254,7 +255,7 @@ fn refactorize_if_needed(
         || xstore[BASICLU_PIVOT_ERROR] > piverr_tol
         || xstore[BASICLU_UPDATE_COST] > 1.0
     {
-        status = factorize(obj, Ap, Ai, Ax, basis);
+        status = factorize(obj, a_p, a_i, a_x, basis);
     }
     status
 }

@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::{lu_int, BASICLU_ERROR_invalid_call, BASICLU_OK};
-use crate::lu_internal::{lu, lu_load, lu_save};
+use crate::basiclu::{LUInt, BASICLU_ERROR_INVALID_CALL, BASICLU_OK};
+use crate::lu_internal::{lu_load, lu_save, LU};
 use crate::lu_update::lu_update;
 
 /// Purpose:
@@ -20,7 +20,7 @@ use crate::lu_update::lu_update;
 ///
 /// Return:
 ///
-///     BASICLU_ERROR_invalid_store if istore, xstore do not hold a BASICLU
+///     BASICLU_ERROR_INVALID_STORE if istore, xstore do not hold a BASICLU
 ///     instance. In this case xstore[BASICLU_STATUS] is not set.
 ///
 ///     Otherwise return the status code. See xstore[BASICLU_STATUS] below.
@@ -29,12 +29,12 @@ use crate::lu_update::lu_update;
 ///
 ///     lu_int istore[]
 ///     double xstore[]
-///     lu_int Li[]
-///     double Lx[]
-///     lu_int Ui[]
-///     double Ux[]
-///     lu_int Wi[]
-///     double Wx[]
+///     lu_int l_i[]
+///     double l_x[]
+///     lu_int u_i[]
+///     double u_x[]
+///     lu_int w_i[]
+///     double w_x[]
 ///
 ///         Factorization computed by basiclu_factorize() or basiclu_update().
 ///
@@ -54,9 +54,9 @@ use crate::lu_update::lu_update;
 ///
 /// Parameters:
 ///
-///     xstore[BASICLU_MEMORYL]: length of Li and Lx
-///     xstore[BASICLU_MEMORYU]: length of Ui and Ux
-///     xstore[BASICLU_MEMORYW]: length of Wi and Wx
+///     xstore[BASICLU_MEMORYL]: length of l_i and l_x
+///     xstore[BASICLU_MEMORYU]: length of u_i and u_x
+///     xstore[BASICLU_MEMORYW]: length of w_i and w_x
 ///
 ///     xstore[BASICLU_DROP_TOLERANCE]
 ///
@@ -71,32 +71,32 @@ use crate::lu_update::lu_update;
 ///
 ///             The update has successfully completed.
 ///
-///         BASICLU_ERROR_argument_missing
+///         BASICLU_ERROR_ARGUMENT_MISSING
 ///
 ///             One or more of the pointer/array arguments are NULL.
 ///
-///         BASICLU_ERROR_invalid_call
+///         BASICLU_ERROR_INVALID_CALL
 ///
 ///             The factorization is invalid or the update was not prepared by two
 ///             calls to basiclu_solve_for_update().
 ///
 ///         BASICLU_REALLOCATE
 ///
-///             Insufficient memory in Wi,Wx. The number of additional elements
+///             Insufficient memory in w_i,w_x. The number of additional elements
 ///             required is given by
 ///
 ///                 xstore[BASICLU_ADD_MEMORYW] > 0
 ///
-///             The user must reallocate Wi,Wx. It is recommended to reallocate for
+///             The user must reallocate w_i,w_x. It is recommended to reallocate for
 ///             the requested number of additional elements plus some extra space
 ///             for further updates (e.g. 0.5 times the current array length). The
 ///             new array length must be provided in
 ///
-///                 xstore[BASICLU_MEMORYW]: length of Wi and Wx
+///                 xstore[BASICLU_MEMORYW]: length of w_i and w_x
 ///
 ///             basiclu_update will start from scratch in the next call.
 ///
-///         BASICLU_ERROR_singular_update
+///         BASICLU_ERROR_SINGULAR_UPDATE
 ///
 ///             The updated factorization would be (numerically) singular. No update
 ///             has been computed and the old factorization is still valid.
@@ -115,17 +115,17 @@ use crate::lu_update::lu_update;
 ///         Forrest-Tomlin update. A large value, say > 1e6, indicates that pivoting
 ///         on diagonal element was unstable and refactorization might be necessary.
 pub fn basiclu_update(
-    istore: &mut [lu_int],
+    _istore: &mut [LUInt],
     xstore: &mut [f64],
-    Li: &mut [lu_int],
-    Lx: &mut [f64],
-    Ui: &mut [lu_int],
-    Ux: &mut [f64],
-    Wi: &mut [lu_int],
-    Wx: &mut [f64],
+    _l_i: &mut [LUInt],
+    _l_x: &mut [f64],
+    _u_i: &mut [LUInt],
+    _u_x: &mut [f64],
+    _w_i: &mut [LUInt],
+    _w_x: &mut [f64],
     xtbl: f64,
-) -> lu_int {
-    let mut this = lu {
+) -> LUInt {
+    let mut this = LU {
         ..Default::default()
     };
 
@@ -133,22 +133,22 @@ pub fn basiclu_update(
         &mut this,
         // istore,
         xstore,
-        // Some(Li.to_vec()), // FIXME
-        // Some(Lx.to_vec()),
-        // Some(Ui.to_vec()),
-        // Some(Ux.to_vec()),
-        // Some(Wi.to_vec()),
-        // Some(Wx.to_vec()),
+        // Some(l_i.to_vec()), // FIXME
+        // Some(l_x.to_vec()),
+        // Some(u_i.to_vec()),
+        // Some(u_x.to_vec()),
+        // Some(w_i.to_vec()),
+        // Some(w_x.to_vec()),
     );
     if status != BASICLU_OK {
         return status;
     }
 
-    // if (! (Li && Lx && Ui && Ux && Wi && Wx)) {
-    //     status = BASICLU_ERROR_argument_missing;
+    // if (! (l_i && l_x && u_i && u_x && w_i && w_x)) {
+    //     status = BASICLU_ERROR_ARGUMENT_MISSING;
     // }
     let status = if this.nupdate < 0 || this.ftran_for_update < 0 || this.btran_for_update < 0 {
-        BASICLU_ERROR_invalid_call
+        BASICLU_ERROR_INVALID_CALL
     } else {
         lu_update(&mut this, xtbl)
     };

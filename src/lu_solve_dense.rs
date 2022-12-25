@@ -1,10 +1,10 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 use crate::lu_garbage_perm::lu_garbage_perm;
 use crate::lu_internal::*;
 
-pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans: char) {
+pub(crate) fn lu_solve_dense(this: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) {
     lu_garbage_perm(this);
     assert_eq!(this.pivotlen, this.m);
 
@@ -14,20 +14,20 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
     let eta_row = &eta_row!(this);
     let pivotcol = &pivotcol!(this);
     let pivotrow = &pivotrow!(this);
-    let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = &Ltbegin_p!(this);
-    let Ubegin = &this.Ubegin;
-    let Rbegin = &Rbegin!(this);
-    let Wbegin = &this.Wbegin;
-    let Wend = &this.Wend;
+    let l_begin_p = &this.l_begin_p;
+    let lt_begin_p = &lt_begin_p!(this);
+    let u_begin = &this.u_begin;
+    let r_begin = &r_begin!(this);
+    let w_begin = &this.w_begin;
+    let w_end = &this.w_end;
     let col_pivot = &this.col_pivot;
     let row_pivot = &this.row_pivot;
-    let Lindex = &this.Lindex;
-    let Lvalue = &this.Lvalue;
-    let Uindex = &this.Uindex;
-    let Uvalue = &this.Uvalue;
-    let Windex = &this.Windex;
-    let Wvalue = &this.Wvalue;
+    let l_index = &this.l_index;
+    let l_value = &this.l_value;
+    let u_index = &this.u_index;
+    let u_value = &this.u_value;
+    let w_index = &this.w_index;
+    let w_value = &this.w_value;
     let work1 = &mut this.work1;
 
     if trans == 't' || trans == 'T' {
@@ -41,8 +41,8 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
             let jpivot = pivotcol[k as usize] as usize;
             let ipivot = pivotrow[k as usize] as usize;
             let x = work1[jpivot] / col_pivot[jpivot];
-            for pos in Wbegin[jpivot]..Wend[jpivot] {
-                work1[Windex[pos as usize] as usize] -= x * Wvalue[pos as usize];
+            for pos in w_begin[jpivot]..w_end[jpivot] {
+                work1[w_index[pos as usize] as usize] -= x * w_value[pos as usize];
             }
             lhs[ipivot] = x;
         }
@@ -52,9 +52,9 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
         for t in (0..nforrest).rev() {
             let ipivot = eta_row[t as usize];
             let x = lhs[ipivot as usize];
-            for pos in Rbegin[t as usize]..Rbegin[(t + 1) as usize] {
-                let i = Lindex[pos as usize] as usize;
-                lhs[i] -= x * Lvalue[pos as usize];
+            for pos in r_begin[t as usize]..r_begin[(t + 1) as usize] {
+                let i = l_index[pos as usize] as usize;
+                lhs[i] -= x * l_value[pos as usize];
             }
         }
 
@@ -63,10 +63,10 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
         for k in (0..m).rev() {
             let mut x = 0.0;
             // for (pos = Lbegin_p[k]; (i = Lindex[pos]) >= 0; pos++)
-            let mut pos = Lbegin_p[k as usize] as usize;
-            while Lindex[pos] >= 0 {
-                let i = Lindex[pos];
-                x += lhs[i as usize] * Lvalue[pos];
+            let mut pos = l_begin_p[k as usize] as usize;
+            while l_index[pos] >= 0 {
+                let i = l_index[pos];
+                x += lhs[i as usize] * l_value[pos];
                 pos += 1;
             }
             lhs[p[k as usize] as usize] -= x;
@@ -80,22 +80,22 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
         // Solve with L.
         for k in 0..m {
             let mut x = 0.0;
-            let mut pos = Ltbegin_p[k as usize] as usize;
-            while Lindex[pos] >= 0 {
-                let i = Lindex[pos];
-                x += work1[i as usize] * Lvalue[pos];
+            let mut pos = lt_begin_p[k as usize] as usize;
+            while l_index[pos] >= 0 {
+                let i = l_index[pos];
+                x += work1[i as usize] * l_value[pos];
                 pos += 1;
             }
             work1[p[k as usize] as usize] -= x;
         }
 
         // Solve with update ETAs.
-        let mut pos = Rbegin[0];
+        let mut pos = r_begin[0];
         for t in 0..nforrest as usize {
             let ipivot = eta_row[t];
             let mut x = 0.0;
-            while pos < Rbegin[t + 1] {
-                x += work1[Lindex[pos as usize] as usize] * Lvalue[pos as usize];
+            while pos < r_begin[t + 1] {
+                x += work1[l_index[pos as usize] as usize] * l_value[pos as usize];
                 pos += 1;
             }
             work1[ipivot as usize] -= x;
@@ -108,10 +108,10 @@ pub(crate) fn lu_solve_dense(this: &mut lu, rhs: &[f64], lhs: &mut [f64], trans:
             let ipivot = pivotrow[k as usize] as usize;
             let x = work1[ipivot] / row_pivot[ipivot];
             // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-            let mut pos = Ubegin[ipivot] as usize;
-            while Uindex[pos] >= 0 {
-                let i = Uindex[pos];
-                work1[i as usize] -= x * Uvalue[pos];
+            let mut pos = u_begin[ipivot] as usize;
+            while u_index[pos] >= 0 {
+                let i = u_index[pos];
+                work1[i as usize] -= x * u_value[pos];
                 pos += 1;
             }
             lhs[jpivot] = x;

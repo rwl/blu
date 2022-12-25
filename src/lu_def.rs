@@ -1,20 +1,20 @@
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 
-pub(crate) const BASICLU_HASH: lu_int = 7743090; // hash in istore[0], xstore[0]
+pub(crate) const BASICLU_HASH: LUInt = 7743090; // hash in istore[0], xstore[0]
 
-pub(crate) const NO_TASK: lu_int = 0;
-pub(crate) const SINGLETONS: lu_int = 1;
-pub(crate) const SETUP_BUMP: lu_int = 2;
-pub(crate) const FACTORIZE_BUMP: lu_int = 3;
-pub(crate) const BUILD_FACTORS: lu_int = 4;
+pub(crate) const NO_TASK: LUInt = 0;
+pub(crate) const SINGLETONS: LUInt = 1;
+pub(crate) const SETUP_BUMP: LUInt = 2;
+pub(crate) const FACTORIZE_BUMP: LUInt = 3;
+pub(crate) const BUILD_FACTORS: LUInt = 4;
 
-pub(crate) fn lu_iswap(x: &mut [lu_int], i: lu_int, j: lu_int) {
+pub(crate) fn lu_iswap(x: &mut [LUInt], i: LUInt, j: LUInt) {
     let t = x[i as usize];
     x[i as usize] = x[j as usize];
     x[j as usize] = t;
 }
 
-pub(crate) fn lu_fswap(x: &mut [f64], i: lu_int, j: lu_int) {
+pub(crate) fn lu_fswap(x: &mut [f64], i: LUInt, j: LUInt) {
     let t = x[i as usize];
     x[i as usize] = x[j as usize];
     x[j as usize] = t;

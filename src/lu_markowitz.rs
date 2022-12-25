@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2019  ERGO-Code
 
 use crate::basiclu::*;
-use crate::lu_internal::lu;
+use crate::lu_internal::LU;
 use crate::lu_list::lu_list_move;
 use std::time::Instant;
 
@@ -30,12 +30,12 @@ use std::time::Instant;
 ///
 /// [1] U. Suhl, L. Suhl, "Computing Sparse LU Factorizations for Large-Scale
 ///     Linear Programming Bases", ORSA Journal on Computing (1990)
-pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
+pub(crate) fn lu_markowitz(this: &mut LU) -> LUInt {
     let m = this.m;
-    let Wbegin = &this.Wbegin;
-    let Wend = &this.Wend;
-    let Windex = &this.Windex;
-    let Wvalue = &this.Wvalue;
+    let w_begin = &this.w_begin;
+    let w_end = &this.w_end;
+    let w_index = &this.w_index;
+    let w_value = &this.w_value;
     let colcount_flink = &this.colcount_flink;
     let rowcount_flink = &mut this.rowcount_flink;
     let rowcount_blink = &mut this.rowcount_blink;
@@ -45,7 +45,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
     let maxsearch = this.maxsearch;
     let search_rows = this.search_rows;
     let nz_start = if search_rows != 0 {
-        lu_int::min(this.min_colnz, this.min_rownz)
+        LUInt::min(this.min_colnz, this.min_rownz)
     } else {
         this.min_colnz
     };
@@ -55,13 +55,13 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
     // double cmx, x, tol, tic[2];
 
     // integers for Markowitz cost must be 64 bit to prevent overflow
-    let M = m as int_least64_t;
+    let m64 = m as IntLeast64;
 
     // lu_tic(tic);
     let tic = Instant::now();
     let mut pivot_row = -1; // row of best pivot so far
     let mut pivot_col = -1; // col of best pivot so far
-    let mut MC: int_least64_t = M * M; // Markowitz cost of best pivot so far
+    let mut mc64: IntLeast64 = m64 * m64; // Markowitz cost of best pivot so far
     let mut nsearch = 0; // count rows/columns searched
     let mut min_colnz = -1; // minimum col count in active submatrix
     let mut min_rownz = -1; // minimum row count in active submatrix
@@ -72,7 +72,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
     if colcount_flink[m as usize] != m {
         pivot_col = colcount_flink[m as usize];
         assert!(pivot_col >= 0 && pivot_col < m);
-        assert_eq!(Wend[pivot_col as usize], Wbegin[pivot_col as usize]);
+        assert_eq!(w_end[pivot_col as usize], w_begin[pivot_col as usize]);
         return done(
             this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
         );
@@ -85,29 +85,29 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
             if min_colnz == -1 {
                 min_colnz = nz;
             }
-            assert_eq!(Wend[j as usize] - Wbegin[j as usize], nz);
+            assert_eq!(w_end[j as usize] - w_begin[j as usize], nz);
             let cmx = colmax[j as usize];
             assert!(cmx >= 0.0);
             if cmx == 0.0 || cmx < abstol {
                 continue;
             }
             let tol = f64::max(abstol, reltol * cmx);
-            for pos in Wbegin[j as usize]..Wend[j as usize] {
-                let x = Wvalue[pos as usize].abs();
+            for pos in w_begin[j as usize]..w_end[j as usize] {
+                let x = w_value[pos as usize].abs();
                 if x == 0.0 || x < tol {
                     continue;
                 }
-                let i = Windex[pos as usize];
+                let i = w_index[pos as usize];
                 assert!(i >= 0 && i < m);
-                let nz1: int_least64_t = nz;
-                let nz2: int_least64_t = Wend[(m + i) as usize] - Wbegin[(m + i) as usize];
+                let nz1: IntLeast64 = nz;
+                let nz2: IntLeast64 = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
                 assert!(nz2 >= 1);
-                let mc: int_least64_t = (nz1 - 1) * (nz2 - 1);
-                if mc < MC {
-                    MC = mc;
+                let mc: IntLeast64 = (nz1 - 1) * (nz2 - 1);
+                if mc < mc64 {
+                    mc64 = mc;
                     pivot_row = i;
                     pivot_col = j;
-                    if search_rows != 0 && MC <= (nz1 - 1) * (nz1 - 1) {
+                    if search_rows != 0 && mc64 <= (nz1 - 1) * (nz1 - 1) {
                         return done(
                             this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
                         );
@@ -115,7 +115,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
                 }
             }
             // We have seen at least one eligible pivot in column j.
-            assert!(MC < M * M);
+            assert!(mc64 < m64 * m64);
             // if (++nsearch >= maxsearch) {
             nsearch += 1;
             if nsearch >= maxsearch {
@@ -139,17 +139,17 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
             }
             // rowcount_flink[i] might be changed below, so keep a copy
             let inext = rowcount_flink[i as usize];
-            assert_eq!(Wend[(m + i) as usize] - Wbegin[(m + i) as usize], nz);
+            assert_eq!(w_end[(m + i) as usize] - w_begin[(m + i) as usize], nz);
             let mut cheap = 0; // row has entries with Markowitz cost < MC?
             let mut found = 0; // eligible pivot found?
-            for pos in Wbegin[(m + i) as usize]..Wend[(m + i) as usize] {
-                j = Windex[pos as usize];
+            for pos in w_begin[(m + i) as usize]..w_end[(m + i) as usize] {
+                j = w_index[pos as usize];
                 assert!(j >= 0 && j < m);
-                let nz1: int_least64_t = nz;
-                let nz2: int_least64_t = Wend[j as usize] - Wbegin[j as usize];
+                let nz1: IntLeast64 = nz;
+                let nz2: IntLeast64 = w_end[j as usize] - w_begin[j as usize];
                 assert!(nz2 >= 1);
-                let mc: int_least64_t = (nz1 - 1) * (nz2 - 1);
-                if mc >= MC {
+                let mc: IntLeast64 = (nz1 - 1) * (nz2 - 1);
+                if mc >= mc64 {
                     continue;
                 }
                 cheap = 1;
@@ -159,18 +159,18 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
                     continue;
                 }
                 // find position of pivot in column file
-                let mut where_ = Wbegin[j as usize];
-                while Windex[where_ as usize] != i {
-                    assert!(where_ < Wend[j as usize] - 1);
+                let mut where_ = w_begin[j as usize];
+                while w_index[where_ as usize] != i {
+                    assert!(where_ < w_end[j as usize] - 1);
                     where_ += 1;
                 }
-                let x = Wvalue[where_ as usize].abs();
+                let x = w_value[where_ as usize].abs();
                 if x >= abstol && x >= reltol * cmx {
                     found = 1;
-                    MC = mc;
+                    mc64 = mc;
                     pivot_row = i;
                     pivot_col = j;
-                    if MC <= nz1 * (nz1 - 1) {
+                    if mc64 <= nz1 * (nz1 - 1) {
                         return done(
                             this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
                         );
@@ -182,7 +182,7 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
             if cheap != 0 && found == 0 {
                 lu_list_move(i, m + 1, rowcount_flink, rowcount_blink, m, None);
             } else {
-                assert!(MC < M * M);
+                assert!(mc64 < m64 * m64);
                 // if (++nsearch >= maxsearch)
                 nsearch += 1;
                 if nsearch >= maxsearch {
@@ -201,14 +201,14 @@ pub(crate) fn lu_markowitz(this: &mut lu) -> lu_int {
 }
 
 fn done(
-    this: &mut lu,
-    pivot_row: lu_int,
-    pivot_col: lu_int,
-    nsearch: lu_int,
-    min_colnz: lu_int,
-    min_rownz: lu_int,
+    this: &mut LU,
+    pivot_row: LUInt,
+    pivot_col: LUInt,
+    nsearch: LUInt,
+    min_colnz: LUInt,
+    min_rownz: LUInt,
     tic: Instant,
-) -> lu_int {
+) -> LUInt {
     this.pivot_row = pivot_row;
     this.pivot_col = pivot_col;
 

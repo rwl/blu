@@ -2,11 +2,11 @@
 //
 // Stability test of fresh LU factorization based on relative residual.
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 use crate::lu_internal::*;
 use crate::lu_matrix_norm::lu_matrix_norm;
 
-fn lu_onenorm(m: lu_int, x: &[f64]) -> f64 {
+fn lu_onenorm(m: LUInt, x: &[f64]) -> f64 {
     let mut d = 0.0;
     for i in 0..m {
         d += x[i as usize].abs();
@@ -15,25 +15,25 @@ fn lu_onenorm(m: lu_int, x: &[f64]) -> f64 {
 }
 
 pub(crate) fn lu_residual_test(
-    this: &mut lu,
-    Bbegin: &[lu_int],
-    Bend: &[lu_int],
-    Bi: &[lu_int],
-    Bx: &[f64],
+    this: &mut LU,
+    b_begin: &[LUInt],
+    b_end: &[LUInt],
+    b_i: &[LUInt],
+    b_x: &[f64],
 ) {
     let m = this.m;
     let rank = this.rank;
     let p = &p!(this);
     let pivotcol = &pivotcol!(this);
     let pivotrow = &pivotrow!(this);
-    let Lbegin_p = &this.Lbegin_p;
-    let Ltbegin_p = &Ltbegin_p!(this);
-    let Ubegin = &this.Ubegin;
+    let l_begin_p = &this.l_begin_p;
+    let lt_begin_p = &lt_begin_p!(this);
+    let u_begin = &this.u_begin;
     let row_pivot = &this.row_pivot;
-    let Lindex = &this.Lindex;
-    let Lvalue = &this.Lvalue;
-    let Uindex = &this.Uindex;
-    let Uvalue = &this.Uvalue;
+    let l_index = &this.l_index;
+    let l_value = &this.l_value;
+    let u_index = &this.u_index;
+    let u_value = &this.u_value;
     let rhs = &mut this.work0;
     let lhs = &mut this.work1;
 
@@ -47,11 +47,11 @@ pub(crate) fn lu_residual_test(
     // Compute lhs = L\rhs and build rhs on-the-fly.
     for k in 0..m as usize {
         let mut d = 0.0;
-        // for (pos = Ltbegin_p[k]; (i = Lindex[pos]) >= 0; pos++)
-        let mut pos = Ltbegin_p[k] as usize;
-        while Lindex[pos] >= 0 {
-            let i = Lindex[pos];
-            d += lhs[i as usize] * Lvalue[pos];
+        // for (pos = lt_begin_p[k]; (i = Lindex[pos]) >= 0; pos++)
+        let mut pos = lt_begin_p[k] as usize;
+        while l_index[pos] >= 0 {
+            let i = l_index[pos];
+            d += lhs[i as usize] * l_value[pos];
             pos += 1;
         }
         let ipivot = p[k];
@@ -66,10 +66,10 @@ pub(crate) fn lu_residual_test(
         lhs[ipivot as usize] /= row_pivot[ipivot as usize]; // TODO: check
         let d = lhs[ipivot as usize];
         // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-        let mut pos = Ubegin[ipivot as usize] as usize;
-        while Uindex[pos] >= 0 {
-            let i = Uindex[pos];
-            lhs[i as usize] -= d * Uvalue[pos];
+        let mut pos = u_begin[ipivot as usize] as usize;
+        while u_index[pos] >= 0 {
+            let i = u_index[pos];
+            lhs[i as usize] -= d * u_value[pos];
             pos += 1;
         }
     }
@@ -79,8 +79,8 @@ pub(crate) fn lu_residual_test(
         let ipivot = pivotrow[k as usize];
         let jpivot = pivotcol[k as usize];
         let d = lhs[ipivot as usize];
-        for pos in Bbegin[jpivot as usize]..Bend[jpivot as usize] {
-            rhs[Bi[pos as usize] as usize] -= d * Bx[pos as usize];
+        for pos in b_begin[jpivot as usize]..b_end[jpivot as usize] {
+            rhs[b_i[pos as usize] as usize] -= d * b_x[pos as usize];
         }
     }
     for k in rank..m {
@@ -97,10 +97,10 @@ pub(crate) fn lu_residual_test(
         let ipivot = pivotrow[k] as usize;
         let mut d = 0.0;
         // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-        let mut pos = Ubegin[ipivot] as usize;
-        while Uindex[pos] >= 0 {
-            let i = Uindex[pos];
-            d += lhs[i as usize] * Uvalue[pos];
+        let mut pos = u_begin[ipivot] as usize;
+        while u_index[pos] >= 0 {
+            let i = u_index[pos];
+            d += lhs[i as usize] * u_value[pos];
             pos += 1;
         }
         rhs[ipivot] = if d <= 0.0 { 1.0 } else { -1.0 };
@@ -112,10 +112,10 @@ pub(crate) fn lu_residual_test(
     for k in (0..m as usize).rev() {
         let mut d = 0.0;
         // for (pos = Lbegin_p[k]; (i = Lindex[pos]) >= 0; pos++)
-        let mut pos = Lbegin_p[k] as usize;
-        while Lindex[pos] >= 0 {
-            let i = Lindex[pos];
-            d += lhs[i as usize] * Lvalue[pos];
+        let mut pos = l_begin_p[k] as usize;
+        while l_index[pos] >= 0 {
+            let i = l_index[pos];
+            d += lhs[i as usize] * l_value[pos];
             pos += 1;
         }
         lhs[p[k] as usize] -= d;
@@ -126,8 +126,8 @@ pub(crate) fn lu_residual_test(
         let ipivot = pivotrow[k] as usize;
         let jpivot = pivotcol[k] as usize;
         let mut d = 0.0;
-        for pos in Bbegin[jpivot]..Bend[jpivot] {
-            d += lhs[Bi[pos as usize] as usize] * Bx[pos as usize];
+        for pos in b_begin[jpivot]..b_end[jpivot] {
+            d += lhs[b_i[pos as usize] as usize] * b_x[pos as usize];
         }
         rhs[ipivot] -= d;
     }
@@ -140,7 +140,7 @@ pub(crate) fn lu_residual_test(
 
     // Finalize //
 
-    lu_matrix_norm(this, Bbegin, Bend, Bi, Bx);
+    lu_matrix_norm(this, b_begin, b_end, b_i, b_x);
     assert!(this.onenorm > 0.0);
     assert!(this.infnorm > 0.0);
     this.residual_test = f64::max(

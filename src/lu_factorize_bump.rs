@@ -1,11 +1,11 @@
 use crate::basiclu::*;
-use crate::lu_internal::lu;
+use crate::lu_internal::LU;
 use crate::lu_list::lu_list_remove;
 use crate::lu_markowitz::lu_markowitz;
 use crate::lu_pivot::lu_pivot;
 
 /// Bump factorization driver routine.
-pub(crate) fn lu_factorize_bump(this: &mut lu) -> lu_int {
+pub(crate) fn lu_factorize_bump(this: &mut LU) -> LUInt {
     let m = this.m;
     let mut status = BASICLU_OK;
 

@@ -24,17 +24,17 @@
 // k in memory. next[nlines] and prev[nlines] are the first respectively last
 // line in memory order.
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 use crate::lu_list::lu_list_move;
 
 /// Initialize empty file with @fmem memory space.
 pub(crate) fn lu_file_empty(
-    nlines: lu_int,
-    begin: &mut [lu_int],
-    end: &mut [lu_int],
-    next: &mut [lu_int],
-    prev: &mut [lu_int],
-    fmem: lu_int,
+    nlines: LUInt,
+    begin: &mut [LUInt],
+    end: &mut [LUInt],
+    next: &mut [LUInt],
+    prev: &mut [LUInt],
+    fmem: LUInt,
 ) {
     begin[nlines as usize] = 0;
     end[nlines as usize] = fmem;
@@ -53,15 +53,15 @@ pub(crate) fn lu_file_empty(
 /// Reappend line to file end and add @extra_space elements room. The file must
 /// have at least length(line) + @extra_space elements free space.
 pub(crate) fn lu_file_reappend(
-    line: lu_int,
-    nlines: lu_int,
-    begin: &mut [lu_int],
-    end: &mut [lu_int],
-    next: &mut [lu_int],
-    prev: &mut [lu_int],
-    index: &mut [lu_int],
+    line: LUInt,
+    nlines: LUInt,
+    begin: &mut [LUInt],
+    end: &mut [LUInt],
+    next: &mut [LUInt],
+    prev: &mut [LUInt],
+    index: &mut [LUInt],
     value: &mut [f64],
-    extra_space: lu_int,
+    extra_space: LUInt,
 ) {
     let fmem = end[nlines as usize];
     let mut used = begin[nlines as usize];
@@ -89,15 +89,15 @@ pub(crate) fn lu_file_reappend(
 ///
 /// Return: number of entries in file
 pub(crate) fn lu_file_compress(
-    nlines: lu_int,
-    begin: &mut [lu_int],
-    end: &mut [lu_int],
-    next: &[lu_int],
-    index: &mut [lu_int],
+    nlines: LUInt,
+    begin: &mut [LUInt],
+    end: &mut [LUInt],
+    next: &[LUInt],
+    index: &mut [LUInt],
     value: &mut [f64],
     stretch: f64,
-    pad: lu_int,
-) -> lu_int {
+    pad: LUInt,
+) -> LUInt {
     let mut nz = 0;
 
     let mut used = 0;
@@ -119,7 +119,7 @@ pub(crate) fn lu_file_compress(
             used += 1;
         }
         end[i as usize] = used;
-        extra_space = (stretch as lu_int) * (iend - ibeg) + pad;
+        extra_space = (stretch as LUInt) * (iend - ibeg) + pad;
         nz += iend - ibeg;
 
         i = next[i as usize];
@@ -148,14 +148,14 @@ pub(crate) fn lu_file_compress(
 // consistency of rowwise and columnwise storage, the method must be called
 // twice with row pointers and column pointers swapped.
 pub(crate) fn lu_file_diff(
-    nrow: lu_int,
-    begin_row: &[lu_int],
-    end_row: &[lu_int],
-    begin_col: &[lu_int],
-    end_col: &[lu_int],
-    index: &[lu_int],
+    nrow: LUInt,
+    begin_row: &[LUInt],
+    end_row: &[LUInt],
+    begin_col: &[LUInt],
+    end_col: &[LUInt],
+    index: &[LUInt],
     value: Option<&[f64]>,
-) -> lu_int {
+) -> LUInt {
     let mut ndiff = 0;
 
     for i in 0..nrow {

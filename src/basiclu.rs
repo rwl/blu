@@ -9,33 +9,33 @@
 ///
 /// The default is 64 bit integers to make the code easily callable from Julia.
 /// int64_t is optional in the C99 standard, but available on most systems.
-pub type lu_int = i64;
+pub type LUInt = i64;
 pub const LU_INT_MAX: i64 = i64::MAX;
 
-pub type int_least64_t = i64;
+pub type IntLeast64 = i64;
 
 // size of istore
-pub const BASICLU_SIZE_ISTORE_1: lu_int = 1024;
-pub const BASICLU_SIZE_ISTORE_M: lu_int = 21;
+pub const BASICLU_SIZE_ISTORE_1: LUInt = 1024;
+pub const BASICLU_SIZE_ISTORE_M: LUInt = 21;
 
 // size of xstore
-pub const BASICLU_SIZE_XSTORE_1: lu_int = 1024;
-pub const BASICLU_SIZE_XSTORE_M: lu_int = 4;
+pub const BASICLU_SIZE_XSTORE_1: LUInt = 1024;
+pub const BASICLU_SIZE_XSTORE_M: LUInt = 4;
 
 // status codes //
 
-pub const BASICLU_OK: lu_int = 0;
-pub const BASICLU_REALLOCATE: lu_int = 1;
-pub const BASICLU_WARNING_singular_matrix: lu_int = 2;
-pub const BASICLU_ERROR_invalid_store: lu_int = -1;
-pub const BASICLU_ERROR_invalid_call: lu_int = -2;
-pub const BASICLU_ERROR_argument_missing: lu_int = -3;
-pub const BASICLU_ERROR_invalid_argument: lu_int = -4;
-pub const BASICLU_ERROR_maximum_updates: lu_int = -5;
-pub const BASICLU_ERROR_singular_update: lu_int = -6;
+pub const BASICLU_OK: LUInt = 0;
+pub const BASICLU_REALLOCATE: LUInt = 1;
+pub const BASICLU_WARNING_SINGULAR_MATRIX: LUInt = 2;
+pub const BASICLU_ERROR_INVALID_STORE: LUInt = -1;
+pub const BASICLU_ERROR_INVALID_CALL: LUInt = -2;
+pub const BASICLU_ERROR_ARGUMENT_MISSING: LUInt = -3;
+pub const BASICLU_ERROR_INVALID_ARGUMENT: LUInt = -4;
+pub const BASICLU_ERROR_MAXIMUM_UPDATES: LUInt = -5;
+pub const BASICLU_ERROR_SINGULAR_UPDATE: LUInt = -6;
 
-pub const BASICLU_ERROR_invalid_object: lu_int = -8;
-pub const BASICLU_ERROR_out_of_memory: lu_int = -9;
+pub const BASICLU_ERROR_INVALID_OBJECT: LUInt = -8;
+pub const BASICLU_ERROR_OUT_OF_MEMORY: LUInt = -9;
 
 // public entries in xstore //
 

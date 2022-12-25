@@ -2,7 +2,7 @@
 //
 // Depth first search in a graph.
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 
 /// compute reach(i) in a graph by depth first search
 ///
@@ -17,62 +17,62 @@ use crate::basiclu::lu_int;
 /// @pstack is size m workspace (m the number of nodes in the graph); the
 /// contents of pstack is undefined on entry/return.
 ///
-/// @marked is size m array. Node j is marked iff marked[j] == M.
+/// @marked is size m array. Node j is marked iff marked[j] == m.
 /// On return nodes xi[newtop..top-1] are marked.
 ///
 /// If node i is marked on entry, the function does nothing.
 pub(crate) fn lu_dfs(
-    i: lu_int,
-    begin: &[lu_int],
-    end: Option<&[lu_int]>,
-    index: &[lu_int],
-    top: lu_int,
-    xi: &mut [lu_int],
+    i: LUInt,
+    begin: &[LUInt],
+    end: Option<&[LUInt]>,
+    index: &[LUInt],
+    top: LUInt,
+    xi: &mut [LUInt],
     // pstack: &mut [lu_int],
     pstack: &mut [f64],
-    marked: &mut [lu_int],
-    M: lu_int,
-) -> lu_int {
-    if marked[i as usize] == M {
+    marked: &mut [LUInt],
+    m: LUInt,
+) -> LUInt {
+    if marked[i as usize] == m {
         return top;
     }
 
     if let Some(end) = end {
-        dfs_end(i, begin, end, index, top, xi, pstack, marked, M)
+        dfs_end(i, begin, end, index, top, xi, pstack, marked, m)
     } else {
-        dfs(i, begin, index, top, xi, pstack, marked, M)
+        dfs(i, begin, index, top, xi, pstack, marked, m)
     }
 }
 
 // adapted from T. Davis, CSPARSE
 fn dfs_end(
-    mut i: lu_int,
-    begin: &[lu_int],
-    end: &[lu_int],
-    index: &[lu_int],
-    mut top: lu_int,
-    xi: &mut [lu_int],
+    mut i: LUInt,
+    begin: &[LUInt],
+    end: &[LUInt],
+    index: &[LUInt],
+    mut top: LUInt,
+    xi: &mut [LUInt],
     // pstack: &mut [lu_int],
     pstack: &mut [f64],
-    marked: &mut [lu_int],
-    M: lu_int,
-) -> lu_int {
-    let mut head: lu_int = 0;
-    assert_ne!(marked[i as usize], M);
+    marked: &mut [LUInt],
+    m: LUInt,
+) -> LUInt {
+    let mut head: LUInt = 0;
+    assert_ne!(marked[i as usize], m);
 
     xi[0] = i;
     while head >= 0 {
         i = xi[head as usize];
-        if marked[i as usize] != M {
+        if marked[i as usize] != m {
             // node i has not been visited
-            marked[i as usize] = M;
+            marked[i as usize] = m;
             pstack[head as usize] = begin[i as usize] as f64;
         }
         let mut done = 1;
         // continue dfs at node i
-        for p in (pstack[head as usize] as lu_int)..end[i as usize] {
+        for p in (pstack[head as usize] as LUInt)..end[i as usize] {
             let inext = index[p as usize];
-            if marked[inext as usize] == M {
+            if marked[inext as usize] == m {
                 continue; // skip visited node
             }
             pstack[head as usize] = (p + 1) as f64;
@@ -95,34 +95,34 @@ fn dfs_end(
 
 // adapted from T. Davis, CSPARSE
 fn dfs(
-    mut i: lu_int,
-    begin: &[lu_int],
-    index: &[lu_int],
-    mut top: lu_int,
-    xi: &mut [lu_int],
+    mut i: LUInt,
+    begin: &[LUInt],
+    index: &[LUInt],
+    mut top: LUInt,
+    xi: &mut [LUInt],
     // pstack: &mut [lu_int],
     pstack: &mut [f64],
-    marked: &mut [lu_int],
-    M: lu_int,
-) -> lu_int {
-    let mut head: lu_int = 0;
-    assert_ne!(marked[i as usize], M);
+    marked: &mut [LUInt],
+    m: LUInt,
+) -> LUInt {
+    let mut head: LUInt = 0;
+    assert_ne!(marked[i as usize], m);
 
     xi[0] = i;
     while head >= 0 {
         i = xi[head as usize];
-        if marked[i as usize] != M {
+        if marked[i as usize] != m {
             // node i has not been visited
-            marked[i as usize] = M;
+            marked[i as usize] = m;
             pstack[head as usize] = begin[i as usize] as f64;
         }
         let mut done = 1;
         // continue dfs at node i
         // for (p = pstack[head]; (inext = index[p]) >= 0; p++)
-        let mut p = pstack[head as usize] as lu_int;
+        let mut p = pstack[head as usize] as LUInt;
         while index[p as usize] >= 0 {
             let inext = index[p as usize];
-            if marked[inext as usize] == M {
+            if marked[inext as usize] == m {
                 p += 1; // TODO: check
                 continue; // skip visited node
             }

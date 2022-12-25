@@ -21,7 +21,7 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 ///
 /// Return:
 ///
-///     BASICLU_ERROR_invalid_store if istore, xstore do not hold a BASICLU
+///     BASICLU_ERROR_INVALID_STORE if istore, xstore do not hold a BASICLU
 ///     instance. In this case xstore[BASICLU_STATUS] is not set.
 ///
 ///     Otherwise return the status code. See xstore[BASICLU_STATUS] below.
@@ -30,12 +30,12 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 ///
 ///     lu_int istore[]
 ///     double xstore[]
-///     lu_int Li[]
-///     double Lx[]
-///     lu_int Ui[]
-///     double Ux[]
-///     lu_int Wi[]
-///     double Wx[]
+///     lu_int l_i[]
+///     double l_x[]
+///     lu_int u_i[]
+///     double u_x[]
+///     lu_int w_i[]
+///     double w_x[]
 ///
 ///         Factorization computed by basiclu_factorize() or basiclu_update().
 ///
@@ -76,9 +76,9 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 ///
 /// Parameters:
 ///
-///     xstore[BASICLU_MEMORYL]: length of Li and Lx
-///     xstore[BASICLU_MEMORYU]: length of Ui and Ux
-///     xstore[BASICLU_MEMORYW]: length of Wi and Wx
+///     xstore[BASICLU_MEMORYL]: length of l_i and l_x
+///     xstore[BASICLU_MEMORYU]: length of u_i and u_x
+///     xstore[BASICLU_MEMORYW]: length of w_i and w_x
 ///
 ///     xstore[BASICLU_SPARSE_THRESHOLD]
 ///
@@ -112,22 +112,22 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 ///             The updated has been successfully prepared and, if requested, the
 ///             solution to the linear system has been computed.
 ///
-///         BASICLU_ERROR_argument_missing
+///         BASICLU_ERROR_ARGUMENT_MISSING
 ///
 ///             One or more of the mandatory pointer/array arguments are NULL.
 ///
-///         BASICLU_ERROR_invalid_call
+///         BASICLU_ERROR_INVALID_CALL
 ///
 ///             The factorization is invalid.
 ///
-///         BASICLU_ERROR_maximum_updates
+///         BASICLU_ERROR_MAXIMUM_UPDATES
 ///
 ///             There have already been m Forrest-Tomlin updates, see
 ///             xstore[BASICLU_NFORREST]. The factorization cannot be updated any
 ///             more and must be recomputed by basiclu_factorize().
 ///             The solution to the linear system has not been computed.
 ///
-///         BASICLU_ERROR_invalid_argument
+///         BASICLU_ERROR_INVALID_ARGUMENT
 ///
 ///             The right-hand side is invalid (forward system: nzrhs < 0 or
 ///             nzrhs > m or one or more indices out of range; backward system:
@@ -135,8 +135,8 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 ///
 ///         BASICLU_REALLOCATE
 ///
-///             The solve was aborted because of insufficient memory in Li,Lx or
-///             Ui,Ux to store data for basiclu_update(). The number of additional
+///             The solve was aborted because of insufficient memory in l_i,l_x or
+///             u_i,u_x to store data for basiclu_update(). The number of additional
 ///             elements required is given by
 ///
 ///                 xstore[BASICLU_ADD_MEMORYL] >= 0
@@ -148,28 +148,28 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 ///             (e.g. 0.5 times the current array length). The new array lengths
 ///             must be provided in
 ///
-///                 xstore[BASICLU_MEMORYL]: length of Li and Lx
-///                 xstore[BASICLU_MEMORYU]: length of Ui and Ux
+///                 xstore[BASICLU_MEMORYL]: length of l_i and l_x
+///                 xstore[BASICLU_MEMORYU]: length of u_i and u_x
 ///
 ///             basiclu_solve_for_update() will start from scratch in the next call.
 pub fn basiclu_solve_for_update(
-    istore: &mut [lu_int],
+    _istore: &mut [LUInt],
     xstore: &mut [f64],
-    Li: &mut [lu_int],
-    Lx: &mut [f64],
-    Ui: &mut [lu_int],
-    Ux: &mut [f64],
-    Wi: &mut [lu_int],
-    Wx: &mut [f64],
-    nzrhs: lu_int,
-    irhs: &[lu_int],
+    _l_i: &mut [LUInt],
+    _l_x: &mut [f64],
+    _u_i: &mut [LUInt],
+    _u_x: &mut [f64],
+    _w_i: &mut [LUInt],
+    _w_x: &mut [f64],
+    nzrhs: LUInt,
+    irhs: &[LUInt],
     xrhs: Option<&[f64]>,
-    p_nzlhs: Option<&mut lu_int>,
-    ilhs: Option<&mut [lu_int]>,
+    p_nzlhs: Option<&mut LUInt>,
+    ilhs: Option<&mut [LUInt]>,
     lhs: Option<&mut [f64]>,
     trans: char,
-) -> lu_int {
-    let mut this = lu {
+) -> LUInt {
+    let mut this = LU {
         ..Default::default()
     };
     // lu_int status, n, ok;
@@ -178,28 +178,28 @@ pub fn basiclu_solve_for_update(
         &mut this,
         // istore,
         xstore,
-        // Some(Li.to_vec()), // FIXME
-        // Some(Lx.to_vec()),
-        // Some(Ui.to_vec()),
-        // Some(Ux.to_vec()),
-        // Some(Wi.to_vec()),
-        // Some(Wx.to_vec()),
+        // Some(l_i.to_vec()), // FIXME
+        // Some(l_x.to_vec()),
+        // Some(u_i.to_vec()),
+        // Some(u_x.to_vec()),
+        // Some(w_i.to_vec()),
+        // Some(w_x.to_vec()),
     );
     if status != BASICLU_OK {
         return status;
     }
 
-    // if (! (Li && Lx && Ui && Ux && Wi && Wx && irhs)) {
-    //     status = BASICLU_ERROR_argument_missing;
+    // if (! (l_i && l_x && u_i && u_x && w_i && w_x && irhs)) {
+    //     status = BASICLU_ERROR_ARGUMENT_MISSING;
     // }
     let mut status = if trans != 't' && trans != 'T'
     /*&& !xrhs*/
     {
-        BASICLU_ERROR_argument_missing
+        BASICLU_ERROR_ARGUMENT_MISSING
     } else if this.nupdate < 0 {
-        BASICLU_ERROR_invalid_call
+        BASICLU_ERROR_INVALID_CALL
     } else if this.nforrest == this.m {
-        BASICLU_ERROR_maximum_updates
+        BASICLU_ERROR_MAXIMUM_UPDATES
     } else {
         // check RHS indices
         let ok = if trans == 't' || trans == 'T' {
@@ -215,7 +215,7 @@ pub fn basiclu_solve_for_update(
             ok
         };
         if !ok {
-            BASICLU_ERROR_invalid_argument
+            BASICLU_ERROR_INVALID_ARGUMENT
         } else {
             BASICLU_OK
         }

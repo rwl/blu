@@ -2,7 +2,7 @@
 //
 // Symbolic solve with triangular matrix
 
-use crate::basiclu::lu_int;
+use crate::basiclu::LUInt;
 use crate::lu_dfs::lu_dfs;
 
 // The pattern of the right-hand side is given in irhs[0..nrhs-1]. The
@@ -16,23 +16,23 @@ use crate::lu_dfs::lu_dfs;
 // The method is due to J. Gilbert and T. Peierls, "Sparse partial pivoting
 // in time proportional to arithmetic operations", (1988).
 pub(crate) fn lu_solve_symbolic(
-    m: lu_int,
-    begin: &[lu_int],
-    end: Option<&[lu_int]>,
-    index: &[lu_int],
-    nrhs: lu_int,
-    irhs: &[lu_int],
-    ilhs: &mut [lu_int],
+    m: LUInt,
+    begin: &[LUInt],
+    end: Option<&[LUInt]>,
+    index: &[LUInt],
+    nrhs: LUInt,
+    irhs: &[LUInt],
+    ilhs: &mut [LUInt],
     // pstack: &[lu_int], // size m workspace
-    pstack: &mut [f64],    // size m workspace
-    marked: &mut [lu_int], // marked[i] != M on entry
-    M: lu_int,
-) -> lu_int {
+    pstack: &mut [f64],   // size m workspace
+    marked: &mut [LUInt], // marked[i] != M on entry
+    marker: LUInt,
+) -> LUInt {
     let mut top = m;
     for n in 0..nrhs {
-        if marked[irhs[n as usize] as usize] != M {
+        if marked[irhs[n as usize] as usize] != marker {
             let i = irhs[n as usize];
-            top = lu_dfs(i, begin, end, index, top, ilhs, pstack, marked, M);
+            top = lu_dfs(i, begin, end, index, top, ilhs, pstack, marked, marker);
         }
     }
     top
