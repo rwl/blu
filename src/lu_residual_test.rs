@@ -15,32 +15,32 @@ fn lu_onenorm(m: LUInt, x: &[f64]) -> f64 {
 }
 
 pub(crate) fn lu_residual_test(
-    this: &mut LU,
+    lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
     b_i: &[LUInt],
     b_x: &[f64],
 ) {
-    let m = this.m;
-    let rank = this.rank;
-    let p = &p!(this);
-    let pivotcol = &pivotcol!(this);
-    let pivotrow = &pivotrow!(this);
-    let l_begin_p = &this.l_begin_p;
-    let lt_begin_p = &lt_begin_p!(this);
-    let u_begin = &this.u_begin;
-    let row_pivot = &this.row_pivot;
-    let l_index = &this.l_index;
-    let l_value = &this.l_value;
-    let u_index = &this.u_index;
-    let u_value = &this.u_value;
-    let rhs = &mut this.work0;
-    let lhs = &mut this.work1;
+    let m = lu.m;
+    let rank = lu.rank;
+    let p = &p!(lu);
+    let pivotcol = &pivotcol!(lu);
+    let pivotrow = &pivotrow!(lu);
+    let l_begin_p = &lu.l_begin_p;
+    let lt_begin_p = &lt_begin_p!(lu);
+    let u_begin = &lu.u_begin;
+    let row_pivot = &lu.row_pivot;
+    let l_index = &lu.l_index;
+    let l_value = &lu.l_value;
+    let u_index = &lu.u_index;
+    let u_value = &lu.u_value;
+    let rhs = &mut lu.work0;
+    let lhs = &mut lu.work1;
 
     // lu_int i, k, ipivot, jpivot, pos;
     // double norm_ftran, norm_ftran_res, norm_btran, norm_btran_res, d;
 
-    assert_eq!(this.nupdate, 0);
+    assert_eq!(lu.nupdate, 0);
 
     // Residual Test with Forward System //
 
@@ -140,17 +140,17 @@ pub(crate) fn lu_residual_test(
 
     // Finalize //
 
-    lu_matrix_norm(this, b_begin, b_end, b_i, b_x);
-    assert!(this.onenorm > 0.0);
-    assert!(this.infnorm > 0.0);
-    this.residual_test = f64::max(
-        norm_ftran_res / ((m as f64) + this.onenorm * norm_ftran),
-        norm_btran_res / ((m as f64) + this.infnorm * norm_btran),
+    lu_matrix_norm(lu, b_begin, b_end, b_i, b_x);
+    assert!(lu.onenorm > 0.0);
+    assert!(lu.infnorm > 0.0);
+    lu.residual_test = f64::max(
+        norm_ftran_res / ((m as f64) + lu.onenorm * norm_ftran),
+        norm_btran_res / ((m as f64) + lu.infnorm * norm_btran),
     );
 
     // reset workspace
     for i in 0..m {
         // rhs[i as usize] = 0.0;
-        this.work0[i as usize] = 0.0;
+        lu.work0[i as usize] = 0.0;
     }
 }

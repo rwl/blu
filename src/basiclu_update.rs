@@ -125,12 +125,12 @@ pub fn basiclu_update(
     _w_x: &mut [f64],
     xtbl: f64,
 ) -> LUInt {
-    let mut this = LU {
+    let mut lu = LU {
         ..Default::default()
     };
 
     let status = lu_load(
-        &mut this,
+        &mut lu,
         // istore,
         xstore,
         // Some(l_i.to_vec()), // FIXME
@@ -147,10 +147,10 @@ pub fn basiclu_update(
     // if (! (l_i && l_x && u_i && u_x && w_i && w_x)) {
     //     status = BASICLU_ERROR_ARGUMENT_MISSING;
     // }
-    let status = if this.nupdate < 0 || this.ftran_for_update < 0 || this.btran_for_update < 0 {
+    let status = if lu.nupdate < 0 || lu.ftran_for_update < 0 || lu.btran_for_update < 0 {
         BASICLU_ERROR_INVALID_CALL
     } else {
-        lu_update(&mut this, xtbl)
+        lu_update(&mut lu, xtbl)
     };
-    lu_save(&mut this, /*istore,*/ xstore, status)
+    lu_save(&mut lu, /*istore,*/ xstore, status)
 }

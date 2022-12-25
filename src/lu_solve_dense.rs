@@ -4,31 +4,31 @@ use crate::basiclu::LUInt;
 use crate::lu_garbage_perm::lu_garbage_perm;
 use crate::lu_internal::*;
 
-pub(crate) fn lu_solve_dense(this: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) {
-    lu_garbage_perm(this);
-    assert_eq!(this.pivotlen, this.m);
+pub(crate) fn lu_solve_dense(lu: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) {
+    lu_garbage_perm(lu);
+    assert_eq!(lu.pivotlen, lu.m);
 
-    let m = this.m;
-    let nforrest = this.nforrest;
-    let p = &p!(this);
-    let eta_row = &eta_row!(this);
-    let pivotcol = &pivotcol!(this);
-    let pivotrow = &pivotrow!(this);
-    let l_begin_p = &this.l_begin_p;
-    let lt_begin_p = &lt_begin_p!(this);
-    let u_begin = &this.u_begin;
-    let r_begin = &r_begin!(this);
-    let w_begin = &this.w_begin;
-    let w_end = &this.w_end;
-    let col_pivot = &this.col_pivot;
-    let row_pivot = &this.row_pivot;
-    let l_index = &this.l_index;
-    let l_value = &this.l_value;
-    let u_index = &this.u_index;
-    let u_value = &this.u_value;
-    let w_index = &this.w_index;
-    let w_value = &this.w_value;
-    let work1 = &mut this.work1;
+    let m = lu.m;
+    let nforrest = lu.nforrest;
+    let p = &p!(lu);
+    let eta_row = &eta_row!(lu);
+    let pivotcol = &pivotcol!(lu);
+    let pivotrow = &pivotrow!(lu);
+    let l_begin_p = &lu.l_begin_p;
+    let lt_begin_p = &lt_begin_p!(lu);
+    let u_begin = &lu.u_begin;
+    let r_begin = &r_begin!(lu);
+    let w_begin = &lu.w_begin;
+    let w_end = &lu.w_end;
+    let col_pivot = &lu.col_pivot;
+    let row_pivot = &lu.row_pivot;
+    let l_index = &lu.l_index;
+    let l_value = &lu.l_value;
+    let u_index = &lu.u_index;
+    let u_value = &lu.u_value;
+    let w_index = &lu.w_index;
+    let w_value = &lu.w_value;
+    let work1 = &mut lu.work1;
 
     if trans == 't' || trans == 'T' {
         // Solve transposed system

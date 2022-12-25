@@ -7,19 +7,19 @@ use crate::basiclu::LUInt;
 use crate::lu_internal::*;
 
 pub(crate) fn lu_matrix_norm(
-    this: &mut LU,
+    lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
     b_i: &[LUInt],
     b_x: &[f64],
 ) {
-    let m = this.m;
-    let rank = this.rank;
-    let pivotcol = &pivotcol!(this);
-    let pivotrow = &pivotrow!(this);
-    let rowsum = &mut this.work1;
+    let m = lu.m;
+    let rank = lu.rank;
+    let pivotcol = &pivotcol!(lu);
+    let pivotrow = &pivotrow!(lu);
+    let rowsum = &mut lu.work1;
 
-    assert_eq!(this.nupdate, 0);
+    assert_eq!(lu.nupdate, 0);
 
     for i in 0..m {
         rowsum[i as usize] = 0.0;
@@ -44,6 +44,6 @@ pub(crate) fn lu_matrix_norm(
         infnorm = f64::max(infnorm, rowsum[i as usize]);
     }
 
-    this.onenorm = onenorm;
-    this.infnorm = infnorm;
+    lu.onenorm = onenorm;
+    lu.infnorm = infnorm;
 }

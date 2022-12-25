@@ -75,12 +75,12 @@ pub fn basiclu_solve_dense(
     lhs: &mut [f64],
     trans: char,
 ) -> LUInt {
-    let mut this = LU {
+    let mut lu = LU {
         ..Default::default()
     };
 
     let status = lu_load(
-        &mut this,
+        &mut lu,
         // istore,
         xstore,
         // Some(l_i),
@@ -97,12 +97,12 @@ pub fn basiclu_solve_dense(
     // if (! (l_i && l_x && u_i && u_x && w_i && w_x && rhs && lhs)) {
     //     status = BASICLU_ERROR_ARGUMENT_MISSING;
     // }
-    if this.nupdate < 0 {
+    if lu.nupdate < 0 {
         let status = BASICLU_ERROR_INVALID_CALL;
-        return lu_save(&this, /*istore,*/ xstore, status);
+        return lu_save(&lu, /*istore,*/ xstore, status);
     }
 
-    lu_solve_dense(&mut this, rhs, lhs, trans);
+    lu_solve_dense(&mut lu, rhs, lhs, trans);
 
-    lu_save(&this, /*istore,*/ xstore, status)
+    lu_save(&lu, /*istore,*/ xstore, status)
 }

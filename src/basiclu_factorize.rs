@@ -252,13 +252,13 @@ pub fn basiclu_factorize(
     b_x: &[f64],
     c0ntinue: LUInt,
 ) -> LUInt {
-    let mut this = LU {
+    let mut lu = LU {
         ..Default::default()
     };
     let tic = Instant::now();
 
     let status = lu_load(
-        &mut this,
+        &mut lu,
         // istore,
         xstore,
         // Some(l_i),
@@ -274,118 +274,118 @@ pub fn basiclu_factorize(
 
     // if !(l_i && l_x && u_i && u_x && w_i && w_x && b_begin && b_end && b_i && b_x) {
     //     let status = BASICLU_ERROR_ARGUMENT_MISSING;
-    //     return lu_save(&this, istore, xstore, status);
+    //     return lu_save(&lu, istore, xstore, status);
     // }
     if c0ntinue == 0 {
-        lu_reset(&mut this);
-        this.task = SINGLETONS;
+        lu_reset(&mut lu);
+        lu.task = SINGLETONS;
     }
 
     fn return_to_caller(
         tic: Instant,
-        this: &mut LU,
+        lu: &mut LU,
         _istore: &mut [LUInt],
         xstore: &mut [f64],
         status: LUInt,
     ) -> LUInt {
         let elapsed = tic.elapsed().as_secs_f64();
-        this.time_factorize += elapsed;
-        this.time_factorize_total += elapsed;
-        return lu_save(&this, /*istore,*/ xstore, status);
+        lu.time_factorize += elapsed;
+        lu.time_factorize_total += elapsed;
+        return lu_save(&lu, /*istore,*/ xstore, status);
     }
 
     // continue factorization
-    match this.task {
+    match lu.task {
         SINGLETONS => {
-            // this.task = SINGLETONS;
-            let status = lu_singletons(&mut this, b_begin, b_end, b_i, b_x);
+            // lu.task = SINGLETONS;
+            let status = lu_singletons(&mut lu, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut this, istore, xstore, status);
+                return return_to_caller(tic, &mut lu, istore, xstore, status);
             }
 
-            this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, b_begin, b_end, b_i, b_x);
+            lu.task = SETUP_BUMP;
+            let status = lu_setup_bump(&mut lu, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut this, istore, xstore, status);
+                return return_to_caller(tic, &mut lu, istore, xstore, status);
             }
 
-            this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this);
+            lu.task = FACTORIZE_BUMP;
+            let status = lu_factorize_bump(&mut lu);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut this, istore, xstore, status);
+                return return_to_caller(tic, &mut lu, istore, xstore, status);
             }
         }
         SETUP_BUMP => {
-            // this.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut this, b_begin, b_end, b_i, b_x);
+            // lu.task = SETUP_BUMP;
+            let status = lu_setup_bump(&mut lu, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut this, istore, xstore, status);
+                return return_to_caller(tic, &mut lu, istore, xstore, status);
             }
 
-            this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this);
+            lu.task = FACTORIZE_BUMP;
+            let status = lu_factorize_bump(&mut lu);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut this, istore, xstore, status);
+                return return_to_caller(tic, &mut lu, istore, xstore, status);
             }
         }
         FACTORIZE_BUMP => {
-            // this.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut this);
+            // lu.task = FACTORIZE_BUMP;
+            let status = lu_factorize_bump(&mut lu);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut this, istore, xstore, status);
+                return return_to_caller(tic, &mut lu, istore, xstore, status);
             }
         }
         BUILD_FACTORS => {}
         _ => {
             let status = BASICLU_ERROR_INVALID_CALL;
-            return lu_save(&this, /*istore,*/ xstore, status);
+            return lu_save(&lu, /*istore,*/ xstore, status);
         }
     };
 
-    this.task = BUILD_FACTORS;
-    let status = lu_build_factors(&mut this);
+    lu.task = BUILD_FACTORS;
+    let status = lu_build_factors(&mut lu);
     if status != BASICLU_OK {
-        return return_to_caller(tic, &mut this, istore, xstore, status);
+        return return_to_caller(tic, &mut lu, istore, xstore, status);
     }
 
     // factorization successfully finished
-    this.task = NO_TASK;
-    this.nupdate = 0; // make factorization valid
-    this.ftran_for_update = -1;
-    this.btran_for_update = -1;
-    this.nfactorize += 1;
+    lu.task = NO_TASK;
+    lu.nupdate = 0; // make factorization valid
+    lu.ftran_for_update = -1;
+    lu.btran_for_update = -1;
+    lu.nfactorize += 1;
 
-    this.condest_l = lu_condest(
-        this.m,
-        &l_begin!(this),
-        // this.Lindex.as_ref().unwrap(),
-        // this.Lvalue.as_ref().unwrap(),
+    lu.condest_l = lu_condest(
+        lu.m,
+        &l_begin!(lu),
+        // lu.Lindex.as_ref().unwrap(),
+        // lu.Lvalue.as_ref().unwrap(),
         l_i,
         l_x,
         None,
-        Some(&p!(this)),
+        Some(&p!(lu)),
         0,
-        &mut this.work1,
-        &mut this.norm_l,
-        &mut this.normest_l_inv,
+        &mut lu.work1,
+        &mut lu.norm_l,
+        &mut lu.normest_l_inv,
     );
-    this.condest_u = lu_condest(
-        this.m,
-        &this.u_begin,
-        // this.Uindex.as_ref().unwrap(),
-        // this.Uvalue.as_ref().unwrap(),
+    lu.condest_u = lu_condest(
+        lu.m,
+        &lu.u_begin,
+        // lu.Uindex.as_ref().unwrap(),
+        // lu.Uvalue.as_ref().unwrap(),
         u_i,
         u_x,
-        Some(&this.row_pivot),
-        Some(&p!(this)),
+        Some(&lu.row_pivot),
+        Some(&p!(lu)),
         1,
-        &mut this.work1,
-        &mut this.norm_u,
-        &mut this.normest_u_inv,
+        &mut lu.work1,
+        &mut lu.norm_u,
+        &mut lu.normest_u_inv,
     );
 
     // measure numerical stability of the factorization
-    lu_residual_test(&mut this, b_begin, b_end, b_i, b_x);
+    lu_residual_test(&mut lu, b_begin, b_end, b_i, b_x);
 
     // factor_cost is a deterministic measure of the factorization cost.
     // The parameters have been adjusted such that (on my computer)
@@ -398,26 +398,26 @@ pub fn basiclu_factorize(
     //
     // update_cost_denom is fixed here.
     // update_cost_numer is zero here and increased by solves/updates.
-    let factor_cost = 0.04 * (this.m as f64)
-        + 0.07 * (this.matrix_nz as f64)
-        + 0.20 * (this.bump_nz as f64)
-        + 0.20 * (this.nsearch_pivot as f64)
-        + 0.008 * (this.factor_flops as f64);
+    let factor_cost = 0.04 * (lu.m as f64)
+        + 0.07 * (lu.matrix_nz as f64)
+        + 0.20 * (lu.bump_nz as f64)
+        + 0.20 * (lu.nsearch_pivot as f64)
+        + 0.008 * (lu.factor_flops as f64);
 
-    this.update_cost_denom = factor_cost * 250.0;
+    lu.update_cost_denom = factor_cost * 250.0;
 
     if cfg!(feature = "debug") {
-        let elapsed = this.time_factorize + tic.elapsed().as_secs_f64();
+        let elapsed = lu.time_factorize + tic.elapsed().as_secs_f64();
         println!(
             " 1e-6 * factor_cost / time_factorize: {}",
             1e-6 * factor_cost / elapsed,
         );
     }
 
-    if this.rank < this.m {
+    if lu.rank < lu.m {
         let status = BASICLU_WARNING_SINGULAR_MATRIX;
-        return_to_caller(tic, &mut this, istore, xstore, status);
+        return_to_caller(tic, &mut lu, istore, xstore, status);
     }
 
-    return_to_caller(tic, &mut this, istore, xstore, status)
+    return_to_caller(tic, &mut lu, istore, xstore, status)
 }

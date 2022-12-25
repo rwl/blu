@@ -105,29 +105,29 @@ pub fn basiclu_get_factors(
     u_rowidx: Option<&mut [LUInt]>,
     u_value_: Option<&mut [f64]>,
 ) -> LUInt {
-    let mut this = LU {
+    let mut lu = LU {
         ..Default::default()
     };
 
     let status = lu_load(
-        &mut this, /*istore,*/ xstore, /*, l_i, l_x, Ui, Ux, w_i, w_x*/
+        &mut lu, /*istore,*/ xstore, /*, l_i, l_x, Ui, Ux, w_i, w_x*/
     );
     if status != BASICLU_OK {
         return status;
     }
-    if this.nupdate != 0 {
+    if lu.nupdate != 0 {
         let status = BASICLU_ERROR_INVALID_CALL;
-        return lu_save(&this, /*istore,*/ xstore, status);
+        return lu_save(&lu, /*istore,*/ xstore, status);
     }
-    let m = this.m;
+    let m = lu.m;
 
     if let Some(rowperm) = rowperm {
-        // memcpy(rowperm, this.pivotrow, m * sizeof(lu_int));
-        pivotrow!(this).copy_from_slice(rowperm);
+        // memcpy(rowperm, lu.pivotrow, m * sizeof(lu_int));
+        pivotrow!(lu).copy_from_slice(rowperm);
     }
     if let Some(colperm) = colperm {
-        // memcpy(colperm, this.pivotcol, m * sizeof(lu_int));
-        pivotcol!(this).copy_from_slice(colperm);
+        // memcpy(colperm, lu.pivotcol, m * sizeof(lu_int));
+        pivotcol!(lu).copy_from_slice(colperm);
     }
 
     if l_colptr.is_some() && l_rowidx.is_some() && l_value_.is_some() {
@@ -135,14 +135,14 @@ pub fn basiclu_get_factors(
         let l_rowidx = l_rowidx.unwrap();
         let l_value_ = l_value_.unwrap();
 
-        // let Lbegin_p = &this.Lbegin_p;
-        let lt_begin_p = &lt_begin_p!(this);
-        // let Lindex = this.Lindex.as_ref().unwrap();
-        // let Lvalue = this.Lvalue.as_ref().unwrap();
+        // let Lbegin_p = &lu.Lbegin_p;
+        let lt_begin_p = &lt_begin_p!(lu);
+        // let Lindex = lu.Lindex.as_ref().unwrap();
+        // let Lvalue = lu.Lvalue.as_ref().unwrap();
         let l_index = l_i;
         let l_value = l_x;
-        let p = &p!(this);
-        let colptr = &mut iwork1!(this); // size m workspace
+        let p = &p!(lu);
+        let colptr = &mut iwork1!(lu); // size m workspace
 
         // L[:,k] will hold the elimination factors from the k-th pivot step.
         // First set the column pointers and store the unit diagonal elements
@@ -155,11 +155,11 @@ pub fn basiclu_get_factors(
             l_value_[put as usize] = 1.0;
             put += 1;
             colptr[p[k as usize] as usize] = put; // next free position in column
-            put += this.l_begin_p[(k + 1) as usize] - this.l_begin_p[k as usize] - 1;
+            put += lu.l_begin_p[(k + 1) as usize] - lu.l_begin_p[k as usize] - 1;
             // subtract 1 because internal storage uses (-1) terminators
         }
         l_colptr[m as usize] = put;
-        assert_eq!(put, this.l_nz + m);
+        assert_eq!(put, lu.l_nz + m);
 
         for k in 0..m {
             let mut pos = lt_begin_p[k as usize];
@@ -186,15 +186,15 @@ pub fn basiclu_get_factors(
         let u_rowidx = u_rowidx.unwrap();
         let u_value_ = u_value_.unwrap();
 
-        // let Wbegin = &this.Wbegin;
-        // let Wend = &this.Wend;
-        // let Windex = this.Windex.as_ref().unwrap();
-        // let Wvalue = this.Wvalue.as_ref().unwrap();
+        // let Wbegin = &lu.Wbegin;
+        // let Wend = &lu.Wend;
+        // let Windex = lu.Windex.as_ref().unwrap();
+        // let Wvalue = lu.Wvalue.as_ref().unwrap();
         let w_index = w_i;
         let w_value = w_x;
-        // let col_pivot = &this.xstore.col_pivot;
-        let pivotcol = &pivotcol!(this);
-        let colptr = &mut iwork1!(this); // size m workspace
+        // let col_pivot = &lu.xstore.col_pivot;
+        let pivotcol = &pivotcol!(lu);
+        let colptr = &mut iwork1!(lu); // size m workspace
 
         // U[:,k] will hold the column of B from the k-th pivot step.
         // First set the column pointers and store the pivot element at the end
@@ -203,7 +203,7 @@ pub fn basiclu_get_factors(
         // memset(colptr, 0, m*sizeof(lu_int)); /* column counts */
         colptr.fill(0); // column counts
         for j in 0..m {
-            for pos in this.w_begin[j as usize]..this.w_end[j as usize] {
+            for pos in lu.w_begin[j as usize]..lu.w_end[j as usize] {
                 colptr[w_index[pos as usize] as usize] += 1;
             }
         }
@@ -215,15 +215,15 @@ pub fn basiclu_get_factors(
             put += colptr[j as usize];
             colptr[j as usize] = u_colptr[k as usize]; // next free position in column
             u_rowidx[put as usize] = k;
-            u_value_[put as usize] = this.col_pivot[j as usize];
+            u_value_[put as usize] = lu.col_pivot[j as usize];
             put += 1;
         }
         u_colptr[m as usize] = put;
-        assert_eq!(put, this.u_nz + m);
+        assert_eq!(put, lu.u_nz + m);
         for k in 0..m {
             // scatter row k
             let j = pivotcol[k as usize];
-            for pos in this.w_begin[j as usize]..this.w_end[j as usize] {
+            for pos in lu.w_begin[j as usize]..lu.w_end[j as usize] {
                 // put = colptr[Windex[pos]]++;  TODO: check
                 put = colptr[w_index[pos as usize] as usize];
                 colptr[w_index[pos as usize] as usize] += 1;

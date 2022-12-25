@@ -8,7 +8,7 @@ use std::mem::size_of;
 use std::time::Instant;
 
 pub(crate) fn lu_solve_sparse(
-    this: &mut LU,
+    lu: &mut LU,
     nrhs: LUInt,
     irhs: &[LUInt],
     xrhs: &[f64],
@@ -17,33 +17,33 @@ pub(crate) fn lu_solve_sparse(
     xlhs: &mut [f64],
     trans: char,
 ) {
-    let m = this.m;
-    let nforrest = this.nforrest;
-    let pivotlen = this.pivotlen;
-    let nz_sparse = (this.sparse_thres as LUInt) * m;
-    let droptol = this.droptol;
-    let p = &p!(this);
-    let pmap = &pmap!(this);
-    let qmap = &qmap!(this);
-    let eta_row = &eta_row!(this);
-    let pivotcol = &pivotcol!(this);
-    let pivotrow = &pivotrow!(this);
-    let l_begin = &l_begin!(this);
-    let lt_begin = &lt_begin!(this);
-    let lt_begin_p = &lt_begin_p!(this);
-    let u_begin = &this.u_begin;
-    let r_begin = &r_begin!(this);
-    let w_begin = &this.w_begin;
-    let w_end = &this.w_end;
-    let col_pivot = &this.col_pivot;
-    let row_pivot = &this.row_pivot;
-    let l_index = &this.l_index;
-    let l_value = &this.l_value;
-    let u_index = &this.u_index;
-    let u_value = &this.u_value;
-    let w_index = &this.w_index;
-    let w_value = &this.w_value;
-    let marked = &mut marked!(this);
+    let m = lu.m;
+    let nforrest = lu.nforrest;
+    let pivotlen = lu.pivotlen;
+    let nz_sparse = (lu.sparse_thres as LUInt) * m;
+    let droptol = lu.droptol;
+    let p = &p!(lu);
+    let pmap = &pmap!(lu);
+    let qmap = &qmap!(lu);
+    let eta_row = &eta_row!(lu);
+    let pivotcol = &pivotcol!(lu);
+    let pivotrow = &pivotrow!(lu);
+    let l_begin = &l_begin!(lu);
+    let lt_begin = &lt_begin!(lu);
+    let lt_begin_p = &lt_begin_p!(lu);
+    let u_begin = &lu.u_begin;
+    let r_begin = &r_begin!(lu);
+    let w_begin = &lu.w_begin;
+    let w_end = &lu.w_end;
+    let col_pivot = &lu.col_pivot;
+    let row_pivot = &lu.row_pivot;
+    let l_index = &lu.l_index;
+    let l_value = &lu.l_value;
+    let u_index = &lu.u_index;
+    let u_value = &lu.u_value;
+    let w_index = &lu.w_index;
+    let w_value = &lu.w_value;
+    let marked = &mut marked!(lu);
 
     let (mut l_flops, mut u_flops, mut r_flops) = (0, 0, 0);
     let tic = Instant::now();
@@ -51,19 +51,19 @@ pub(crate) fn lu_solve_sparse(
     if trans == 't' || trans == 'T' {
         // Solve transposed system //
 
-        // let pattern_symb = &mut this.iwork1;
-        // let pattern = &mut this.iwork1[m as usize..];
-        let (pattern_symb, pattern) = iwork1!(this).split_at_mut(m as usize);
-        let work = &mut this.work0;
-        // lu_int *pstack = (void *) this.work1;
-        let pstack = &mut this.work1;
+        // let pattern_symb = &mut lu.iwork1;
+        // let pattern = &mut lu.iwork1[m as usize..];
+        let (pattern_symb, pattern) = iwork1!(lu).split_at_mut(m as usize);
+        let work = &mut lu.work0;
+        // lu_int *pstack = (void *) lu.work1;
+        let pstack = &mut lu.work1;
         assert!(size_of::<LUInt>() <= size_of::<f64>());
 
         // Sparse triangular solve with U'.
         // Solution scattered into work, indices in pattern[0..nz-1].
-        // M = ++this.marker;
-        this.marker += 1;
-        let marker = this.marker;
+        // M = ++lu.marker;
+        lu.marker += 1;
+        let marker = lu.marker;
         let top = lu_solve_symbolic(
             m,
             w_begin,
@@ -97,9 +97,9 @@ pub(crate) fn lu_solve_sparse(
 
         // Permute solution into xlhs.
         // Map pattern from column indices to row indices.
-        // M = ++this.marker;
-        this.marker += 1;
-        let marker = this.marker;
+        // M = ++lu.marker;
+        lu.marker += 1;
+        let marker = lu.marker;
         for n in 0..nz {
             let j = pattern[n as usize];
             let i = pmap[j as usize];
@@ -132,9 +132,9 @@ pub(crate) fn lu_solve_sparse(
         if nz <= nz_sparse {
             // Sparse triangular solve with L'.
             // Solution scattered into xlhs, indices in ilhs[0..nz-1].
-            // M = ++this.marker;
-            this.marker += 1;
-            let marker = this.marker;
+            // M = ++lu.marker;
+            lu.marker += 1;
+            let marker = lu.marker;
             let top = lu_solve_symbolic(
                 m,
                 lt_begin,
@@ -193,19 +193,19 @@ pub(crate) fn lu_solve_sparse(
     } else {
         // Solve forward system //
 
-        // let pattern_symb = &mut this.iwork1;
-        // let pattern = &mut this.iwork1[m as usize..];
-        let (pattern_symb, pattern) = iwork1!(this).split_at_mut(m as usize);
-        let work = &mut this.work0;
-        // lu_int *pstack       = (void *) this.work1;
-        let pstack = &mut this.work1;
+        // let pattern_symb = &mut lu.iwork1;
+        // let pattern = &mut lu.iwork1[m as usize..];
+        let (pattern_symb, pattern) = iwork1!(lu).split_at_mut(m as usize);
+        let work = &mut lu.work0;
+        // lu_int *pstack       = (void *) lu.work1;
+        let pstack = &mut lu.work1;
         assert!(size_of::<LUInt>() <= size_of::<f64>());
 
         // Sparse triangular solve with L.
         // Solution scattered into work, indices in pattern[0..nz-1].
-        // M = ++this.marker;
-        this.marker += 1;
-        let marker = this.marker;
+        // M = ++lu.marker;
+        lu.marker += 1;
+        let marker = lu.marker;
         let top = lu_solve_symbolic(
             m,
             l_begin,
@@ -278,9 +278,9 @@ pub(crate) fn lu_solve_sparse(
         if nz <= nz_sparse {
             // Sparse triangular solve with U.
             // Solution scattered into work, indices in ilhs[0..nz-1].
-            // M = ++this.marker;
-            this.marker += 1;
-            let marker = this.marker;
+            // M = ++lu.marker;
+            lu.marker += 1;
+            let marker = lu.marker;
             let top = lu_solve_symbolic(
                 m,
                 u_begin,
@@ -350,10 +350,10 @@ pub(crate) fn lu_solve_sparse(
     }
 
     let elapsed = tic.elapsed().as_secs_f64();
-    this.time_solve += elapsed;
-    this.time_solve_total += elapsed;
-    this.l_flops += l_flops;
-    this.u_flops += u_flops;
-    this.r_flops += r_flops;
-    this.update_cost_numer += r_flops as f64;
+    lu.time_solve += elapsed;
+    lu.time_solve_total += elapsed;
+    lu.l_flops += l_flops;
+    lu.u_flops += u_flops;
+    lu.r_flops += r_flops;
+    lu.update_cost_numer += r_flops as f64;
 }

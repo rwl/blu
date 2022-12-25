@@ -77,34 +77,34 @@ use std::time::Instant;
 ///                                   duplicates)
 /// - BASICLU_OK
 pub(crate) fn lu_singletons(
-    this: &mut LU,
+    lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
     b_i: &[LUInt],
     b_x: &[f64],
 ) -> LUInt {
-    let m = this.m;
-    let l_mem = this.l_mem;
-    let u_mem = this.u_mem;
-    let w_mem = this.w_mem;
-    let abstol = this.abstol;
-    let nzbias = this.nzbias;
-    let pinv = &mut this.pinv;
-    let qinv = &mut this.qinv;
-    let l_begin_p = &mut this.l_begin_p;
-    let u_begin = &mut this.u_begin;
-    let col_pivot = &mut this.col_pivot;
-    let l_index = &mut this.l_index;
-    let l_value = &mut this.l_value;
-    let u_index = &mut this.u_index;
-    let u_value = &mut this.u_value;
-    // let iwork1 = &mut this.iwork1;
+    let m = lu.m;
+    let l_mem = lu.l_mem;
+    let u_mem = lu.u_mem;
+    let w_mem = lu.w_mem;
+    let abstol = lu.abstol;
+    let nzbias = lu.nzbias;
+    let pinv = &mut lu.pinv;
+    let qinv = &mut lu.qinv;
+    let l_begin_p = &mut lu.l_begin_p;
+    let u_begin = &mut lu.u_begin;
+    let col_pivot = &mut lu.col_pivot;
+    let l_index = &mut lu.l_index;
+    let l_value = &mut lu.l_value;
+    let u_index = &mut lu.u_index;
+    let u_value = &mut lu.u_value;
+    // let iwork1 = &mut lu.iwork1;
     // let iwork2 = iwork1 + m;
-    let (iwork1, iwork2) = iwork1!(this).split_at_mut(m as usize);
+    let (iwork1, iwork2) = iwork1!(lu).split_at_mut(m as usize);
 
-    let b_tp = &mut this.w_begin; // build B rowwise in W
-    let b_ti = &mut this.w_index;
-    let b_tx = &mut this.w_value;
+    let b_tp = &mut lu.w_begin; // build B rowwise in W
+    let b_ti = &mut lu.w_index;
+    let b_tx = &mut lu.w_value;
 
     // lu_int i, j, pos, put, rank, Bnz, ok;
     // double tic[2];
@@ -132,15 +132,15 @@ pub(crate) fn lu_singletons(
     // Check if sufficient memory in L, U, W.
     let mut ok = 1;
     if l_mem < b_nz {
-        this.addmem_l = b_nz - l_mem;
+        lu.addmem_l = b_nz - l_mem;
         ok = 0;
     }
     if u_mem < b_nz {
-        this.addmem_u = b_nz - u_mem;
+        lu.addmem_u = b_nz - u_mem;
         ok = 0;
     }
     if w_mem < b_nz {
-        this.addmem_w = b_nz - w_mem;
+        lu.addmem_w = b_nz - w_mem;
         ok = 0;
     }
     if ok == 0 {
@@ -253,9 +253,9 @@ pub(crate) fn lu_singletons(
         }
     }
 
-    this.matrix_nz = b_nz;
-    this.rank = rank;
-    this.time_singletons = tic.elapsed().as_secs_f64();
+    lu.matrix_nz = b_nz;
+    lu.rank = rank;
+    lu.time_singletons = tic.elapsed().as_secs_f64();
     BASICLU_OK
 }
 

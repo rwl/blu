@@ -12,17 +12,17 @@ use crate::lu_internal::*;
 //
 // This routine removes duplicates and compresses the indices such that
 // pivotlen == m.
-pub(crate) fn lu_garbage_perm(this: &mut LU) {
-    let m = this.m;
-    let pivotlen = this.pivotlen;
-    let pivotcol = &mut pivotcol!(this);
-    let pivotrow = &mut pivotrow!(this);
-    let marked = &mut marked!(this);
+pub(crate) fn lu_garbage_perm(lu: &mut LU) {
+    let m = lu.m;
+    let pivotlen = lu.pivotlen;
+    let pivotcol = &mut pivotcol!(lu);
+    let pivotrow = &mut pivotrow!(lu);
+    let marked = &mut marked!(lu);
 
     if pivotlen > m {
-        // marker = ++this.marker;
-        this.marker += 1;
-        let marker = this.marker;
+        // marker = ++lu.marker;
+        lu.marker += 1;
+        let marker = lu.marker;
         let mut put = pivotlen;
         // for (get = pivotlen-1; get >= 0; get--) {
         for get in (0..pivotlen).rev() {
@@ -42,6 +42,6 @@ pub(crate) fn lu_garbage_perm(this: &mut LU) {
         // memmove(pivotrow, pivotrow + put, m * sizeof(lu_int));
         pivotrow.copy_within((put as usize)..(put + m) as usize, 0);
 
-        this.pivotlen = m;
+        lu.pivotlen = m;
     }
 }

@@ -151,64 +151,64 @@ pub struct LU {
 }
 
 macro_rules! pivotcol {
-    ($this:ident) => {
-        $this.colcount_flink
+    ($lu:ident) => {
+        $lu.colcount_flink
     };
 }
 
 macro_rules! pivotrow {
-    ($this:ident) => {
-        $this.colcount_blink
+    ($lu:ident) => {
+        $lu.colcount_blink
     };
 }
 macro_rules! r_begin {
-    ($this:ident) => {
-        $this.rowcount_flink
+    ($lu:ident) => {
+        $lu.rowcount_flink
     };
 }
 macro_rules! eta_row {
-    ($this:ident) => {
-        $this.rowcount_flink
+    ($lu:ident) => {
+        $lu.rowcount_flink
     };
 }
 macro_rules! iwork1 {
-    ($this:ident) => {
-        $this.rowcount_blink
+    ($lu:ident) => {
+        $lu.rowcount_blink
     };
 }
 macro_rules! l_begin {
-    ($this:ident) => {
-        $this.Wbegin[$this.m as usize + 1..]
+    ($lu:ident) => {
+        $lu.Wbegin[$lu.m as usize + 1..]
     };
 }
 macro_rules! lt_begin {
-    ($this:ident) => {
-        $this.Wend[$this.m as usize + 1..]
+    ($lu:ident) => {
+        $lu.Wend[$lu.m as usize + 1..]
     };
 }
 macro_rules! lt_begin_p {
-    ($this:ident) => {
-        $this.Wflink[$this.m as usize + 1..]
+    ($lu:ident) => {
+        $lu.Wflink[$lu.m as usize + 1..]
     };
 }
 macro_rules! p {
-    ($this:ident) => {
-        $this.Wblink[$this.m as usize + 1..]
+    ($lu:ident) => {
+        $lu.Wblink[$lu.m as usize + 1..]
     };
 }
 macro_rules! pmap {
-    ($this:ident) => {
-        $this.pinv
+    ($lu:ident) => {
+        $lu.pinv
     };
 }
 macro_rules! qmap {
-    ($this:ident) => {
-        $this.qinv
+    ($lu:ident) => {
+        $lu.qinv
     };
 }
 macro_rules! marked {
-    ($this:ident) => {
-        $this.iwork0
+    ($lu:ident) => {
+        $lu.iwork0
     };
 }
 
@@ -217,12 +217,12 @@ pub(crate) use {
     r_begin,
 };
 
-/// Initialize @this from @istore, @xstore if these are a valid BASICLU
+/// Initialize @lu from @istore, @xstore if these are a valid BASICLU
 /// instance. The remaining arguments are copied only and can be NULL.
 ///
 /// Return `BASICLU_OK` or `BASICLU_ERROR_INVALID_STORE`
 pub(crate) fn lu_load(
-    this: &mut LU,
+    lu: &mut LU,
     // istore: &[lu_int],
     xstore: &[f64],
     // Li: Option<&[lu_int]>,
@@ -239,20 +239,20 @@ pub(crate) fn lu_load(
     }
 
     // user parameters
-    this.l_mem = xstore[BASICLU_MEMORYL] as LUInt;
-    this.u_mem = xstore[BASICLU_MEMORYU] as LUInt;
-    this.w_mem = xstore[BASICLU_MEMORYW] as LUInt;
-    this.droptol = xstore[BASICLU_DROP_TOLERANCE];
-    this.abstol = xstore[BASICLU_ABS_PIVOT_TOLERANCE];
-    this.reltol = xstore[BASICLU_REL_PIVOT_TOLERANCE];
-    this.reltol = f64::min(this.reltol, 1.0);
-    this.nzbias = xstore[BASICLU_BIAS_NONZEROS] as LUInt;
-    this.maxsearch = xstore[BASICLU_MAXN_SEARCH_PIVOT] as LUInt;
-    this.pad = xstore[BASICLU_PAD] as LUInt;
-    this.stretch = xstore[BASICLU_STRETCH];
-    this.compress_thres = xstore[BASICLU_COMPRESSION_THRESHOLD];
-    this.sparse_thres = xstore[BASICLU_SPARSE_THRESHOLD];
-    this.search_rows = if xstore[BASICLU_SEARCH_ROWS] != 0.0 {
+    lu.l_mem = xstore[BASICLU_MEMORYL] as LUInt;
+    lu.u_mem = xstore[BASICLU_MEMORYU] as LUInt;
+    lu.w_mem = xstore[BASICLU_MEMORYW] as LUInt;
+    lu.droptol = xstore[BASICLU_DROP_TOLERANCE];
+    lu.abstol = xstore[BASICLU_ABS_PIVOT_TOLERANCE];
+    lu.reltol = xstore[BASICLU_REL_PIVOT_TOLERANCE];
+    lu.reltol = f64::min(lu.reltol, 1.0);
+    lu.nzbias = xstore[BASICLU_BIAS_NONZEROS] as LUInt;
+    lu.maxsearch = xstore[BASICLU_MAXN_SEARCH_PIVOT] as LUInt;
+    lu.pad = xstore[BASICLU_PAD] as LUInt;
+    lu.stretch = xstore[BASICLU_STRETCH];
+    lu.compress_thres = xstore[BASICLU_COMPRESSION_THRESHOLD];
+    lu.sparse_thres = xstore[BASICLU_SPARSE_THRESHOLD];
+    lu.search_rows = if xstore[BASICLU_SEARCH_ROWS] != 0.0 {
         1
     } else {
         0
@@ -260,338 +260,338 @@ pub(crate) fn lu_load(
 
     // user readable
     let m = xstore[BASICLU_DIM];
-    this.m = m as LUInt;
-    this.addmem_l = 0;
-    this.addmem_u = 0;
-    this.addmem_w = 0;
+    lu.m = m as LUInt;
+    lu.addmem_l = 0;
+    lu.addmem_u = 0;
+    lu.addmem_w = 0;
 
-    this.nupdate = xstore[BASICLU_NUPDATE] as LUInt;
-    this.nforrest = xstore[BASICLU_NFORREST] as LUInt;
-    this.nfactorize = xstore[BASICLU_NFACTORIZE] as LUInt;
-    this.nupdate_total = xstore[BASICLU_NUPDATE_TOTAL] as LUInt;
-    this.nforrest_total = xstore[BASICLU_NFORREST_TOTAL] as LUInt;
-    this.nsymperm_total = xstore[BASICLU_NSYMPERM_TOTAL] as LUInt;
-    this.l_nz = xstore[BASICLU_LNZ] as LUInt;
-    this.u_nz = xstore[BASICLU_UNZ] as LUInt;
-    this.r_nz = xstore[BASICLU_RNZ] as LUInt;
-    this.min_pivot = xstore[BASICLU_MIN_PIVOT];
-    this.max_pivot = xstore[BASICLU_MAX_PIVOT];
-    this.max_eta = xstore[BASICLU_MAX_ETA];
-    this.update_cost_numer = xstore[BASICLU_UPDATE_COST_NUMER];
-    this.update_cost_denom = xstore[BASICLU_UPDATE_COST_DENOM];
-    this.time_factorize = xstore[BASICLU_TIME_FACTORIZE];
-    this.time_solve = xstore[BASICLU_TIME_SOLVE];
-    this.time_update = xstore[BASICLU_TIME_UPDATE];
-    this.time_factorize_total = xstore[BASICLU_TIME_FACTORIZE_TOTAL];
-    this.time_solve_total = xstore[BASICLU_TIME_SOLVE_TOTAL];
-    this.time_update_total = xstore[BASICLU_TIME_UPDATE_TOTAL];
-    this.l_flops = xstore[BASICLU_LFLOPS] as LUInt;
-    this.u_flops = xstore[BASICLU_UFLOPS] as LUInt;
-    this.r_flops = xstore[BASICLU_RFLOPS] as LUInt;
-    this.condest_l = xstore[BASICLU_CONDEST_L];
-    this.condest_u = xstore[BASICLU_CONDEST_U];
-    this.norm_l = xstore[BASICLU_NORM_L];
-    this.norm_u = xstore[BASICLU_NORM_U];
-    this.normest_l_inv = xstore[BASICLU_NORMEST_LINV];
-    this.normest_u_inv = xstore[BASICLU_NORMEST_UINV];
-    this.onenorm = xstore[BASICLU_MATRIX_ONENORM];
-    this.infnorm = xstore[BASICLU_MATRIX_INFNORM];
-    this.residual_test = xstore[BASICLU_RESIDUAL_TEST];
+    lu.nupdate = xstore[BASICLU_NUPDATE] as LUInt;
+    lu.nforrest = xstore[BASICLU_NFORREST] as LUInt;
+    lu.nfactorize = xstore[BASICLU_NFACTORIZE] as LUInt;
+    lu.nupdate_total = xstore[BASICLU_NUPDATE_TOTAL] as LUInt;
+    lu.nforrest_total = xstore[BASICLU_NFORREST_TOTAL] as LUInt;
+    lu.nsymperm_total = xstore[BASICLU_NSYMPERM_TOTAL] as LUInt;
+    lu.l_nz = xstore[BASICLU_LNZ] as LUInt;
+    lu.u_nz = xstore[BASICLU_UNZ] as LUInt;
+    lu.r_nz = xstore[BASICLU_RNZ] as LUInt;
+    lu.min_pivot = xstore[BASICLU_MIN_PIVOT];
+    lu.max_pivot = xstore[BASICLU_MAX_PIVOT];
+    lu.max_eta = xstore[BASICLU_MAX_ETA];
+    lu.update_cost_numer = xstore[BASICLU_UPDATE_COST_NUMER];
+    lu.update_cost_denom = xstore[BASICLU_UPDATE_COST_DENOM];
+    lu.time_factorize = xstore[BASICLU_TIME_FACTORIZE];
+    lu.time_solve = xstore[BASICLU_TIME_SOLVE];
+    lu.time_update = xstore[BASICLU_TIME_UPDATE];
+    lu.time_factorize_total = xstore[BASICLU_TIME_FACTORIZE_TOTAL];
+    lu.time_solve_total = xstore[BASICLU_TIME_SOLVE_TOTAL];
+    lu.time_update_total = xstore[BASICLU_TIME_UPDATE_TOTAL];
+    lu.l_flops = xstore[BASICLU_LFLOPS] as LUInt;
+    lu.u_flops = xstore[BASICLU_UFLOPS] as LUInt;
+    lu.r_flops = xstore[BASICLU_RFLOPS] as LUInt;
+    lu.condest_l = xstore[BASICLU_CONDEST_L];
+    lu.condest_u = xstore[BASICLU_CONDEST_U];
+    lu.norm_l = xstore[BASICLU_NORM_L];
+    lu.norm_u = xstore[BASICLU_NORM_U];
+    lu.normest_l_inv = xstore[BASICLU_NORMEST_LINV];
+    lu.normest_u_inv = xstore[BASICLU_NORMEST_UINV];
+    lu.onenorm = xstore[BASICLU_MATRIX_ONENORM];
+    lu.infnorm = xstore[BASICLU_MATRIX_INFNORM];
+    lu.residual_test = xstore[BASICLU_RESIDUAL_TEST];
 
-    this.matrix_nz = xstore[BASICLU_MATRIX_NZ] as LUInt;
-    this.rank = xstore[BASICLU_RANK] as LUInt;
-    this.bump_size = xstore[BASICLU_BUMP_SIZE] as LUInt;
-    this.bump_nz = xstore[BASICLU_BUMP_NZ] as LUInt;
-    this.nsearch_pivot = xstore[BASICLU_NSEARCH_PIVOT] as LUInt;
-    this.nexpand = xstore[BASICLU_NEXPAND] as LUInt;
-    this.ngarbage = xstore[BASICLU_NGARBAGE] as LUInt;
-    this.factor_flops = xstore[BASICLU_FACTOR_FLOPS] as LUInt;
-    this.time_singletons = xstore[BASICLU_TIME_SINGLETONS];
-    this.time_search_pivot = xstore[BASICLU_TIME_SEARCH_PIVOT];
-    this.time_elim_pivot = xstore[BASICLU_TIME_ELIM_PIVOT];
+    lu.matrix_nz = xstore[BASICLU_MATRIX_NZ] as LUInt;
+    lu.rank = xstore[BASICLU_RANK] as LUInt;
+    lu.bump_size = xstore[BASICLU_BUMP_SIZE] as LUInt;
+    lu.bump_nz = xstore[BASICLU_BUMP_NZ] as LUInt;
+    lu.nsearch_pivot = xstore[BASICLU_NSEARCH_PIVOT] as LUInt;
+    lu.nexpand = xstore[BASICLU_NEXPAND] as LUInt;
+    lu.ngarbage = xstore[BASICLU_NGARBAGE] as LUInt;
+    lu.factor_flops = xstore[BASICLU_FACTOR_FLOPS] as LUInt;
+    lu.time_singletons = xstore[BASICLU_TIME_SINGLETONS];
+    lu.time_search_pivot = xstore[BASICLU_TIME_SEARCH_PIVOT];
+    lu.time_elim_pivot = xstore[BASICLU_TIME_ELIM_PIVOT];
 
-    this.pivot_error = xstore[BASICLU_PIVOT_ERROR];
+    lu.pivot_error = xstore[BASICLU_PIVOT_ERROR];
 
     // private
-    this.task = xstore[BASICLU_TASK] as LUInt;
-    this.pivot_row = xstore[BASICLU_PIVOT_ROW] as LUInt;
-    this.pivot_col = xstore[BASICLU_PIVOT_COL] as LUInt;
-    this.ftran_for_update = xstore[BASICLU_FTCOLUMN_IN] as LUInt;
-    this.btran_for_update = xstore[BASICLU_FTCOLUMN_OUT] as LUInt;
-    this.marker = xstore[BASICLU_MARKER] as LUInt;
-    this.pivotlen = xstore[BASICLU_PIVOTLEN] as LUInt;
-    this.rankdef = xstore[BASICLU_RANKDEF] as LUInt;
-    this.min_colnz = xstore[BASICLU_MIN_COLNZ] as LUInt;
-    this.min_rownz = xstore[BASICLU_MIN_ROWNZ] as LUInt;
+    lu.task = xstore[BASICLU_TASK] as LUInt;
+    lu.pivot_row = xstore[BASICLU_PIVOT_ROW] as LUInt;
+    lu.pivot_col = xstore[BASICLU_PIVOT_COL] as LUInt;
+    lu.ftran_for_update = xstore[BASICLU_FTCOLUMN_IN] as LUInt;
+    lu.btran_for_update = xstore[BASICLU_FTCOLUMN_OUT] as LUInt;
+    lu.marker = xstore[BASICLU_MARKER] as LUInt;
+    lu.pivotlen = xstore[BASICLU_PIVOTLEN] as LUInt;
+    lu.rankdef = xstore[BASICLU_RANKDEF] as LUInt;
+    lu.min_colnz = xstore[BASICLU_MIN_COLNZ] as LUInt;
+    lu.min_rownz = xstore[BASICLU_MIN_ROWNZ] as LUInt;
 
     // aliases to user arrays
-    // this.Lindex = Li;
-    // this.Lvalue = Lx;
-    // this.Uindex = Ui;
-    // this.Uvalue = Ux;
-    // this.Windex = Wi;
-    // this.Wvalue = Wx;
-    // this.Lindex = match Li {
+    // lu.Lindex = Li;
+    // lu.Lvalue = Lx;
+    // lu.Uindex = Ui;
+    // lu.Uvalue = Ux;
+    // lu.Windex = Wi;
+    // lu.Wvalue = Wx;
+    // lu.Lindex = match Li {
     //     Some(Li) => Some(Li.to_vec()),
     //     None => None,
     // };
-    // this.Lvalue = match Lx {
+    // lu.Lvalue = match Lx {
     //     Some(Lx) => Some(Lx.to_vec()),
     //     None => None,
     // };
-    // this.Uindex = match Ui {
+    // lu.Uindex = match Ui {
     //     Some(Ui) => Some(Ui.to_vec()),
     //     None => None,
     // };
-    // this.Uvalue = match Ux {
+    // lu.Uvalue = match Ux {
     //     Some(Ux) => Some(Ux.to_vec()),
     //     None => None,
     // };
-    // this.Windex = match Wi {
+    // lu.Windex = match Wi {
     //     Some(Wi) => Some(Wi.to_vec()),
     //     None => None,
     // };
-    // this.Wvalue = match Wx {
+    // lu.Wvalue = match Wx {
     //     Some(Wx) => Some(Wx.to_vec()),
     //     None => None,
     // };
 
     // // partition istore for factorize
-    // this.colcount_flink = vec![0; 2 * m as usize + 2];
-    // this.pivotcol = vec![];
+    // lu.colcount_flink = vec![0; 2 * m as usize + 2];
+    // lu.pivotcol = vec![];
     // // iptr += 2 * m + 2;
-    // this.colcount_blink = Some(vec![0; 2 * m as usize + 2]);
+    // lu.colcount_blink = Some(vec![0; 2 * m as usize + 2]);
     // // iptr += 2 * m + 2;
-    // this.rowcount_flink = Some(vec![0; 2 * m as usize + 2]);
+    // lu.rowcount_flink = Some(vec![0; 2 * m as usize + 2]);
     // // iptr += 2 * m + 2;
-    // this.rowcount_blink = Some(vec![0; 2 * m as usize + 2]);
+    // lu.rowcount_blink = Some(vec![0; 2 * m as usize + 2]);
     // // iptr += 2 * m + 2;
-    // this.Wbegin = Some(vec![0; 2 * m as usize + 2]);
+    // lu.Wbegin = Some(vec![0; 2 * m as usize + 2]);
     // // iptr += 2 * m + 1;
-    // this.Wend = Some(vec![0; 2 * m as usize + 2]);
+    // lu.Wend = Some(vec![0; 2 * m as usize + 2]);
     // // iptr += 2 * m + 1;
-    // this.Wflink = Some(vec![0; 2 * m as usize + 2]);
+    // lu.Wflink = Some(vec![0; 2 * m as usize + 2]);
     // // iptr += 2 * m + 1;
-    // this.Wblink = Some(vec![0; 2 * m as usize + 2]);
+    // lu.Wblink = Some(vec![0; 2 * m as usize + 2]);
     // // iptr += 2 * m + 1;
-    // this.pinv = Some(vec![0; m as usize]);
+    // lu.pinv = Some(vec![0; m as usize]);
     // // iptr += m;
-    // this.qinv = Some(vec![0; m as usize]);
+    // lu.qinv = Some(vec![0; m as usize]);
     // // iptr += m;
-    // this.Lbegin_p = vec![0; m as usize + 1];
+    // lu.Lbegin_p = vec![0; m as usize + 1];
     // // iptr += m + 1;
-    // this.Ubegin = vec![0; m as usize + 1];
+    // lu.Ubegin = vec![0; m as usize + 1];
     // // iptr += m + 1;
-    // this.iwork0 = Some(vec![0; m as usize]);
+    // lu.iwork0 = Some(vec![0; m as usize]);
     // // iptr += m;
     //
     // // share istore memory for solve/update
-    // swap(&mut this.pivotcol, &mut this.colcount_flink);
-    // this.pivotrow = this.colcount_blink.take();
-    // this.r_begin = this.rowcount_flink.take(); // FIXME: [..m+1]
-    //                                           // this.eta_row = this.rowcount_flink + m + 1;
-    //                                           // this.eta_row = this.rowcount_flink[m as usize + 1..].to_vec();
-    // this.eta_row = vec![0; m as usize + 1]; // FIXME: rowcount_flink[m+1..]
-    // this.iwork1 = this.rowcount_blink.take();
-    // // this.l_begin = this.Wbegin + m + 1;
-    // // this.l_begin = this.Wbegin[m as usize + 1..].to_vec();
-    // this.l_begin = this.Wbegin.take(); // [m+1..]
-    //                                   // this.lt_begin = this.Wend + m + 1;
-    //                                   // this.lt_begin = this.Wend[m as usize + 1..].to_vec();
-    // this.lt_begin = this.Wend.take(); // [m+1..]
-    //                                  // this.lt_begin_p = this.Wflink + m + 1;
-    //                                  // this.lt_begin_p = this.Wflink[m as usize + 1..].to_vec();
-    // this.lt_begin_p = this.Wflink.take(); // [m+1..]
-    //                                      // this.p = this.Wblink + m + 1;
-    //                                      // this.p = this.Wblink[m as usize + 1..].to_vec();
-    // this.p = this.Wblink.take(); // [m+1..]
-    // this.pmap = this.pinv.take();
-    // this.qmap = this.qinv.take();
-    // this.marked = this.iwork0.take();
+    // swap(&mut lu.pivotcol, &mut lu.colcount_flink);
+    // lu.pivotrow = lu.colcount_blink.take();
+    // lu.r_begin = lu.rowcount_flink.take(); // FIXME: [..m+1]
+    //                                           // lu.eta_row = lu.rowcount_flink + m + 1;
+    //                                           // lu.eta_row = lu.rowcount_flink[m as usize + 1..].to_vec();
+    // lu.eta_row = vec![0; m as usize + 1]; // FIXME: rowcount_flink[m+1..]
+    // lu.iwork1 = lu.rowcount_blink.take();
+    // // lu.l_begin = lu.Wbegin + m + 1;
+    // // lu.l_begin = lu.Wbegin[m as usize + 1..].to_vec();
+    // lu.l_begin = lu.Wbegin.take(); // [m+1..]
+    //                                   // lu.lt_begin = lu.Wend + m + 1;
+    //                                   // lu.lt_begin = lu.Wend[m as usize + 1..].to_vec();
+    // lu.lt_begin = lu.Wend.take(); // [m+1..]
+    //                                  // lu.lt_begin_p = lu.Wflink + m + 1;
+    //                                  // lu.lt_begin_p = lu.Wflink[m as usize + 1..].to_vec();
+    // lu.lt_begin_p = lu.Wflink.take(); // [m+1..]
+    //                                      // lu.p = lu.Wblink + m + 1;
+    //                                      // lu.p = lu.Wblink[m as usize + 1..].to_vec();
+    // lu.p = lu.Wblink.take(); // [m+1..]
+    // lu.pmap = lu.pinv.take();
+    // lu.qmap = lu.qinv.take();
+    // lu.marked = lu.iwork0.take();
     //
     // // partition xstore for factorize and update
     // // let xptr = xstore + 512;
     // // let (_, xstore) = xstore.split_at(512);
     // // let (work0, xstore) = xstore.split_at(m as usize);
-    // this.work0 = vec![0.0; m as usize];
+    // lu.work0 = vec![0.0; m as usize];
     // // xptr += m;
     // let (work1, xstore) = xstore.split_at(m as usize);
-    // // this.work1 = Vec::from(work1);
-    // this.work1 = vec![0.0; m as usize];
+    // // lu.work1 = Vec::from(work1);
+    // lu.work1 = vec![0.0; m as usize];
     // // xptr += m;
     // // let (col_pivot, xstore) = xstore.split_at(m as usize);
-    // // this.col_pivot = Vec::from(col_pivot);
-    // this.col_pivot = vec![0.0; m as usize];
+    // // lu.col_pivot = Vec::from(col_pivot);
+    // lu.col_pivot = vec![0.0; m as usize];
     // // xptr += m;
     // // let (row_pivot, _) = xstore.split_at(m as usize);
-    // // this.row_pivot = Vec::from(row_pivot);
-    // this.row_pivot = vec![0.0; m as usize];
+    // // lu.row_pivot = Vec::from(row_pivot);
+    // lu.row_pivot = vec![0.0; m as usize];
     // // xptr += m;
     //
     // // Reset @marked if increasing @marker by four causes overflow.
-    // if this.marker > LU_INT_MAX - 4 {
-    //     // memset(this.marked, 0, m * sizeof(lu_int));
-    //     this.marked.as_mut().unwrap().fill(0);
-    //     this.marker = 0;
+    // if lu.marker > LU_INT_MAX - 4 {
+    //     // memset(lu.marked, 0, m * sizeof(lu_int));
+    //     lu.marked.as_mut().unwrap().fill(0);
+    //     lu.marker = 0;
     // }
     //
     // // One past the final position in @Wend must hold the file size.
     // // The file has 2*m lines while factorizing and m lines otherwise.
-    // let Wend = this.Wend.as_mut().unwrap();
-    // if this.nupdate >= 0 {
-    //     Wend[m as usize] = this.wmem;
+    // let Wend = lu.Wend.as_mut().unwrap();
+    // if lu.nupdate >= 0 {
+    //     Wend[m as usize] = lu.wmem;
     // } else {
-    //     Wend[2 * m as usize] = this.wmem;
+    //     Wend[2 * m as usize] = lu.wmem;
     // }
 
     BASICLU_OK
 }
 
-/// Copy scalar entries (except for user parameters) from @this to @istore,
+/// Copy scalar entries (except for user parameters) from @lu to @istore,
 /// @xstore. Store status code.
 ///
 /// Return @status
 pub(crate) fn lu_save(
-    this: &LU,
+    lu: &LU,
     // _istore: &mut [lu_int],
     xstore: &mut [f64],
     status: LUInt,
 ) -> LUInt {
     // user readable
     xstore[BASICLU_STATUS] = status as f64;
-    xstore[BASICLU_ADD_MEMORYL] = this.addmem_l as f64;
-    xstore[BASICLU_ADD_MEMORYU] = this.addmem_u as f64;
-    xstore[BASICLU_ADD_MEMORYW] = this.addmem_w as f64;
+    xstore[BASICLU_ADD_MEMORYL] = lu.addmem_l as f64;
+    xstore[BASICLU_ADD_MEMORYU] = lu.addmem_u as f64;
+    xstore[BASICLU_ADD_MEMORYW] = lu.addmem_w as f64;
 
-    xstore[BASICLU_NUPDATE] = this.nupdate as f64;
-    xstore[BASICLU_NFORREST] = this.nforrest as f64;
-    xstore[BASICLU_NFACTORIZE] = this.nfactorize as f64;
-    xstore[BASICLU_NUPDATE_TOTAL] = this.nupdate_total as f64;
-    xstore[BASICLU_NFORREST_TOTAL] = this.nforrest_total as f64;
-    xstore[BASICLU_NSYMPERM_TOTAL] = this.nsymperm_total as f64;
-    xstore[BASICLU_LNZ] = this.l_nz as f64;
-    xstore[BASICLU_UNZ] = this.u_nz as f64;
-    xstore[BASICLU_RNZ] = this.r_nz as f64;
-    xstore[BASICLU_MIN_PIVOT] = this.min_pivot;
-    xstore[BASICLU_MAX_PIVOT] = this.max_pivot;
-    xstore[BASICLU_MAX_ETA] = this.max_eta;
-    xstore[BASICLU_UPDATE_COST_NUMER] = this.update_cost_numer;
-    xstore[BASICLU_UPDATE_COST_DENOM] = this.update_cost_denom;
-    xstore[BASICLU_UPDATE_COST] = this.update_cost_numer / this.update_cost_denom;
-    xstore[BASICLU_TIME_FACTORIZE] = this.time_factorize;
-    xstore[BASICLU_TIME_SOLVE] = this.time_solve;
-    xstore[BASICLU_TIME_UPDATE] = this.time_update;
-    xstore[BASICLU_TIME_FACTORIZE_TOTAL] = this.time_factorize_total;
-    xstore[BASICLU_TIME_SOLVE_TOTAL] = this.time_solve_total;
-    xstore[BASICLU_TIME_UPDATE_TOTAL] = this.time_update_total;
-    xstore[BASICLU_LFLOPS] = this.l_flops as f64;
-    xstore[BASICLU_UFLOPS] = this.u_flops as f64;
-    xstore[BASICLU_RFLOPS] = this.r_flops as f64;
-    xstore[BASICLU_CONDEST_L] = this.condest_l;
-    xstore[BASICLU_CONDEST_U] = this.condest_u;
-    xstore[BASICLU_NORM_L] = this.norm_l;
-    xstore[BASICLU_NORM_U] = this.norm_u;
-    xstore[BASICLU_NORMEST_LINV] = this.normest_l_inv;
-    xstore[BASICLU_NORMEST_UINV] = this.normest_u_inv;
-    xstore[BASICLU_MATRIX_ONENORM] = this.onenorm;
-    xstore[BASICLU_MATRIX_INFNORM] = this.infnorm;
-    xstore[BASICLU_RESIDUAL_TEST] = this.residual_test;
+    xstore[BASICLU_NUPDATE] = lu.nupdate as f64;
+    xstore[BASICLU_NFORREST] = lu.nforrest as f64;
+    xstore[BASICLU_NFACTORIZE] = lu.nfactorize as f64;
+    xstore[BASICLU_NUPDATE_TOTAL] = lu.nupdate_total as f64;
+    xstore[BASICLU_NFORREST_TOTAL] = lu.nforrest_total as f64;
+    xstore[BASICLU_NSYMPERM_TOTAL] = lu.nsymperm_total as f64;
+    xstore[BASICLU_LNZ] = lu.l_nz as f64;
+    xstore[BASICLU_UNZ] = lu.u_nz as f64;
+    xstore[BASICLU_RNZ] = lu.r_nz as f64;
+    xstore[BASICLU_MIN_PIVOT] = lu.min_pivot;
+    xstore[BASICLU_MAX_PIVOT] = lu.max_pivot;
+    xstore[BASICLU_MAX_ETA] = lu.max_eta;
+    xstore[BASICLU_UPDATE_COST_NUMER] = lu.update_cost_numer;
+    xstore[BASICLU_UPDATE_COST_DENOM] = lu.update_cost_denom;
+    xstore[BASICLU_UPDATE_COST] = lu.update_cost_numer / lu.update_cost_denom;
+    xstore[BASICLU_TIME_FACTORIZE] = lu.time_factorize;
+    xstore[BASICLU_TIME_SOLVE] = lu.time_solve;
+    xstore[BASICLU_TIME_UPDATE] = lu.time_update;
+    xstore[BASICLU_TIME_FACTORIZE_TOTAL] = lu.time_factorize_total;
+    xstore[BASICLU_TIME_SOLVE_TOTAL] = lu.time_solve_total;
+    xstore[BASICLU_TIME_UPDATE_TOTAL] = lu.time_update_total;
+    xstore[BASICLU_LFLOPS] = lu.l_flops as f64;
+    xstore[BASICLU_UFLOPS] = lu.u_flops as f64;
+    xstore[BASICLU_RFLOPS] = lu.r_flops as f64;
+    xstore[BASICLU_CONDEST_L] = lu.condest_l;
+    xstore[BASICLU_CONDEST_U] = lu.condest_u;
+    xstore[BASICLU_NORM_L] = lu.norm_l;
+    xstore[BASICLU_NORM_U] = lu.norm_u;
+    xstore[BASICLU_NORMEST_LINV] = lu.normest_l_inv;
+    xstore[BASICLU_NORMEST_UINV] = lu.normest_u_inv;
+    xstore[BASICLU_MATRIX_ONENORM] = lu.onenorm;
+    xstore[BASICLU_MATRIX_INFNORM] = lu.infnorm;
+    xstore[BASICLU_RESIDUAL_TEST] = lu.residual_test;
 
-    xstore[BASICLU_MATRIX_NZ] = this.matrix_nz as f64;
-    xstore[BASICLU_RANK] = this.rank as f64;
-    xstore[BASICLU_BUMP_SIZE] = this.bump_size as f64;
-    xstore[BASICLU_BUMP_NZ] = this.bump_nz as f64;
-    xstore[BASICLU_NSEARCH_PIVOT] = this.nsearch_pivot as f64;
-    xstore[BASICLU_NEXPAND] = this.nexpand as f64;
-    xstore[BASICLU_NGARBAGE] = this.ngarbage as f64;
-    xstore[BASICLU_FACTOR_FLOPS] = this.factor_flops as f64;
-    xstore[BASICLU_TIME_SINGLETONS] = this.time_singletons;
-    xstore[BASICLU_TIME_SEARCH_PIVOT] = this.time_search_pivot;
-    xstore[BASICLU_TIME_ELIM_PIVOT] = this.time_elim_pivot;
+    xstore[BASICLU_MATRIX_NZ] = lu.matrix_nz as f64;
+    xstore[BASICLU_RANK] = lu.rank as f64;
+    xstore[BASICLU_BUMP_SIZE] = lu.bump_size as f64;
+    xstore[BASICLU_BUMP_NZ] = lu.bump_nz as f64;
+    xstore[BASICLU_NSEARCH_PIVOT] = lu.nsearch_pivot as f64;
+    xstore[BASICLU_NEXPAND] = lu.nexpand as f64;
+    xstore[BASICLU_NGARBAGE] = lu.ngarbage as f64;
+    xstore[BASICLU_FACTOR_FLOPS] = lu.factor_flops as f64;
+    xstore[BASICLU_TIME_SINGLETONS] = lu.time_singletons;
+    xstore[BASICLU_TIME_SEARCH_PIVOT] = lu.time_search_pivot;
+    xstore[BASICLU_TIME_ELIM_PIVOT] = lu.time_elim_pivot;
 
-    xstore[BASICLU_PIVOT_ERROR] = this.pivot_error;
+    xstore[BASICLU_PIVOT_ERROR] = lu.pivot_error;
 
     // private
-    xstore[BASICLU_TASK] = this.task as f64;
-    xstore[BASICLU_PIVOT_ROW] = this.pivot_row as f64;
-    xstore[BASICLU_PIVOT_COL] = this.pivot_col as f64;
-    xstore[BASICLU_FTCOLUMN_IN] = this.ftran_for_update as f64;
-    xstore[BASICLU_FTCOLUMN_OUT] = this.btran_for_update as f64;
-    xstore[BASICLU_MARKER] = this.marker as f64;
-    xstore[BASICLU_PIVOTLEN] = this.pivotlen as f64;
-    xstore[BASICLU_RANKDEF] = this.rankdef as f64;
-    xstore[BASICLU_MIN_COLNZ] = this.min_colnz as f64;
-    xstore[BASICLU_MIN_ROWNZ] = this.min_rownz as f64;
+    xstore[BASICLU_TASK] = lu.task as f64;
+    xstore[BASICLU_PIVOT_ROW] = lu.pivot_row as f64;
+    xstore[BASICLU_PIVOT_COL] = lu.pivot_col as f64;
+    xstore[BASICLU_FTCOLUMN_IN] = lu.ftran_for_update as f64;
+    xstore[BASICLU_FTCOLUMN_OUT] = lu.btran_for_update as f64;
+    xstore[BASICLU_MARKER] = lu.marker as f64;
+    xstore[BASICLU_PIVOTLEN] = lu.pivotlen as f64;
+    xstore[BASICLU_RANKDEF] = lu.rankdef as f64;
+    xstore[BASICLU_MIN_COLNZ] = lu.min_colnz as f64;
+    xstore[BASICLU_MIN_ROWNZ] = lu.min_rownz as f64;
 
     status
 }
 
-/// Reset @this for a new factorization. Invalidate current factorization.
-pub(crate) fn lu_reset(this: &mut LU) {
+/// Reset @lu for a new factorization. Invalidate current factorization.
+pub(crate) fn lu_reset(lu: &mut LU) {
     // user readable
-    this.nupdate = -1; // invalidate factorization
-    this.nforrest = 0;
-    this.l_nz = 0;
-    this.u_nz = 0;
-    this.r_nz = 0;
-    this.min_pivot = 0.0;
-    this.max_pivot = 0.0;
-    this.max_eta = 0.0;
-    this.update_cost_numer = 0.0;
-    this.update_cost_denom = 1.0;
-    this.time_factorize = 0.0;
-    this.time_solve = 0.0;
-    this.time_update = 0.0;
-    this.l_flops = 0;
-    this.u_flops = 0;
-    this.r_flops = 0;
-    this.condest_l = 0.0;
-    this.condest_u = 0.0;
-    this.norm_l = 0.0;
-    this.norm_u = 0.0;
-    this.normest_l_inv = 0.0;
-    this.normest_u_inv = 0.0;
-    this.onenorm = 0.0;
-    this.infnorm = 0.0;
-    this.residual_test = 0.0;
+    lu.nupdate = -1; // invalidate factorization
+    lu.nforrest = 0;
+    lu.l_nz = 0;
+    lu.u_nz = 0;
+    lu.r_nz = 0;
+    lu.min_pivot = 0.0;
+    lu.max_pivot = 0.0;
+    lu.max_eta = 0.0;
+    lu.update_cost_numer = 0.0;
+    lu.update_cost_denom = 1.0;
+    lu.time_factorize = 0.0;
+    lu.time_solve = 0.0;
+    lu.time_update = 0.0;
+    lu.l_flops = 0;
+    lu.u_flops = 0;
+    lu.r_flops = 0;
+    lu.condest_l = 0.0;
+    lu.condest_u = 0.0;
+    lu.norm_l = 0.0;
+    lu.norm_u = 0.0;
+    lu.normest_l_inv = 0.0;
+    lu.normest_u_inv = 0.0;
+    lu.onenorm = 0.0;
+    lu.infnorm = 0.0;
+    lu.residual_test = 0.0;
 
-    this.matrix_nz = 0;
-    this.rank = 0;
-    this.bump_size = 0;
-    this.bump_nz = 0;
-    this.nsearch_pivot = 0;
-    this.nexpand = 0;
-    this.ngarbage = 0;
-    this.factor_flops = 0;
-    this.time_singletons = 0.0;
-    this.time_search_pivot = 0.0;
-    this.time_elim_pivot = 0.0;
+    lu.matrix_nz = 0;
+    lu.rank = 0;
+    lu.bump_size = 0;
+    lu.bump_nz = 0;
+    lu.nsearch_pivot = 0;
+    lu.nexpand = 0;
+    lu.ngarbage = 0;
+    lu.factor_flops = 0;
+    lu.time_singletons = 0.0;
+    lu.time_search_pivot = 0.0;
+    lu.time_elim_pivot = 0.0;
 
-    this.pivot_error = 0.0;
+    lu.pivot_error = 0.0;
 
     // private
-    this.task = NO_TASK;
-    this.pivot_row = -1;
-    this.pivot_col = -1;
-    this.ftran_for_update = -1;
-    this.btran_for_update = -1;
-    this.marker = 0;
-    this.pivotlen = 0;
-    this.rankdef = 0;
-    this.min_colnz = 1;
-    this.min_rownz = 1;
+    lu.task = NO_TASK;
+    lu.pivot_row = -1;
+    lu.pivot_col = -1;
+    lu.ftran_for_update = -1;
+    lu.btran_for_update = -1;
+    lu.marker = 0;
+    lu.pivotlen = 0;
+    lu.rankdef = 0;
+    lu.min_colnz = 1;
+    lu.min_rownz = 1;
 
     // One past the final position in @Wend must hold the file size.
     // The file has 2*m lines during factorization.
-    this.w_end[2 * this.m as usize] = this.w_mem;
+    lu.w_end[2 * lu.m as usize] = lu.w_mem;
 
     // The integer workspace iwork0 must be zeroed for a new factorization.
     // The double workspace work0 actually needs only be zeroed once in the
     // initialization of xstore. However, it is easier and more consistent
     // to do that here as well.
-    // memset(this.iwork0, 0, this.m);
-    this.iwork0.fill(0);
+    // memset(lu.iwork0, 0, lu.m);
+    lu.iwork0.fill(0);
 
-    // memset(this.work0, 0, this.m);
-    this.work0.fill(0.0);
+    // memset(lu.work0, 0, lu.m);
+    lu.work0.fill(0.0);
 }

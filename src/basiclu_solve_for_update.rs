@@ -169,13 +169,13 @@ pub fn basiclu_solve_for_update(
     lhs: Option<&mut [f64]>,
     trans: char,
 ) -> LUInt {
-    let mut this = LU {
+    let mut lu = LU {
         ..Default::default()
     };
     // lu_int status, n, ok;
 
     let status = lu_load(
-        &mut this,
+        &mut lu,
         // istore,
         xstore,
         // Some(l_i.to_vec()), // FIXME
@@ -196,21 +196,21 @@ pub fn basiclu_solve_for_update(
     /*&& !xrhs*/
     {
         BASICLU_ERROR_ARGUMENT_MISSING
-    } else if this.nupdate < 0 {
+    } else if lu.nupdate < 0 {
         BASICLU_ERROR_INVALID_CALL
-    } else if this.nforrest == this.m {
+    } else if lu.nforrest == lu.m {
         BASICLU_ERROR_MAXIMUM_UPDATES
     } else {
         // check RHS indices
         let ok = if trans == 't' || trans == 'T' {
-            irhs[0] >= 0 && irhs[0] < this.m
+            irhs[0] >= 0 && irhs[0] < lu.m
         } else {
-            let mut ok = nzrhs >= 0 && nzrhs <= this.m;
+            let mut ok = nzrhs >= 0 && nzrhs <= lu.m;
             for n in 0..nzrhs as usize {
                 if !ok {
                     break;
                 }
-                ok = ok && irhs[n] >= 0 && irhs[n] < this.m;
+                ok = ok && irhs[n] >= 0 && irhs[n] < lu.m;
             }
             ok
         };
@@ -223,8 +223,8 @@ pub fn basiclu_solve_for_update(
 
     if status == BASICLU_OK {
         // may request reallocation
-        status = lu_solve_for_update(&mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        status = lu_solve_for_update(&mut lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
-    lu_save(&this, /*istore,*/ xstore, status)
+    lu_save(&lu, /*istore,*/ xstore, status)
 }

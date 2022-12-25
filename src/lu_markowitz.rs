@@ -30,24 +30,24 @@ use std::time::Instant;
 ///
 /// [1] U. Suhl, L. Suhl, "Computing Sparse LU Factorizations for Large-Scale
 ///     Linear Programming Bases", ORSA Journal on Computing (1990)
-pub(crate) fn lu_markowitz(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let w_begin = &this.w_begin;
-    let w_end = &this.w_end;
-    let w_index = &this.w_index;
-    let w_value = &this.w_value;
-    let colcount_flink = &this.colcount_flink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &this.col_pivot;
-    let abstol = this.abstol;
-    let reltol = this.reltol;
-    let maxsearch = this.maxsearch;
-    let search_rows = this.search_rows;
+pub(crate) fn lu_markowitz(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let w_begin = &lu.w_begin;
+    let w_end = &lu.w_end;
+    let w_index = &lu.w_index;
+    let w_value = &lu.w_value;
+    let colcount_flink = &lu.colcount_flink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let colmax = &lu.col_pivot;
+    let abstol = lu.abstol;
+    let reltol = lu.reltol;
+    let maxsearch = lu.maxsearch;
+    let search_rows = lu.search_rows;
     let nz_start = if search_rows != 0 {
-        LUInt::min(this.min_colnz, this.min_rownz)
+        LUInt::min(lu.min_colnz, lu.min_rownz)
     } else {
-        this.min_colnz
+        lu.min_colnz
     };
 
     // lu_int i, j, pos, where_, inext, nz, pivot_row, pivot_col;
@@ -73,9 +73,7 @@ pub(crate) fn lu_markowitz(this: &mut LU) -> LUInt {
         pivot_col = colcount_flink[m as usize];
         assert!(pivot_col >= 0 && pivot_col < m);
         assert_eq!(w_end[pivot_col as usize], w_begin[pivot_col as usize]);
-        return done(
-            this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
-        );
+        return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
     }
 
     for nz in nz_start..=m {
@@ -108,9 +106,7 @@ pub(crate) fn lu_markowitz(this: &mut LU) -> LUInt {
                     pivot_row = i;
                     pivot_col = j;
                     if search_rows != 0 && mc64 <= (nz1 - 1) * (nz1 - 1) {
-                        return done(
-                            this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
-                        );
+                        return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
                     }
                 }
             }
@@ -119,9 +115,7 @@ pub(crate) fn lu_markowitz(this: &mut LU) -> LUInt {
             // if (++nsearch >= maxsearch) {
             nsearch += 1;
             if nsearch >= maxsearch {
-                return done(
-                    this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
-                );
+                return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
             }
             j = colcount_flink[j as usize];
         }
@@ -171,9 +165,7 @@ pub(crate) fn lu_markowitz(this: &mut LU) -> LUInt {
                     pivot_row = i;
                     pivot_col = j;
                     if mc64 <= nz1 * (nz1 - 1) {
-                        return done(
-                            this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
-                        );
+                        return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
                     }
                 }
             }
@@ -186,22 +178,18 @@ pub(crate) fn lu_markowitz(this: &mut LU) -> LUInt {
                 // if (++nsearch >= maxsearch)
                 nsearch += 1;
                 if nsearch >= maxsearch {
-                    return done(
-                        this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
-                    );
+                    return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
                 }
             }
             i = inext;
         }
         assert_eq!(i, m + nz);
     }
-    done(
-        this, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic,
-    )
+    done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic)
 }
 
 fn done(
-    this: &mut LU,
+    lu: &mut LU,
     pivot_row: LUInt,
     pivot_col: LUInt,
     nsearch: LUInt,
@@ -209,19 +197,19 @@ fn done(
     min_rownz: LUInt,
     tic: Instant,
 ) -> LUInt {
-    this.pivot_row = pivot_row;
-    this.pivot_col = pivot_col;
+    lu.pivot_row = pivot_row;
+    lu.pivot_col = pivot_col;
 
-    this.nsearch_pivot += nsearch;
+    lu.nsearch_pivot += nsearch;
 
     if min_colnz >= 0 {
-        this.min_colnz = min_colnz;
+        lu.min_colnz = min_colnz;
     }
     if min_rownz >= 0 {
-        this.min_rownz = min_rownz;
+        lu.min_rownz = min_rownz;
     }
 
-    this.time_search_pivot += tic.elapsed().as_secs_f64();
+    lu.time_search_pivot += tic.elapsed().as_secs_f64();
 
     return BASICLU_OK;
 }

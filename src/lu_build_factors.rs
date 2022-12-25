@@ -108,39 +108,39 @@ use crate::lu_list::lu_list_move;
 ///
 ///  BASICLU_REALLOCATE  require more memory in L, U, and/or W
 ///  BASICLU_OK
-pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let l_mem = this.l_mem;
-    let u_mem = this.u_mem;
-    let w_mem = this.w_mem;
-    let pad = this.pad;
-    let stretch = this.stretch as LUInt;
-    // let pinv = &mut this.pinv;
-    // let qinv = &mut this.qinv;
-    // let pmap = &mut pmap!(this); // shares memory with pinv
-    // let qmap = &mut qmap!(this); // shares memory with qinv
-    let pivotcol = &mut pivotcol!(this);
-    let pivotrow = &mut pivotrow!(this);
-    let l_begin = &mut l_begin!(this);
-    // let Lbegin_p = &mut this.Lbegin_p;
-    let lt_begin = &mut lt_begin!(this);
-    let lt_begin_p = &mut lt_begin_p!(this);
-    // let Ubegin = &mut this.Ubegin;
-    let r_begin = &mut r_begin!(this);
-    // let Wbegin = &mut this.Wbegin;
-    // let Wend = &mut this.Wend;
-    // let Wflink = &mut this.Wflink;
-    // let Wblink = &mut this.Wblink;
-    // let col_pivot = &mut this.xstore.col_pivot;
-    // let row_pivot = &mut this.xstore.row_pivot;
-    let l_index = &mut this.l_index;
-    let l_value = &mut this.l_value;
-    let u_index = &mut this.u_index;
-    let u_value = &mut this.u_value;
-    let w_index = &mut this.w_index;
-    let w_value = &mut this.w_value;
-    let iwork1 = &mut iwork1!(this);
+pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let rank = lu.rank;
+    let l_mem = lu.l_mem;
+    let u_mem = lu.u_mem;
+    let w_mem = lu.w_mem;
+    let pad = lu.pad;
+    let stretch = lu.stretch as LUInt;
+    // let pinv = &mut lu.pinv;
+    // let qinv = &mut lu.qinv;
+    // let pmap = &mut pmap!(lu); // shares memory with pinv
+    // let qmap = &mut qmap!(lu); // shares memory with qinv
+    let pivotcol = &mut pivotcol!(lu);
+    let pivotrow = &mut pivotrow!(lu);
+    let l_begin = &mut l_begin!(lu);
+    // let Lbegin_p = &mut lu.Lbegin_p;
+    let lt_begin = &mut lt_begin!(lu);
+    let lt_begin_p = &mut lt_begin_p!(lu);
+    // let Ubegin = &mut lu.Ubegin;
+    let r_begin = &mut r_begin!(lu);
+    // let Wbegin = &mut lu.Wbegin;
+    // let Wend = &mut lu.Wend;
+    // let Wflink = &mut lu.Wflink;
+    // let Wblink = &mut lu.Wblink;
+    // let col_pivot = &mut lu.xstore.col_pivot;
+    // let row_pivot = &mut lu.xstore.row_pivot;
+    let l_index = &mut lu.l_index;
+    let l_value = &mut lu.l_value;
+    let u_index = &mut lu.u_index;
+    let u_value = &mut lu.u_value;
+    let w_index = &mut lu.w_index;
+    let w_value = &mut lu.w_value;
+    let iwork1 = &mut iwork1!(lu);
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;
     // double pivot, min_pivot, max_pivot;
@@ -150,9 +150,9 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
     // in Uindex, Uvalue. The factorization has computed rank columns of L
     // and rank rows of U. If rank < m, then the columns which have not been
     // pivotal will be removed from U.
-    let mut l_nz = this.l_begin_p[rank as usize];
+    let mut l_nz = lu.l_begin_p[rank as usize];
     l_nz -= rank; // because each column is terminated by -1
-    let mut u_nz = this.u_begin[rank as usize]; // might be decreased when rank < m
+    let mut u_nz = lu.u_begin[rank as usize]; // might be decreased when rank < m
 
     // Calculate memory and reallocate. The rowwise and columnwise storage of
     // L both need space for Lnz nonzeros + m terminators. The same for the
@@ -161,17 +161,17 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
     // row with nz nonzeros is padded by stretch*nz + pad elements.
     let need = 2 * (l_nz + m);
     if l_mem < need {
-        this.addmem_l = need - l_mem;
+        lu.addmem_l = need - l_mem;
         status = BASICLU_REALLOCATE;
     }
     let need = u_nz + m + 1;
     if u_mem < need {
-        this.addmem_u = need - u_mem;
+        lu.addmem_u = need - u_mem;
         status = BASICLU_REALLOCATE;
     }
     let need = u_nz + stretch * u_nz + m * pad;
     if w_mem < need {
-        this.addmem_w = need - w_mem;
+        lu.addmem_w = need - w_mem;
         status = BASICLU_REALLOCATE;
     }
     if status != BASICLU_OK {
@@ -193,20 +193,20 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
 
     let mut lrank = rank;
     for i in 0..m as usize {
-        if this.pinv[i] < 0 {
-            this.pinv[i] = lrank;
+        if lu.pinv[i] < 0 {
+            lu.pinv[i] = lrank;
             lrank += 1;
         }
-        pivotrow[this.pinv[i] as usize] = i as LUInt;
+        pivotrow[lu.pinv[i] as usize] = i as LUInt;
     }
     assert_eq!(lrank, m);
     let mut lrank = rank;
     for j in 0..m as usize {
-        if this.qinv[j] < 0 {
-            this.qinv[j] = lrank;
+        if lu.qinv[j] < 0 {
+            lu.qinv[j] = lrank;
             lrank += 1;
         }
-        pivotcol[this.qinv[j] as usize] = j as LUInt;
+        pivotcol[lu.qinv[j] as usize] = j as LUInt;
     }
     assert_eq!(lrank, m);
 
@@ -221,22 +221,22 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
 
     // Dependent columns get unit pivot elements.
     for k in rank..m {
-        this.col_pivot[pivotcol[k as usize] as usize] = 1.0;
+        lu.col_pivot[pivotcol[k as usize] as usize] = 1.0;
     }
 
     // Lower triangular factor //
 
     // L columnwise. If rank < m, then complete with unit columns (no
     // off-diagonals, so nothing to store here).
-    let mut put = this.l_begin_p[rank as usize];
+    let mut put = lu.l_begin_p[rank as usize];
     for k in rank..m {
         l_index[put as usize] = -1;
         put += 1;
-        this.l_begin_p[k as usize + 1] = put;
+        lu.l_begin_p[k as usize + 1] = put;
     }
-    assert_eq!(this.l_begin_p[m as usize], l_nz + m);
+    assert_eq!(lu.l_begin_p[m as usize], l_nz + m);
     for i in 0..m as usize {
-        l_begin[i] = this.l_begin_p[this.pinv[i] as usize];
+        l_begin[i] = lu.l_begin_p[lu.pinv[i] as usize];
     }
 
     // L rowwise.
@@ -263,7 +263,7 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
         // fill rows
         let ipivot = pivotrow[k];
         // for (get = Lbegin_p[k]; (i = Lindex[get]) >= 0; get++)
-        let mut get = this.l_begin_p[k] as usize;
+        let mut get = lu.l_begin_p[k] as usize;
         while l_index[get] >= 0 {
             // put = iwork1[i]++;  /* put into row i */
             put = iwork1[l_index[get] as usize]; // put into row i
@@ -286,10 +286,10 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
     // U rowwise.
     lu_file_empty(
         m,
-        &mut this.w_begin,
-        &mut this.w_end,
-        &mut this.w_flink,
-        &mut this.w_blink,
+        &mut lu.w_begin,
+        &mut lu.w_end,
+        &mut lu.w_flink,
+        &mut lu.w_blink,
         w_mem,
     );
     // memset(iwork1, 0, m*sizeof(lu_int)); /* column counts */
@@ -301,9 +301,9 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
     if rank == m {
         for k in 0..m as usize {
             let jpivot = pivotcol[k];
-            this.w_begin[jpivot as usize] = put;
+            lu.w_begin[jpivot as usize] = put;
             let mut nz = 0;
-            for pos in this.u_begin[k]..this.u_begin[k + 1] {
+            for pos in lu.u_begin[k]..lu.u_begin[k + 1] {
                 let j = u_index[pos as usize];
                 w_index[put as usize] = j;
                 // Wvalue[put++] = Uvalue[pos];
@@ -313,19 +313,19 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
                 iwork1[j as usize] += 1;
                 nz += 1;
             }
-            this.w_end[jpivot as usize] = put;
+            lu.w_end[jpivot as usize] = put;
             put += stretch * nz + pad;
-            lu_list_move(jpivot, 0, &mut this.w_flink, &mut this.w_blink, m, None);
+            lu_list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
         }
     } else {
         u_nz = 0; // actual number of nonzeros
         for k in 0..rank as usize {
             let jpivot = pivotcol[k];
-            this.w_begin[jpivot as usize] = put;
+            lu.w_begin[jpivot as usize] = put;
             let mut nz = 0;
-            for pos in this.u_begin[k]..this.u_begin[k + 1] {
+            for pos in lu.u_begin[k]..lu.u_begin[k + 1] {
                 let j = u_index[pos as usize];
-                if this.qinv[j as usize] < rank {
+                if lu.qinv[j as usize] < rank {
                     w_index[put as usize] = j;
                     // Wvalue[put++] = Uvalue[pos];
                     let put0 = put;
@@ -335,21 +335,21 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
                     nz += 1;
                 }
             }
-            this.w_end[jpivot as usize] = put;
+            lu.w_end[jpivot as usize] = put;
             put += stretch * nz + pad;
-            lu_list_move(jpivot, 0, &mut this.w_flink, &mut this.w_blink, m, None);
+            lu_list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
             u_nz += nz;
         }
         for k in rank..m {
             let jpivot = pivotcol[k as usize];
-            this.w_begin[jpivot as usize] = put;
-            this.w_end[jpivot as usize] = put;
+            lu.w_begin[jpivot as usize] = put;
+            lu.w_end[jpivot as usize] = put;
             put += pad;
-            lu_list_move(jpivot, 0, &mut this.w_flink, &mut this.w_blink, m, None);
+            lu_list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
         }
     }
-    assert!(put <= this.w_end[m as usize]);
-    this.w_begin[m as usize] = put; // beginning of free space
+    assert!(put <= lu.w_end[m as usize]);
+    lu.w_begin[m as usize] = put; // beginning of free space
 
     // U columnwise.
     u_index[0] = -1;
@@ -360,21 +360,21 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
         let i = pivotrow[k] as usize;
         let nz = iwork1[j];
         if nz == 0 {
-            this.u_begin[i] = 0; // empty columns all in position 0
+            lu.u_begin[i] = 0; // empty columns all in position 0
         } else {
-            this.u_begin[i] = put;
+            lu.u_begin[i] = put;
             put += nz;
             u_index[put as usize] = -1; // terminate column
             put += 1;
         }
-        iwork1[j] = this.u_begin[i];
+        iwork1[j] = lu.u_begin[i];
     }
-    this.u_begin[m as usize] = put;
+    lu.u_begin[m as usize] = put;
     for k in 0..m as usize {
         // fill columns
         let jpivot = pivotcol[k] as usize;
         let i = pivotrow[k];
-        for pos in this.w_begin[jpivot]..this.w_end[jpivot] {
+        for pos in lu.w_begin[jpivot]..lu.w_end[jpivot] {
             let j = w_index[pos as usize] as usize;
             put = iwork1[j];
             iwork1[j] += 1;
@@ -396,29 +396,29 @@ pub(crate) fn lu_build_factors(this: &mut LU) -> LUInt {
     for k in 0..m as usize {
         let i = pivotrow[k];
         let j = pivotcol[k];
-        pmap!(this)[j as usize] = i;
-        qmap!(this)[i as usize] = j;
+        pmap!(lu)[j as usize] = i;
+        qmap!(lu)[i as usize] = j;
     }
 
     // Build pivots by row index.
     let mut max_pivot = 0.0;
     let mut min_pivot = f64::INFINITY;
     for i in 0..m as usize {
-        this.row_pivot[i] = this.col_pivot[qmap![this][i] as usize];
-        let pivot = this.row_pivot[i].abs();
+        lu.row_pivot[i] = lu.col_pivot[qmap![lu][i] as usize];
+        let pivot = lu.row_pivot[i].abs();
         max_pivot = f64::max(pivot, max_pivot);
         min_pivot = f64::min(pivot, min_pivot);
     }
 
-    // memcpy(this.p, pivotrow, m*sizeof(lu_int));
-    p!(this).copy_from_slice(pivotrow); // TODO: check
+    // memcpy(lu.p, pivotrow, m*sizeof(lu_int));
+    p!(lu).copy_from_slice(pivotrow); // TODO: check
 
-    this.min_pivot = min_pivot;
-    this.max_pivot = max_pivot;
-    this.pivotlen = m;
-    this.l_nz = l_nz;
-    this.u_nz = u_nz;
-    this.r_nz = 0;
+    lu.min_pivot = min_pivot;
+    lu.max_pivot = max_pivot;
+    lu.pivotlen = m;
+    lu.l_nz = l_nz;
+    lu.u_nz = u_nz;
+    lu.r_nz = 0;
 
     status
 }

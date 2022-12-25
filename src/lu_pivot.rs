@@ -44,19 +44,19 @@ use std::time::Instant;
 // by hand and is aware of it.
 const MAXROW_SMALL: LUInt = 64;
 
-pub(crate) fn lu_pivot(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let l_mem = this.l_mem;
-    let u_mem = this.u_mem;
-    let pivot_col = this.pivot_col;
-    let pivot_row = this.pivot_row;
-    // let colmax = &this.col_pivot;
-    let l_begin_p = &this.l_begin_p;
-    // let Ubegin = &this.Ubegin;
-    let w_begin = &this.w_begin;
-    let w_end = &this.w_end;
-    // let Uindex = this.Uindex.as_ref().unwrap();
+pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let rank = lu.rank;
+    let l_mem = lu.l_mem;
+    let u_mem = lu.u_mem;
+    let pivot_col = lu.pivot_col;
+    let pivot_row = lu.pivot_row;
+    // let colmax = &lu.col_pivot;
+    let l_begin_p = &lu.l_begin_p;
+    // let Ubegin = &lu.Ubegin;
+    let w_begin = &lu.w_begin;
+    let w_end = &lu.w_end;
+    // let Uindex = lu.Uindex.as_ref().unwrap();
     let nz_col = w_end[pivot_col as usize] - w_begin[pivot_col as usize];
     let nz_row = w_end[(m + pivot_row) as usize] - w_begin[(m + pivot_row) as usize];
 
@@ -70,13 +70,13 @@ pub(crate) fn lu_pivot(this: &mut LU) -> LUInt {
     let room = l_mem - l_begin_p[rank as usize];
     let need = nz_col; // # off-diagonals in pivot col + end marker (-1)
     if room < need {
-        this.addmem_l = need - room;
+        lu.addmem_l = need - room;
         status = BASICLU_REALLOCATE;
     }
-    let room = u_mem - this.u_begin[rank as usize];
+    let room = u_mem - lu.u_begin[rank as usize];
     let need = nz_row - 1; // # off-diagonals in pivot row
     if room < need {
-        this.addmem_u = need - room;
+        lu.addmem_u = need - room;
         status = BASICLU_REALLOCATE;
     }
     if status != BASICLU_OK {
@@ -85,61 +85,61 @@ pub(crate) fn lu_pivot(this: &mut LU) -> LUInt {
 
     // Branch out implementation of pivot operation.
     if nz_row == 1 {
-        status = lu_pivot_singleton_row(this);
+        status = lu_pivot_singleton_row(lu);
     } else if nz_col == 1 {
-        status = lu_pivot_singleton_col(this);
+        status = lu_pivot_singleton_col(lu);
     } else if nz_col == 2 {
-        status = lu_pivot_doubleton_col(this);
+        status = lu_pivot_doubleton_col(lu);
     } else if nz_col - 1 <= MAXROW_SMALL {
-        status = lu_pivot_small(this);
+        status = lu_pivot_small(lu);
     } else {
-        status = lu_pivot_any(this);
+        status = lu_pivot_any(lu);
     }
 
     // Remove all entries in columns whose maximum entry has dropped below
     // absolute pivot tolerance.
     if status == BASICLU_OK {
-        for pos in this.u_begin[rank as usize]..this.u_begin[(rank + 1) as usize] {
-            let j = this.u_index[pos as usize];
+        for pos in lu.u_begin[rank as usize]..lu.u_begin[(rank + 1) as usize] {
+            let j = lu.u_index[pos as usize];
             assert_ne!(j, pivot_col);
-            if this.col_pivot[j as usize] == 0.0 || this.col_pivot[j as usize] < this.abstol {
-                lu_remove_col(this, j);
+            if lu.col_pivot[j as usize] == 0.0 || lu.col_pivot[j as usize] < lu.abstol {
+                lu_remove_col(lu, j);
             }
         }
     }
 
-    this.factor_flops += (nz_col - 1) * (nz_row - 1);
-    this.time_elim_pivot += tic.elapsed().as_secs_f64();
+    lu.factor_flops += (nz_col - 1) * (nz_row - 1);
+    lu.time_elim_pivot += tic.elapsed().as_secs_f64();
     status
 }
 
-fn lu_pivot_any(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let droptol = this.droptol;
-    let pad = this.pad;
-    let stretch = this.stretch;
-    let pivot_col = this.pivot_col;
-    let pivot_row = this.pivot_row;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.col_pivot;
-    let l_begin_p = &mut this.l_begin_p;
-    let u_begin = &mut this.u_begin;
-    let w_begin = &mut this.w_begin;
-    let w_end = &mut this.w_end;
-    let w_flink = &mut this.w_flink;
-    let w_blink = &mut this.w_blink;
-    let l_index = &mut this.l_index;
-    let l_value = &mut this.l_value;
-    let u_index = &mut this.u_index;
-    let u_value = &mut this.u_value;
-    let w_index = &mut this.w_index;
-    let w_value = &mut this.w_value;
-    let marked = &mut this.iwork0;
-    let work = &mut this.work0;
+fn lu_pivot_any(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let rank = lu.rank;
+    let droptol = lu.droptol;
+    let pad = lu.pad;
+    let stretch = lu.stretch;
+    let pivot_col = lu.pivot_col;
+    let pivot_row = lu.pivot_row;
+    let colcount_flink = &mut lu.colcount_flink;
+    let colcount_blink = &mut lu.colcount_blink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let colmax = &mut lu.col_pivot;
+    let l_begin_p = &mut lu.l_begin_p;
+    let u_begin = &mut lu.u_begin;
+    let w_begin = &mut lu.w_begin;
+    let w_end = &mut lu.w_end;
+    let w_flink = &mut lu.w_flink;
+    let w_blink = &mut lu.w_blink;
+    let l_index = &mut lu.l_index;
+    let l_value = &mut lu.l_value;
+    let u_index = &mut lu.u_index;
+    let u_value = &mut lu.u_value;
+    let w_index = &mut lu.w_index;
+    let w_value = &mut lu.w_value;
+    let marked = &mut lu.iwork0;
+    let work = &mut lu.work0;
 
     let mut cbeg = w_begin[pivot_col as usize]; // changed by file compression
     let mut cend = w_end[pivot_col as usize];
@@ -202,17 +202,17 @@ fn lu_pivot_any(this: &mut LU) -> LUInt {
         rbeg = w_begin[(m + pivot_row) as usize];
         rend = w_end[(m + pivot_row) as usize];
         room = w_end[(2 * m) as usize] - w_begin[(2 * m) as usize];
-        this.ngarbage += 1;
+        lu.ngarbage += 1;
     }
     if grow > room {
-        this.addmem_w = grow - room;
+        lu.addmem_w = grow - room;
         return BASICLU_REALLOCATE;
     }
 
     // get pointer to U
     let mut u_put = u_begin[rank as usize];
     assert!(u_put >= 0);
-    assert!(u_put < this.u_mem);
+    assert!(u_put < lu.u_mem);
 
     // Column file update //
 
@@ -282,7 +282,7 @@ fn lu_pivot_any(this: &mut LU) -> LUInt {
             );
             put = w_end[j as usize];
             assert_eq!(w_begin[w_flink[j as usize] as usize] - put, room);
-            this.nexpand += 1;
+            lu.nexpand += 1;
         }
 
         // Compute update in workspace and append to column.
@@ -307,7 +307,7 @@ fn lu_pivot_any(this: &mut LU) -> LUInt {
 
         // Write pivot row entry to U and remove from file.
         if xrj.abs() > droptol {
-            assert!(u_put < this.u_mem);
+            assert!(u_put < lu.u_mem);
             u_index[u_put as usize] = j;
             u_value[u_put as usize] = xrj;
             u_put += 1;
@@ -323,7 +323,7 @@ fn lu_pivot_any(this: &mut LU) -> LUInt {
             colcount_flink,
             colcount_blink,
             m,
-            Some(&mut this.min_colnz),
+            Some(&mut lu.min_colnz),
         );
 
         colmax[j as usize] = cmx;
@@ -378,7 +378,7 @@ fn lu_pivot_any(this: &mut LU) -> LUInt {
             );
             put = w_end[(m + i) as usize];
             assert_eq!(w_begin[w_flink[(m + i) as usize] as usize] - put, room);
-            this.nexpand += 1;
+            lu.nexpand += 1;
         }
         for rpos in (rbeg + 1)..rend {
             w_index[put as usize] = w_index[rpos as usize];
@@ -395,7 +395,7 @@ fn lu_pivot_any(this: &mut LU) -> LUInt {
             rowcount_flink,
             rowcount_blink,
             m,
-            Some(&mut this.min_rownz),
+            Some(&mut lu.min_rownz),
         );
     }
     for rpos in rbeg..rend {
@@ -459,35 +459,35 @@ fn lu_pivot_any(this: &mut LU) -> LUInt {
     BASICLU_OK
 }
 
-fn lu_pivot_small(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let droptol = this.droptol;
-    let pad = this.pad;
-    let stretch = this.stretch;
-    let pivot_col = this.pivot_col;
-    let pivot_row = this.pivot_row;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.col_pivot;
-    let l_begin_p = &mut this.l_begin_p;
-    let u_begin = &mut this.u_begin;
-    let w_begin = &mut this.w_begin;
-    let w_end = &mut this.w_end;
-    let w_flink = &mut this.w_flink;
-    let w_blink = &mut this.w_blink;
-    let l_index = &mut this.l_index;
-    let l_value = &mut this.l_value;
-    let u_index = &mut this.u_index;
-    let u_value = &mut this.u_value;
-    let w_index = &mut this.w_index;
-    let w_value = &mut this.w_value;
-    let marked = &mut this.iwork0;
-    let work = &mut this.work0;
-    // int64_t *cancelled      = (void *) this.row_pivot;
-    let cancelled = &mut this.row_pivot;
+fn lu_pivot_small(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let rank = lu.rank;
+    let droptol = lu.droptol;
+    let pad = lu.pad;
+    let stretch = lu.stretch;
+    let pivot_col = lu.pivot_col;
+    let pivot_row = lu.pivot_row;
+    let colcount_flink = &mut lu.colcount_flink;
+    let colcount_blink = &mut lu.colcount_blink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let colmax = &mut lu.col_pivot;
+    let l_begin_p = &mut lu.l_begin_p;
+    let u_begin = &mut lu.u_begin;
+    let w_begin = &mut lu.w_begin;
+    let w_end = &mut lu.w_end;
+    let w_flink = &mut lu.w_flink;
+    let w_blink = &mut lu.w_blink;
+    let l_index = &mut lu.l_index;
+    let l_value = &mut lu.l_value;
+    let u_index = &mut lu.u_index;
+    let u_value = &mut lu.u_value;
+    let w_index = &mut lu.w_index;
+    let w_value = &mut lu.w_value;
+    let marked = &mut lu.iwork0;
+    let work = &mut lu.work0;
+    // int64_t *cancelled      = (void *) lu.row_pivot;
+    let cancelled = &mut lu.row_pivot;
 
     let mut cbeg = w_begin[pivot_col as usize]; // changed by file compression
     let mut cend = w_end[pivot_col as usize];
@@ -552,17 +552,17 @@ fn lu_pivot_small(this: &mut LU) -> LUInt {
         rbeg = w_begin[(m + pivot_row) as usize];
         rend = w_end[(m + pivot_row) as usize];
         room = w_end[(2 * m) as usize] - w_begin[(2 * m) as usize];
-        this.ngarbage += 1;
+        lu.ngarbage += 1;
     }
     if grow > room {
-        this.addmem_w = grow - room;
+        lu.addmem_w = grow - room;
         return BASICLU_REALLOCATE;
     }
 
     // get pointer to U
     let mut u_put = u_begin[rank as usize];
     assert!(u_put >= 0);
-    assert!(u_put < this.u_mem);
+    assert!(u_put < lu.u_mem);
 
     // Column file update //
 
@@ -635,7 +635,7 @@ fn lu_pivot_small(this: &mut LU) -> LUInt {
             );
             put = w_end[j as usize];
             assert_eq!(w_begin[w_flink[j as usize] as usize] - put, room);
-            this.nexpand += 1;
+            lu.nexpand += 1;
         }
 
         // Compute update in workspace and append to column.
@@ -667,7 +667,7 @@ fn lu_pivot_small(this: &mut LU) -> LUInt {
 
         // Write pivot row entry to U and remove from file.
         if xrj.abs() > droptol {
-            assert!(u_put < this.u_mem);
+            assert!(u_put < lu.u_mem);
             u_index[u_put as usize] = j;
             u_value[u_put as usize] = xrj;
             u_put += 1;
@@ -683,7 +683,7 @@ fn lu_pivot_small(this: &mut LU) -> LUInt {
             colcount_flink,
             colcount_blink,
             m,
-            Some(&mut this.min_colnz),
+            Some(&mut lu.min_colnz),
         );
 
         colmax[j as usize] = cmx;
@@ -744,7 +744,7 @@ fn lu_pivot_small(this: &mut LU) -> LUInt {
             );
             put = w_end[(m + i) as usize];
             assert_eq!(w_begin[w_flink[(m + i) as usize] as usize] - put, room);
-            this.nexpand += 1;
+            lu.nexpand += 1;
         }
 
         col_number = 0;
@@ -766,7 +766,7 @@ fn lu_pivot_small(this: &mut LU) -> LUInt {
             rowcount_flink,
             rowcount_blink,
             m,
-            Some(&mut this.min_rownz),
+            Some(&mut lu.min_rownz),
         );
 
         mask <<= 1;
@@ -834,25 +834,25 @@ fn lu_pivot_small(this: &mut LU) -> LUInt {
     BASICLU_OK
 }
 
-fn lu_pivot_singleton_row(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let droptol = this.droptol;
-    let pivot_col = this.pivot_col;
-    let pivot_row = this.pivot_row;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.col_pivot;
-    let l_begin_p = &mut this.l_begin_p;
-    let u_begin = &mut this.u_begin;
-    let w_begin = &mut this.w_begin;
-    let w_end = &mut this.w_end;
-    let l_index = &mut this.l_index;
-    let l_value = &mut this.l_value;
-    let w_index = &mut this.w_index;
-    let w_value = &mut this.w_value;
+fn lu_pivot_singleton_row(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let rank = lu.rank;
+    let droptol = lu.droptol;
+    let pivot_col = lu.pivot_col;
+    let pivot_row = lu.pivot_row;
+    let colcount_flink = &mut lu.colcount_flink;
+    let colcount_blink = &mut lu.colcount_blink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let colmax = &mut lu.col_pivot;
+    let l_begin_p = &mut lu.l_begin_p;
+    let u_begin = &mut lu.u_begin;
+    let w_begin = &mut lu.w_begin;
+    let w_end = &mut lu.w_end;
+    let l_index = &mut lu.l_index;
+    let l_value = &mut lu.l_value;
+    let w_index = &mut lu.w_index;
+    let w_value = &mut lu.w_value;
 
     let cbeg = w_begin[pivot_col as usize];
     let cend = w_end[pivot_col as usize];
@@ -910,7 +910,7 @@ fn lu_pivot_singleton_row(this: &mut LU) -> LUInt {
             rowcount_flink,
             rowcount_blink,
             m,
-            Some(&mut this.min_rownz),
+            Some(&mut lu.min_rownz),
         );
     }
 
@@ -927,26 +927,26 @@ fn lu_pivot_singleton_row(this: &mut LU) -> LUInt {
     BASICLU_OK
 }
 
-fn lu_pivot_singleton_col(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let droptol = this.droptol;
-    let pivot_col = this.pivot_col;
-    let pivot_row = this.pivot_row;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.col_pivot;
-    let l_begin_p = &mut this.l_begin_p;
-    let u_begin = &mut this.u_begin;
-    let w_begin = &mut this.w_begin;
-    let w_end = &mut this.w_end;
-    let l_index = &mut this.l_index;
-    let u_index = &mut this.u_index;
-    let u_value = &mut this.u_value;
-    let w_index = &mut this.w_index;
-    let w_value = &mut this.w_value;
+fn lu_pivot_singleton_col(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let rank = lu.rank;
+    let droptol = lu.droptol;
+    let pivot_col = lu.pivot_col;
+    let pivot_row = lu.pivot_row;
+    let colcount_flink = &mut lu.colcount_flink;
+    let colcount_blink = &mut lu.colcount_blink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let colmax = &mut lu.col_pivot;
+    let l_begin_p = &mut lu.l_begin_p;
+    let u_begin = &mut lu.u_begin;
+    let w_begin = &mut lu.w_begin;
+    let w_end = &mut lu.w_end;
+    let l_index = &mut lu.l_index;
+    let u_index = &mut lu.u_index;
+    let u_value = &mut lu.u_value;
+    let w_index = &mut lu.w_index;
+    let w_value = &mut lu.w_value;
 
     let cbeg = w_begin[pivot_col as usize];
     let cend = w_end[pivot_col as usize];
@@ -1000,7 +1000,7 @@ fn lu_pivot_singleton_col(this: &mut LU) -> LUInt {
             colcount_flink,
             colcount_blink,
             m,
-            Some(&mut this.min_colnz),
+            Some(&mut lu.min_colnz),
         );
         colmax[j as usize] = cmx;
     }
@@ -1026,32 +1026,32 @@ fn lu_pivot_singleton_col(this: &mut LU) -> LUInt {
     BASICLU_OK
 }
 
-fn lu_pivot_doubleton_col(this: &mut LU) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let droptol = this.droptol;
-    let pad = this.pad;
-    let stretch = this.stretch;
-    let pivot_col = this.pivot_col;
-    let pivot_row = this.pivot_row;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.col_pivot;
-    let l_begin_p = &mut this.l_begin_p;
-    let u_begin = &mut this.u_begin;
-    let w_begin = &mut this.w_begin;
-    let w_end = &mut this.w_end;
-    let w_flink = &mut this.w_flink;
-    let w_blink = &mut this.w_blink;
-    let l_index = &mut this.l_index;
-    let l_value = &mut this.l_value;
-    let u_index = &mut this.u_index;
-    let u_value = &mut this.u_value;
-    let w_index = &mut this.w_index;
-    let w_value = &mut this.w_value;
-    let marked = &mut this.iwork0;
+fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
+    let m = lu.m;
+    let rank = lu.rank;
+    let droptol = lu.droptol;
+    let pad = lu.pad;
+    let stretch = lu.stretch;
+    let pivot_col = lu.pivot_col;
+    let pivot_row = lu.pivot_row;
+    let colcount_flink = &mut lu.colcount_flink;
+    let colcount_blink = &mut lu.colcount_blink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let colmax = &mut lu.col_pivot;
+    let l_begin_p = &mut lu.l_begin_p;
+    let u_begin = &mut lu.u_begin;
+    let w_begin = &mut lu.w_begin;
+    let w_end = &mut lu.w_end;
+    let w_flink = &mut lu.w_flink;
+    let w_blink = &mut lu.w_blink;
+    let l_index = &mut lu.l_index;
+    let l_value = &mut lu.l_value;
+    let u_index = &mut lu.u_index;
+    let u_value = &mut lu.u_value;
+    let w_index = &mut lu.w_index;
+    let w_value = &mut lu.w_value;
+    let marked = &mut lu.iwork0;
 
     let mut cbeg = w_begin[pivot_col as usize]; // changed by file compression
     let mut cend = w_end[pivot_col as usize];
@@ -1105,10 +1105,10 @@ fn lu_pivot_doubleton_col(this: &mut LU) -> LUInt {
         rbeg = w_begin[(m + pivot_row) as usize];
         rend = w_end[(m + pivot_row) as usize];
         room = w_end[(2 * m) as usize] - w_begin[(2 * m) as usize];
-        this.ngarbage += 1;
+        lu.ngarbage += 1;
     }
     if grow > room {
-        this.addmem_w = grow - room;
+        lu.addmem_w = grow - room;
         return BASICLU_REALLOCATE;
     }
 
@@ -1177,7 +1177,7 @@ fn lu_pivot_doubleton_col(this: &mut LU) -> LUInt {
                     colcount_flink,
                     colcount_blink,
                     m,
-                    Some(&mut this.min_colnz),
+                    Some(&mut lu.min_colnz),
                 );
             }
         } else {
@@ -1215,7 +1215,7 @@ fn lu_pivot_doubleton_col(this: &mut LU) -> LUInt {
                 colcount_flink,
                 colcount_blink,
                 m,
-                Some(&mut this.min_colnz),
+                Some(&mut lu.min_colnz),
             );
         }
         colmax[j as usize] = cmx;
@@ -1273,7 +1273,7 @@ fn lu_pivot_doubleton_col(this: &mut LU) -> LUInt {
             w_value,
             space,
         );
-        this.nexpand += 1;
+        lu.nexpand += 1;
     }
 
     // Append fill-in to row pattern.
@@ -1292,7 +1292,7 @@ fn lu_pivot_doubleton_col(this: &mut LU) -> LUInt {
         rowcount_flink,
         rowcount_blink,
         m,
-        Some(&mut this.min_rownz),
+        Some(&mut lu.min_rownz),
     );
 
     // Store column in L.
@@ -1349,16 +1349,16 @@ fn lu_pivot_doubleton_col(this: &mut LU) -> LUInt {
     BASICLU_OK
 }
 
-fn lu_remove_col(this: &mut LU, j: LUInt) {
-    let m = this.m;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let colmax = &mut this.col_pivot;
-    let w_begin = &mut this.w_begin;
-    let w_end = &mut this.w_end;
-    let w_index = &mut this.w_index;
+fn lu_remove_col(lu: &mut LU, j: LUInt) {
+    let m = lu.m;
+    let colcount_flink = &mut lu.colcount_flink;
+    let colcount_blink = &mut lu.colcount_blink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let colmax = &mut lu.col_pivot;
+    let w_begin = &mut lu.w_begin;
+    let w_end = &mut lu.w_end;
+    let w_index = &mut lu.w_index;
     let cbeg = w_begin[j as usize];
     let cend = w_end[j as usize];
 
@@ -1382,7 +1382,7 @@ fn lu_remove_col(this: &mut LU, j: LUInt) {
             rowcount_flink,
             rowcount_blink,
             m,
-            Some(&mut this.min_rownz),
+            Some(&mut lu.min_rownz),
         );
     }
 
@@ -1395,6 +1395,6 @@ fn lu_remove_col(this: &mut LU, j: LUInt) {
         colcount_flink,
         colcount_blink,
         m,
-        Some(&mut this.min_colnz),
+        Some(&mut lu.min_colnz),
     );
 }

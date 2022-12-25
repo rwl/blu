@@ -112,12 +112,12 @@ pub fn basiclu_solve_sparse(
     lhs: &mut [f64],
     trans: char,
 ) -> LUInt {
-    let mut this = LU {
+    let mut lu = LU {
         ..Default::default()
     };
 
     let status = lu_load(
-        &mut this,
+        &mut lu,
         // istore,
         xstore,
         // Some(l_i.to_vec()),
@@ -135,16 +135,16 @@ pub fn basiclu_solve_sparse(
     //        && lhs)) {
     //     status = BASICLU_ERROR_ARGUMENT_MISSING;
     // }
-    let status = if this.nupdate < 0 {
+    let status = if lu.nupdate < 0 {
         BASICLU_ERROR_INVALID_CALL
     } else {
         // check RHS indices
-        let mut ok = nzrhs >= 0 && nzrhs <= this.m;
+        let mut ok = nzrhs >= 0 && nzrhs <= lu.m;
         for n in 0..nzrhs as usize {
             if !ok {
                 break;
             }
-            ok = ok && irhs[n] >= 0 && irhs[n] < this.m;
+            ok = ok && irhs[n] >= 0 && irhs[n] < lu.m;
         }
         if !ok {
             BASICLU_ERROR_INVALID_ARGUMENT
@@ -154,8 +154,8 @@ pub fn basiclu_solve_sparse(
     };
 
     if status == BASICLU_OK {
-        lu_solve_sparse(&mut this, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        lu_solve_sparse(&mut lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
-    lu_save(&this, /*istore,*/ xstore, status)
+    lu_save(&lu, /*istore,*/ xstore, status)
 }

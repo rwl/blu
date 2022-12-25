@@ -37,39 +37,39 @@ use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
 ///  BASICLU_REALLOCATE  require more memory in W
 ///  BASICLU_OK
 pub(crate) fn lu_setup_bump(
-    this: &mut LU,
+    lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
     b_i: &[LUInt],
     b_x: &[f64],
 ) -> LUInt {
-    let m = this.m;
-    let rank = this.rank;
-    let w_mem = this.w_mem;
-    let b_nz = this.matrix_nz;
-    let l_nz = this.l_begin_p[rank as usize] - rank;
-    let u_nz = this.u_begin[rank as usize];
-    let abstol = this.abstol;
-    let pad = this.pad;
-    let stretch = this.stretch;
-    let colcount_flink = &mut this.colcount_flink;
-    let colcount_blink = &mut this.colcount_blink;
-    let rowcount_flink = &mut this.rowcount_flink;
-    let rowcount_blink = &mut this.rowcount_blink;
-    let pinv = &this.pinv;
-    let qinv = &this.qinv;
-    // let Wbegin = &mut this.Wbegin;
-    // let Wend = &mut this.Wend;
+    let m = lu.m;
+    let rank = lu.rank;
+    let w_mem = lu.w_mem;
+    let b_nz = lu.matrix_nz;
+    let l_nz = lu.l_begin_p[rank as usize] - rank;
+    let u_nz = lu.u_begin[rank as usize];
+    let abstol = lu.abstol;
+    let pad = lu.pad;
+    let stretch = lu.stretch;
+    let colcount_flink = &mut lu.colcount_flink;
+    let colcount_blink = &mut lu.colcount_blink;
+    let rowcount_flink = &mut lu.rowcount_flink;
+    let rowcount_blink = &mut lu.rowcount_blink;
+    let pinv = &lu.pinv;
+    let qinv = &lu.qinv;
+    // let Wbegin = &mut lu.Wbegin;
+    // let Wend = &mut lu.Wend;
     // let Wbegin2 = Wbegin + m; /* alias for row file */
     // let Wend2 = Wend + m;
-    let (w_begin, w_begin2) = this.w_begin.split_at_mut(m as usize);
-    let (w_end, w_end2) = this.w_end.split_at_mut(m as usize);
-    let w_flink = &mut this.w_flink;
-    let w_blink = &mut this.w_blink;
-    let w_index = &mut this.w_index;
-    let w_value = &mut this.w_value;
-    let colmax = &mut this.col_pivot;
-    let iwork0 = &mut this.iwork0;
+    let (w_begin, w_begin2) = lu.w_begin.split_at_mut(m as usize);
+    let (w_end, w_end2) = lu.w_end.split_at_mut(m as usize);
+    let w_flink = &mut lu.w_flink;
+    let w_blink = &mut lu.w_blink;
+    let w_index = &mut lu.w_index;
+    let w_value = &mut lu.w_value;
+    let colmax = &mut lu.col_pivot;
+    let iwork0 = &mut lu.iwork0;
 
     let mut bump_nz = b_nz - l_nz - u_nz - rank; // will change if columns are dropped
 
@@ -91,7 +91,7 @@ pub(crate) fn lu_setup_bump(
     let need = bump_nz + (stretch as LUInt) * bump_nz + (m - rank) * pad;
     let need = 2 * need; // rowwise + columnwise
     if need > w_mem {
-        this.addmem_w = need - w_mem;
+        lu.addmem_w = need - w_mem;
         return BASICLU_REALLOCATE;
     }
 
@@ -216,10 +216,10 @@ pub(crate) fn lu_setup_bump(
         assert_eq!(iwork0[i], 0);
     }
 
-    this.bump_nz = bump_nz;
-    this.bump_size = m - rank;
-    this.min_colnz = min_colnz;
-    this.min_rownz = min_rownz;
+    lu.bump_nz = bump_nz;
+    lu.bump_size = m - rank;
+    lu.min_colnz = min_colnz;
+    lu.min_rownz = min_rownz;
 
     BASICLU_OK
 }
