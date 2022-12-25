@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::basiclu::*;
-use crate::lu_internal::{lu_load, lu_save, LU};
+use crate::lu_internal::LU;
 use crate::lu_solve_dense::lu_solve_dense;
 
 /// Purpose:
@@ -62,47 +62,23 @@ use crate::lu_solve_dense::lu_solve_dense;
 ///         BASICLU_ERROR_INVALID_CALL
 ///
 ///             The factorization is invalid.
-pub fn basiclu_solve_dense(
-    // istore: &mut [lu_int],
-    xstore: &mut [f64],
-    _l_i: &[LUInt],
-    _l_x: &[f64],
-    _u_i: &[LUInt],
-    _u_x: &[f64],
-    _w_i: &[LUInt],
-    _w_x: &[f64],
-    rhs: &[f64],
-    lhs: &mut [f64],
-    trans: char,
-) -> LUInt {
-    let mut lu = LU {
-        ..Default::default()
-    };
-
-    let status = lu_load(
-        &mut lu,
-        // istore,
-        xstore,
-        // Some(l_i),
-        // Some(l_x),
-        // Some(u_i),
-        // Some(u_x),
-        // Some(w_i),
-        // Some(w_x),
-    );
-    if status != BASICLU_OK {
-        return status;
-    }
+pub fn basiclu_solve_dense(lu: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) -> LUInt {
+    // let status = lu.load(xstore);
+    // if status != BASICLU_OK {
+    //     return status;
+    // }
 
     // if (! (l_i && l_x && u_i && u_x && w_i && w_x && rhs && lhs)) {
     //     status = BASICLU_ERROR_ARGUMENT_MISSING;
     // }
-    if lu.nupdate < 0 {
-        let status = BASICLU_ERROR_INVALID_CALL;
-        return lu_save(&lu, /*istore,*/ xstore, status);
-    }
+    assert!(lu.nupdate >= 0);
+    // if lu.nupdate < 0 {
+    //     let status = BASICLU_ERROR_INVALID_CALL;
+    //     return lu_save(&lu, /*istore,*/ xstore, status);
+    // }
 
-    lu_solve_dense(&mut lu, rhs, lhs, trans);
+    lu_solve_dense(lu, rhs, lhs, trans);
 
-    lu_save(&lu, /*istore,*/ xstore, status)
+    // lu_save(&lu, /*istore,*/ xstore, status)
+    BASICLU_OK
 }

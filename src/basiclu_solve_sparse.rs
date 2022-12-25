@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::basiclu::*;
-use crate::lu_internal::{lu_load, lu_save, LU};
+use crate::lu_internal::LU;
 use crate::lu_solve_sparse::lu_solve_sparse;
 
 /// Purpose:
@@ -96,14 +96,7 @@ use crate::lu_solve_sparse::lu_solve_sparse;
 ///             The right-hand side is invalid (nzrhs < 0 or nzrhs > m or one or
 ///             more indices out of range).
 pub fn basiclu_solve_sparse(
-    _istore: &mut [LUInt],
-    xstore: &mut [f64],
-    _l_i: &[LUInt],
-    _l_x: &[f64],
-    _u_i: &[LUInt],
-    _u_x: &[f64],
-    _w_i: &[LUInt],
-    _w_x: &[f64],
+    lu: &mut LU,
     nzrhs: LUInt,
     irhs: &[LUInt],
     xrhs: &[f64],
@@ -112,24 +105,10 @@ pub fn basiclu_solve_sparse(
     lhs: &mut [f64],
     trans: char,
 ) -> LUInt {
-    let mut lu = LU {
-        ..Default::default()
-    };
-
-    let status = lu_load(
-        &mut lu,
-        // istore,
-        xstore,
-        // Some(l_i.to_vec()),
-        // Some(l_x.to_vec()),
-        // Some(u_i.to_vec()),
-        // Some(u_x.to_vec()),
-        // Some(w_i.to_vec()),
-        // Some(w_x.to_vec()),
-    );
-    if status != BASICLU_OK {
-        return status;
-    }
+    // let status = lu.load(xstore);
+    // if status != BASICLU_OK {
+    //     return status;
+    // }
 
     // if (! (l_i && l_x && u_i && u_x && w_i && w_x && irhs && xrhs && p_nzlhs && ilhs
     //        && lhs)) {
@@ -154,8 +133,9 @@ pub fn basiclu_solve_sparse(
     };
 
     if status == BASICLU_OK {
-        lu_solve_sparse(&mut lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        lu_solve_sparse(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
-    lu_save(&lu, /*istore,*/ xstore, status)
+    // lu_save(&lu, /*istore,*/ xstore, status)
+    status
 }

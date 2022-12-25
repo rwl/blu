@@ -153,14 +153,7 @@ use crate::lu_solve_for_update::lu_solve_for_update;
 ///
 ///             basiclu_solve_for_update() will start from scratch in the next call.
 pub fn basiclu_solve_for_update(
-    _istore: &mut [LUInt],
-    xstore: &mut [f64],
-    _l_i: &mut [LUInt],
-    _l_x: &mut [f64],
-    _u_i: &mut [LUInt],
-    _u_x: &mut [f64],
-    _w_i: &mut [LUInt],
-    _w_x: &mut [f64],
+    lu: &mut LU,
     nzrhs: LUInt,
     irhs: &[LUInt],
     xrhs: Option<&[f64]>,
@@ -169,25 +162,10 @@ pub fn basiclu_solve_for_update(
     lhs: Option<&mut [f64]>,
     trans: char,
 ) -> LUInt {
-    let mut lu = LU {
-        ..Default::default()
-    };
-    // lu_int status, n, ok;
-
-    let status = lu_load(
-        &mut lu,
-        // istore,
-        xstore,
-        // Some(l_i.to_vec()), // FIXME
-        // Some(l_x.to_vec()),
-        // Some(u_i.to_vec()),
-        // Some(u_x.to_vec()),
-        // Some(w_i.to_vec()),
-        // Some(w_x.to_vec()),
-    );
-    if status != BASICLU_OK {
-        return status;
-    }
+    // let status = lu.load(xstore);
+    // if status != BASICLU_OK {
+    //     return status;
+    // }
 
     // if (! (l_i && l_x && u_i && u_x && w_i && w_x && irhs)) {
     //     status = BASICLU_ERROR_ARGUMENT_MISSING;
@@ -223,8 +201,9 @@ pub fn basiclu_solve_for_update(
 
     if status == BASICLU_OK {
         // may request reallocation
-        status = lu_solve_for_update(&mut lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        status = lu_solve_for_update(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
-    lu_save(&lu, /*istore,*/ xstore, status)
+    // lu_save(&lu, /*istore,*/ xstore, status)
+    status
 }

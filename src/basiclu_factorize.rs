@@ -238,114 +238,94 @@ use std::time::Instant;
 ///     xstore[BASICLU_CONDEST_L]
 ///     xstore[BASICLU_CONDEST_U] Estimated 1-norm condition number of L and U.
 pub fn basiclu_factorize(
-    istore: &mut [LUInt],
-    xstore: &mut [f64],
-    l_i: &mut [LUInt],
-    l_x: &mut [f64],
-    u_i: &mut [LUInt],
-    u_x: &mut [f64],
-    _w_i: &mut [LUInt],
-    _w_x: &mut [f64],
+    lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
     b_i: &[LUInt],
     b_x: &[f64],
     c0ntinue: LUInt,
 ) -> LUInt {
-    let mut lu = LU {
-        ..Default::default()
-    };
     let tic = Instant::now();
 
-    let status = lu_load(
-        &mut lu,
-        // istore,
-        xstore,
-        // Some(l_i),
-        // Some(l_x),
-        // Some(u_i),
-        // Some(u_x),
-        // Some(w_i),
-        // Some(w_x),
-    );
-    if status != BASICLU_OK {
-        return status;
-    }
+    // let status = lu.load(xstore);
+    // if status != BASICLU_OK {
+    //     return status;
+    // }
 
     // if !(l_i && l_x && u_i && u_x && w_i && w_x && b_begin && b_end && b_i && b_x) {
     //     let status = BASICLU_ERROR_ARGUMENT_MISSING;
     //     return lu_save(&lu, istore, xstore, status);
     // }
     if c0ntinue == 0 {
-        lu_reset(&mut lu);
+        lu.reset();
         lu.task = SINGLETONS;
     }
 
     fn return_to_caller(
         tic: Instant,
         lu: &mut LU,
-        _istore: &mut [LUInt],
-        xstore: &mut [f64],
-        status: LUInt,
+        /*xstore: &mut [f64],*/ status: LUInt,
     ) -> LUInt {
         let elapsed = tic.elapsed().as_secs_f64();
         lu.time_factorize += elapsed;
         lu.time_factorize_total += elapsed;
-        return lu_save(&lu, /*istore,*/ xstore, status);
+        // return lu_save(&lu, /*istore,*/ xstore, status);
+        status
     }
 
     // continue factorization
     match lu.task {
         SINGLETONS => {
             // lu.task = SINGLETONS;
-            let status = lu_singletons(&mut lu, b_begin, b_end, b_i, b_x);
+            let status = lu_singletons(lu, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut lu, istore, xstore, status);
+                return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut lu, b_begin, b_end, b_i, b_x);
+            let status = lu_setup_bump(lu, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut lu, istore, xstore, status);
+                return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut lu);
+            let status = lu_factorize_bump(lu);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut lu, istore, xstore, status);
+                return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         SETUP_BUMP => {
             // lu.task = SETUP_BUMP;
-            let status = lu_setup_bump(&mut lu, b_begin, b_end, b_i, b_x);
+            let status = lu_setup_bump(lu, b_begin, b_end, b_i, b_x);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut lu, istore, xstore, status);
+                return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut lu);
+            let status = lu_factorize_bump(lu);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut lu, istore, xstore, status);
+                return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         FACTORIZE_BUMP => {
             // lu.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(&mut lu);
+            let status = lu_factorize_bump(lu);
             if status != BASICLU_OK {
-                return return_to_caller(tic, &mut lu, istore, xstore, status);
+                return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         BUILD_FACTORS => {}
         _ => {
             let status = BASICLU_ERROR_INVALID_CALL;
-            return lu_save(&lu, /*istore,*/ xstore, status);
+            // return lu_save(&lu, xstore, status);
+            return status;
         }
     };
 
     lu.task = BUILD_FACTORS;
-    let status = lu_build_factors(&mut lu);
+    let status = lu_build_factors(lu);
     if status != BASICLU_OK {
-        return return_to_caller(tic, &mut lu, istore, xstore, status);
+        return return_to_caller(tic, lu, /*xstore,*/ status);
     }
 
     // factorization successfully finished
@@ -358,10 +338,8 @@ pub fn basiclu_factorize(
     lu.condest_l = lu_condest(
         lu.m,
         &l_begin!(lu),
-        // lu.Lindex.as_ref().unwrap(),
-        // lu.Lvalue.as_ref().unwrap(),
-        l_i,
-        l_x,
+        &lu.l_index,
+        &lu.l_value,
         None,
         Some(&p!(lu)),
         0,
@@ -372,10 +350,8 @@ pub fn basiclu_factorize(
     lu.condest_u = lu_condest(
         lu.m,
         &lu.u_begin,
-        // lu.Uindex.as_ref().unwrap(),
-        // lu.Uvalue.as_ref().unwrap(),
-        u_i,
-        u_x,
+        &lu.u_index,
+        &lu.u_value,
         Some(&lu.row_pivot),
         Some(&p!(lu)),
         1,
@@ -385,7 +361,7 @@ pub fn basiclu_factorize(
     );
 
     // measure numerical stability of the factorization
-    lu_residual_test(&mut lu, b_begin, b_end, b_i, b_x);
+    lu_residual_test(lu, b_begin, b_end, b_i, b_x);
 
     // factor_cost is a deterministic measure of the factorization cost.
     // The parameters have been adjusted such that (on my computer)
@@ -416,8 +392,8 @@ pub fn basiclu_factorize(
 
     if lu.rank < lu.m {
         let status = BASICLU_WARNING_SINGULAR_MATRIX;
-        return_to_caller(tic, &mut lu, istore, xstore, status);
+        return_to_caller(tic, lu, /*xstore,*/ status);
     }
 
-    return_to_caller(tic, &mut lu, istore, xstore, status)
+    return_to_caller(tic, lu, /*xstore,*/ status)
 }

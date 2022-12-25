@@ -1,50 +1,71 @@
 use crate::basiclu::*;
-use crate::lu_def::BASICLU_HASH;
-use crate::lu_internal::{lu_load, lu_reset, lu_save, LU};
+use crate::lu_internal::LU;
 
-/// lu_initialize()
-///
-/// Make @istore, @xstore a BASICLU instance. Set parameters to defaults and
-/// initialize global counters. Reset instance for a fresh factorization.
-pub(crate) fn lu_initialize(m: LUInt, /*istore: &mut [lu_int],*/ xstore: &mut [f64]) {
-    let mut lu = LU {
-        ..Default::default()
-    };
+impl LU {
+    /// Make a BASICLU instance. Set parameters to defaults and initialize global counters.
+    /// Reset instance for a fresh factorization.
+    pub(crate) fn new(m: LUInt) -> Self {
+        let mut lu = LU {
+            l_mem: m,
+            u_mem: m,
+            w_mem: m,
 
-    // set constant entries
-    // istore[0] = BASICLU_HASH;
-    xstore[0] = BASICLU_HASH as f64;
-    xstore[BASICLU_DIM] = m as f64;
+            // set default parameters
+            droptol: 1e-20,
+            abstol: 1e-14,
+            reltol: 0.1,
+            nzbias: 1,
+            maxsearch: 3,
+            pad: 4,
+            stretch: 0.3,
+            compress_thres: 0.5,
+            sparse_thres: 0.05,
+            search_rows: 0,
 
-    // set default parameters
-    xstore[BASICLU_MEMORYL] = 0.0;
-    xstore[BASICLU_MEMORYU] = 0.0;
-    xstore[BASICLU_MEMORYW] = 0.0;
-    xstore[BASICLU_DROP_TOLERANCE] = 1e-20;
-    xstore[BASICLU_ABS_PIVOT_TOLERANCE] = 1e-14;
-    xstore[BASICLU_REL_PIVOT_TOLERANCE] = 0.1;
-    xstore[BASICLU_BIAS_NONZEROS] = 1.0;
-    xstore[BASICLU_MAXN_SEARCH_PIVOT] = 3.0;
-    xstore[BASICLU_PAD] = 4.0;
-    xstore[BASICLU_STRETCH] = 0.3;
-    xstore[BASICLU_COMPRESSION_THRESHOLD] = 0.5;
-    xstore[BASICLU_SPARSE_THRESHOLD] = 0.05;
-    xstore[BASICLU_REMOVE_COLUMNS] = 0.0;
-    xstore[BASICLU_SEARCH_ROWS] = 1.0;
+            // initialize global counters
+            nfactorize: 0,
+            nupdate_total: 0,
+            nforrest_total: 0,
+            nsymperm_total: 0,
+            time_factorize_total: 0.0,
+            time_solve_total: 0.0,
+            time_update_total: 0.0,
 
-    // initialize global counters
-    xstore[BASICLU_NFACTORIZE] = 0.0;
-    xstore[BASICLU_NUPDATE_TOTAL] = 0.0;
-    xstore[BASICLU_NFORREST_TOTAL] = 0.0;
-    xstore[BASICLU_NSYMPERM_TOTAL] = 0.0;
-    xstore[BASICLU_TIME_FACTORIZE_TOTAL] = 0.0;
-    xstore[BASICLU_TIME_SOLVE_TOTAL] = 0.0;
-    xstore[BASICLU_TIME_UPDATE_TOTAL] = 0.0;
+            l_index: vec![0; m as usize],
+            u_index: vec![0; m as usize],
+            w_index: vec![0; m as usize],
 
-    // lu_reset() and lu_save() initializes the remaining slots
-    lu_load(
-        &mut lu, /*istore,*/ xstore, //None, None, None, None, None, None,
-    );
-    lu_reset(&mut lu);
-    lu_save(&lu, /*istore,*/ xstore, BASICLU_OK);
+            l_value: vec![0.0; m as usize],
+            u_value: vec![0.0; m as usize],
+            w_value: vec![0.0; m as usize],
+
+            colcount_flink: vec![0; 2 * m as usize + 2],
+            colcount_blink: vec![0; 2 * m as usize + 2],
+            rowcount_flink: vec![0; 2 * m as usize + 2],
+            rowcount_blink: vec![0; 2 * m as usize + 2],
+            w_begin: vec![0; 2 * m as usize + 2],
+            w_end: vec![0; 2 * m as usize + 2],
+            w_flink: vec![0; 2 * m as usize + 2],
+            w_blink: vec![0; 2 * m as usize + 2],
+            pinv: vec![0; m as usize],
+            qinv: vec![0; m as usize],
+            l_begin_p: vec![0; m as usize + 1],
+            u_begin: vec![0; m as usize + 1],
+            iwork0: vec![0; m as usize],
+
+            work0: vec![0.0; m as usize],
+            work1: vec![0.0; m as usize],
+            col_pivot: vec![0.0; m as usize],
+            row_pivot: vec![0.0; m as usize],
+
+            ..Default::default()
+        };
+
+        // lu.reset() and lu.save() initializes the remaining slots
+        // lu.load(xstore);
+        lu.reset();
+        // lu.save(xstore, BASICLU_OK);
+
+        lu
+    }
 }

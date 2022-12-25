@@ -90,12 +90,7 @@ use crate::lu_internal::*;
 ///             basiclu_factorize() has not completed or basiclu_update() has been
 ///             called in the meanwhile).
 pub fn basiclu_get_factors(
-    _istore: &mut [LUInt],
-    xstore: &mut [f64],
-    l_i: &[LUInt],
-    l_x: &[f64],
-    w_i: &[LUInt],
-    w_x: &[f64],
+    lu: &mut LU,
     rowperm: Option<&[LUInt]>,
     colperm: Option<&[LUInt]>,
     l_colptr: Option<&mut [LUInt]>,
@@ -105,20 +100,15 @@ pub fn basiclu_get_factors(
     u_rowidx: Option<&mut [LUInt]>,
     u_value_: Option<&mut [f64]>,
 ) -> LUInt {
-    let mut lu = LU {
-        ..Default::default()
-    };
-
-    let status = lu_load(
-        &mut lu, /*istore,*/ xstore, /*, l_i, l_x, Ui, Ux, w_i, w_x*/
-    );
-    if status != BASICLU_OK {
-        return status;
-    }
-    if lu.nupdate != 0 {
-        let status = BASICLU_ERROR_INVALID_CALL;
-        return lu_save(&lu, /*istore,*/ xstore, status);
-    }
+    // let status = lu.load(xstore);
+    // if status != BASICLU_OK {
+    //     return status;
+    // }
+    assert_eq!(lu.nupdate, 0);
+    // if lu.nupdate != 0 {
+    //     let status = BASICLU_ERROR_INVALID_CALL;
+    //     return lu.save(xstore, status);
+    // }
     let m = lu.m;
 
     if let Some(rowperm) = rowperm {
@@ -137,10 +127,8 @@ pub fn basiclu_get_factors(
 
         // let Lbegin_p = &lu.Lbegin_p;
         let lt_begin_p = &lt_begin_p!(lu);
-        // let Lindex = lu.Lindex.as_ref().unwrap();
-        // let Lvalue = lu.Lvalue.as_ref().unwrap();
-        let l_index = l_i;
-        let l_value = l_x;
+        let l_index = &lu.l_index;
+        let l_value = &lu.l_value;
         let p = &p!(lu);
         let colptr = &mut iwork1!(lu); // size m workspace
 
@@ -188,10 +176,8 @@ pub fn basiclu_get_factors(
 
         // let Wbegin = &lu.Wbegin;
         // let Wend = &lu.Wend;
-        // let Windex = lu.Windex.as_ref().unwrap();
-        // let Wvalue = lu.Wvalue.as_ref().unwrap();
-        let w_index = w_i;
-        let w_value = w_x;
+        let w_index = &lu.w_index;
+        let w_value = &lu.w_value;
         // let col_pivot = &lu.xstore.col_pivot;
         let pivotcol = &pivotcol!(lu);
         let colptr = &mut iwork1!(lu); // size m workspace

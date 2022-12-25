@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::{LUInt, BASICLU_ERROR_INVALID_CALL, BASICLU_OK};
-use crate::lu_internal::{lu_load, lu_save, LU};
+use crate::basiclu::{LUInt, BASICLU_ERROR_INVALID_CALL};
+use crate::lu_internal::LU;
 use crate::lu_update::lu_update;
 
 /// Purpose:
@@ -114,35 +114,11 @@ use crate::lu_update::lu_update;
 ///         The maximum entry (in absolute value) in the eta vectors from the
 ///         Forrest-Tomlin update. A large value, say > 1e6, indicates that pivoting
 ///         on diagonal element was unstable and refactorization might be necessary.
-pub fn basiclu_update(
-    _istore: &mut [LUInt],
-    xstore: &mut [f64],
-    _l_i: &mut [LUInt],
-    _l_x: &mut [f64],
-    _u_i: &mut [LUInt],
-    _u_x: &mut [f64],
-    _w_i: &mut [LUInt],
-    _w_x: &mut [f64],
-    xtbl: f64,
-) -> LUInt {
-    let mut lu = LU {
-        ..Default::default()
-    };
-
-    let status = lu_load(
-        &mut lu,
-        // istore,
-        xstore,
-        // Some(l_i.to_vec()), // FIXME
-        // Some(l_x.to_vec()),
-        // Some(u_i.to_vec()),
-        // Some(u_x.to_vec()),
-        // Some(w_i.to_vec()),
-        // Some(w_x.to_vec()),
-    );
-    if status != BASICLU_OK {
-        return status;
-    }
+pub fn basiclu_update(lu: &mut LU, xtbl: f64) -> LUInt {
+    // let status = lu.load(xstore);
+    // if status != BASICLU_OK {
+    //     return status;
+    // }
 
     // if (! (l_i && l_x && u_i && u_x && w_i && w_x)) {
     //     status = BASICLU_ERROR_ARGUMENT_MISSING;
@@ -150,7 +126,8 @@ pub fn basiclu_update(
     let status = if lu.nupdate < 0 || lu.ftran_for_update < 0 || lu.btran_for_update < 0 {
         BASICLU_ERROR_INVALID_CALL
     } else {
-        lu_update(&mut lu, xtbl)
+        lu_update(lu, xtbl)
     };
-    lu_save(&mut lu, /*istore,*/ xstore, status)
+    // lu_save(&mut lu, /*istore,*/ xstore, status)
+    status
 }

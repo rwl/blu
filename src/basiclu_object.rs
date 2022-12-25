@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::basiclu::*;
-use crate::lu_initialize::lu_initialize;
+use crate::lu_internal::LU;
 use crate::{
     basiclu_factorize, basiclu_get_factors, basiclu_solve_dense, basiclu_solve_for_update,
     basiclu_solve_sparse, basiclu_update,
@@ -24,15 +24,7 @@ use crate::{
 ///         Arrays are reallocated for max(realloc_factor, 1.0) times the
 ///         required size. Default: 1.5
 pub struct BasicLUObject {
-    pub istore: Vec<LUInt>,
-    pub xstore: Vec<f64>,
-
-    l_i: Vec<LUInt>,
-    u_i: Vec<LUInt>,
-    w_i: Vec<LUInt>,
-    l_x: Vec<f64>,
-    u_x: Vec<f64>,
-    w_x: Vec<f64>,
+    pub lu: LU,
 
     pub lhs: Vec<f64>,
     pub ilhs: Vec<LUInt>,
@@ -41,425 +33,362 @@ pub struct BasicLUObject {
     pub realloc_factor: f64,
 }
 
-/// Purpose:
-///
-///     Initialize a BASICLU object. When m is positive, then *obj is initialized to
-///     process matrices of dimension m. When m is zero, then *obj is initialized to
-///     a "null" object, which cannot be used for factorization, but can be passed
-///     to basiclu_obj_free().
-///
-///     This routine must be called once before passing obj to any other
-///     basiclu_obj_ routine. When obj is initialized to a null object, then the
-///     routine can be called again to reinitialize obj.
-///
-/// Return:
-///
-///     BASICLU_OK
-///
-///         *obj successfully initialized.
-///
-///     BASICLU_ERROR_ARGUMENT_MISSING
-///
-///         obj is NULL.
-///
-///     BASICLU_ERROR_INVALID_ARGUMENT
-///
-///         m is negative.
-///
-///     BASICLU_ERROR_OUT_OF_MEMORY
-///
-///         insufficient memory to initialize object.
-///
-/// Arguments:
-///
-///     struct BasicLUObject *obj
-///
-///         Pointer to the object to be initialized.
-///
-///     lu_int m
-///
-///         The dimension of matrices which can be processed, or 0.
-pub fn basiclu_obj_initialize(obj: &mut BasicLUObject, m: LUInt) -> LUInt {
-    // lu_int imemsize, xmemsize, fmemsize;
+impl BasicLUObject {
+    /// Purpose:
+    ///
+    ///     Initialize a BASICLU object. When m is positive, then *obj is initialized to
+    ///     process matrices of dimension m. When m is zero, then *obj is initialized to
+    ///     a "null" object, which cannot be used for factorization, but can be passed
+    ///     to basiclu_obj_free().
+    ///
+    ///     This routine must be called once before passing obj to any other
+    ///     basiclu_obj_ routine. When obj is initialized to a null object, then the
+    ///     routine can be called again to reinitialize obj.
+    ///
+    /// Return:
+    ///
+    ///     BASICLU_OK
+    ///
+    ///         *obj successfully initialized.
+    ///
+    ///     BASICLU_ERROR_ARGUMENT_MISSING
+    ///
+    ///         obj is NULL.
+    ///
+    ///     BASICLU_ERROR_INVALID_ARGUMENT
+    ///
+    ///         m is negative.
+    ///
+    ///     BASICLU_ERROR_OUT_OF_MEMORY
+    ///
+    ///         insufficient memory to initialize object.
+    ///
+    /// Arguments:
+    ///
+    ///     struct BasicLUObject *obj
+    ///
+    ///         Pointer to the object to be initialized.
+    ///
+    ///     lu_int m
+    ///
+    ///         The dimension of matrices which can be processed, or 0.
+    pub fn new(m: LUInt) -> Self {
+        // lu_int imemsize, xmemsize, fmemsize;
 
-    // if (!obj)
-    //     return BASICLU_ERROR_ARGUMENT_MISSING;
-    if m < 0 {
-        return BASICLU_ERROR_INVALID_ARGUMENT;
-    }
+        // if (!obj)
+        //     return BASICLU_ERROR_ARGUMENT_MISSING;
+        // if m < 0 {
+        //     return BASICLU_ERROR_INVALID_ARGUMENT;
+        // }
+        assert!(m >= 0);
 
-    let imemsize = BASICLU_SIZE_ISTORE_1 + BASICLU_SIZE_ISTORE_M * m;
-    let xmemsize = BASICLU_SIZE_XSTORE_1 + BASICLU_SIZE_XSTORE_M * m;
-    let fmemsize = m; // initial length of l_i, l_x, u_i, u_x, w_i, w_x
+        // let imemsize = BASICLU_SIZE_ISTORE_1 + BASICLU_SIZE_ISTORE_M * m;
+        // let xmemsize = BASICLU_SIZE_XSTORE_1 + BASICLU_SIZE_XSTORE_M * m;
+        // let fmemsize = m; // initial length of l_i, l_x, u_i, u_x, w_i, w_x
 
-    obj.istore = vec![0; imemsize as usize];
-    obj.xstore = vec![0.0; xmemsize as usize];
-    obj.l_i = vec![0; fmemsize as usize];
-    obj.l_x = vec![0.0; fmemsize as usize];
-    obj.u_i = vec![0; fmemsize as usize];
-    obj.u_x = vec![0.0; fmemsize as usize];
-    obj.w_i = vec![0; fmemsize as usize];
-    obj.w_x = vec![0.0; fmemsize as usize];
-    obj.lhs = vec![0.0; m as usize];
-    obj.ilhs = vec![0; m as usize];
-    obj.nzlhs = 0;
-    obj.realloc_factor = 1.5;
+        // obj.istore = vec![0; imemsize as usize];
+        // obj.xstore = vec![0.0; xmemsize as usize];
+        // obj.l_i = vec![0; fmemsize as usize];
+        // obj.l_x = vec![0.0; fmemsize as usize];
+        // obj.u_i = vec![0; fmemsize as usize];
+        // obj.u_x = vec![0.0; fmemsize as usize];
+        // obj.w_i = vec![0; fmemsize as usize];
+        // obj.w_x = vec![0.0; fmemsize as usize];
+        // obj.lhs = vec![0.0; m as usize];
+        // obj.ilhs = vec![0; m as usize];
+        // obj.nzlhs = 0;
+        // obj.realloc_factor = 1.5;
 
-    lu_initialize(m, /*&mut obj.istore,*/ &mut obj.xstore);
-    obj.xstore[BASICLU_MEMORYL] = fmemsize as f64;
-    obj.xstore[BASICLU_MEMORYU] = fmemsize as f64;
-    obj.xstore[BASICLU_MEMORYW] = fmemsize as f64;
-    BASICLU_OK
-}
+        // lu_initialize(m, /*&mut obj.istore,*/ &mut obj.xstore);
+        // obj.xstore[BASICLU_MEMORYL] = fmemsize as f64;
+        // obj.xstore[BASICLU_MEMORYU] = fmemsize as f64;
+        // obj.xstore[BASICLU_MEMORYW] = fmemsize as f64;
+        // BASICLU_OK
 
-/// Purpose:
-///
-///     Call basiclu_factorize() on a BASICLU object.
-///
-/// Return:
-///
-///     BASICLU_ERROR_INVALID_OBJECT
-///
-///         obj is NULL or initialized to a null object.
-///
-///     BASICLU_ERROR_OUT_OF_MEMORY
-///
-///         reallocation failed because of insufficient memory.
-///
-///     Other return codes are passed through from basiclu_factorize().
-///
-/// Arguments:
-///
-///     struct BasicLUObject *obj
-///
-///         Pointer to an initialized BASICLU object.
-///
-///     The other arguments are passed through to basiclu_factorize().
-pub fn basiclu_obj_factorize(
-    obj: &mut BasicLUObject,
-    b_begin: &[LUInt],
-    b_end: &[LUInt],
-    b_i: &[LUInt],
-    b_x: &[f64],
-) -> LUInt {
-    if !isvalid(obj) {
-        return BASICLU_ERROR_INVALID_OBJECT;
-    }
-
-    let mut status = basiclu_factorize(
-        &mut obj.istore,
-        &mut obj.xstore,
-        &mut obj.l_i,
-        &mut obj.l_x,
-        &mut obj.u_i,
-        &mut obj.u_x,
-        &mut obj.w_i,
-        &mut obj.w_x,
-        b_begin,
-        b_end,
-        b_i,
-        b_x,
-        0,
-    );
-
-    while status == BASICLU_REALLOCATE {
-        status = lu_realloc_obj(obj);
-        if status != BASICLU_OK {
-            break;
+        Self {
+            lu: LU::new(m),
+            lhs: vec![0.0; m as usize],
+            ilhs: vec![0; m as usize],
+            nzlhs: 0,
+            realloc_factor: 1.5,
         }
-        status = basiclu_factorize(
-            &mut obj.istore,
-            &mut obj.xstore,
-            &mut obj.l_i,
-            &mut obj.l_x,
-            &mut obj.u_i,
-            &mut obj.u_x,
-            &mut obj.w_i,
-            &mut obj.w_x,
-            b_begin,
-            b_end,
-            b_i,
-            b_x,
-            1,
-        );
     }
 
-    status
-}
+    /// Purpose:
+    ///
+    ///     Call basiclu_factorize() on a BASICLU object.
+    ///
+    /// Return:
+    ///
+    ///     BASICLU_ERROR_INVALID_OBJECT
+    ///
+    ///         obj is NULL or initialized to a null object.
+    ///
+    ///     BASICLU_ERROR_OUT_OF_MEMORY
+    ///
+    ///         reallocation failed because of insufficient memory.
+    ///
+    ///     Other return codes are passed through from basiclu_factorize().
+    ///
+    /// Arguments:
+    ///
+    ///     struct BasicLUObject *obj
+    ///
+    ///         Pointer to an initialized BASICLU object.
+    ///
+    ///     The other arguments are passed through to basiclu_factorize().
+    pub fn factorize(
+        &mut self,
+        b_begin: &[LUInt],
+        b_end: &[LUInt],
+        b_i: &[LUInt],
+        b_x: &[f64],
+    ) -> LUInt {
+        if !isvalid(self) {
+            return BASICLU_ERROR_INVALID_OBJECT;
+        }
 
-/// Purpose:
-///
-///     Call basiclu_get_factors() on a BASICLU object.
-///
-/// Return:
-///
-///     BASICLU_ERROR_INVALID_OBJECT
-///
-///         obj is NULL or initialized to a null object.
-///
-///     Other return codes are passed through from basiclu_get_factors().
-///
-/// Arguments:
-///
-///     struct BasicLUObject *obj
-///
-///         Pointer to an initialized BASICLU object.
-///
-///     The other arguments are passed through to basiclu_get_factors().
-pub fn basiclu_obj_get_factors(
-    obj: &mut BasicLUObject,
-    rowperm: Option<&[LUInt]>,
-    colperm: Option<&[LUInt]>,
-    l_colptr: Option<&mut [LUInt]>,
-    l_rowidx: Option<&mut [LUInt]>,
-    l_value: Option<&mut [f64]>,
-    u_colptr: Option<&mut [LUInt]>,
-    u_rowidx: Option<&mut [LUInt]>,
-    u_value: Option<&mut [f64]>,
-) -> LUInt {
-    if !isvalid(obj) {
-        return BASICLU_ERROR_INVALID_OBJECT;
+        let mut status = basiclu_factorize(&mut self.lu, b_begin, b_end, b_i, b_x, 0);
+
+        while status == BASICLU_REALLOCATE {
+            status = lu_realloc_obj(self);
+            if status != BASICLU_OK {
+                break;
+            }
+            status = basiclu_factorize(&mut self.lu, b_begin, b_end, b_i, b_x, 1);
+        }
+
+        status
     }
 
-    basiclu_get_factors(
-        &mut obj.istore,
-        &mut obj.xstore,
-        &obj.l_i,
-        &obj.l_x,
-        &obj.w_i,
-        &obj.w_x,
-        rowperm,
-        colperm,
-        l_colptr,
-        l_rowidx,
-        l_value,
-        u_colptr,
-        u_rowidx,
-        u_value,
-    )
-}
+    /// Purpose:
+    ///
+    ///     Call basiclu_get_factors() on a BASICLU object.
+    ///
+    /// Return:
+    ///
+    ///     BASICLU_ERROR_INVALID_OBJECT
+    ///
+    ///         obj is NULL or initialized to a null object.
+    ///
+    ///     Other return codes are passed through from basiclu_get_factors().
+    ///
+    /// Arguments:
+    ///
+    ///     struct BasicLUObject *obj
+    ///
+    ///         Pointer to an initialized BASICLU object.
+    ///
+    ///     The other arguments are passed through to basiclu_get_factors().
+    pub fn get_factors(
+        &mut self,
+        rowperm: Option<&[LUInt]>,
+        colperm: Option<&[LUInt]>,
+        l_colptr: Option<&mut [LUInt]>,
+        l_rowidx: Option<&mut [LUInt]>,
+        l_value: Option<&mut [f64]>,
+        u_colptr: Option<&mut [LUInt]>,
+        u_rowidx: Option<&mut [LUInt]>,
+        u_value: Option<&mut [f64]>,
+    ) -> LUInt {
+        if !isvalid(self) {
+            return BASICLU_ERROR_INVALID_OBJECT;
+        }
 
-/// Purpose:
-///
-///     Call basiclu_solve_dense() on a BASICLU object.
-///
-/// Return:
-///
-///     BASICLU_ERROR_INVALID_OBJECT
-///
-///         obj is NULL or initialized to a null object.
-///
-///     Other return codes are passed through from basiclu_solve_dense().
-///
-/// Arguments:
-///
-///     struct BasicLUObject *obj
-///
-///         Pointer to an initialized BASICLU object.
-///
-///     The other arguments are passed through to basiclu_solve_dense().
-pub fn basiclu_obj_solve_dense(
-    obj: &mut BasicLUObject,
-    rhs: &[f64],
-    lhs: &mut [f64],
-    trans: char,
-) -> LUInt {
-    if !isvalid(obj) {
-        return BASICLU_ERROR_INVALID_OBJECT;
+        basiclu_get_factors(
+            &mut self.lu,
+            rowperm,
+            colperm,
+            l_colptr,
+            l_rowidx,
+            l_value,
+            u_colptr,
+            u_rowidx,
+            u_value,
+        )
     }
 
-    basiclu_solve_dense(
-        // &mut obj.istore,
-        &mut obj.xstore,
-        &obj.l_i,
-        &obj.l_x,
-        &obj.u_i,
-        &obj.u_x,
-        &obj.w_i,
-        &obj.w_x,
-        rhs,
-        lhs,
-        trans,
-    )
-}
+    /// Purpose:
+    ///
+    ///     Call basiclu_solve_dense() on a BASICLU object.
+    ///
+    /// Return:
+    ///
+    ///     BASICLU_ERROR_INVALID_OBJECT
+    ///
+    ///         obj is NULL or initialized to a null object.
+    ///
+    ///     Other return codes are passed through from basiclu_solve_dense().
+    ///
+    /// Arguments:
+    ///
+    ///     struct BasicLUObject *obj
+    ///
+    ///         Pointer to an initialized BASICLU object.
+    ///
+    ///     The other arguments are passed through to basiclu_solve_dense().
+    pub fn solve_dense(&mut self, rhs: &[f64], lhs: &mut [f64], trans: char) -> LUInt {
+        if !isvalid(self) {
+            return BASICLU_ERROR_INVALID_OBJECT;
+        }
 
-/// Purpose:
-///
-///     Call basiclu_solve_sparse() on a BASICLU object. On success, the solution
-///     is provided in obj.lhs and the nonzero pattern is stored in
-///     obj.ilhs[0..obj.nzlhs-1].
-///
-/// Return:
-///
-///     BASICLU_ERROR_INVALID_OBJECT
-///
-///         obj is NULL or initialized to a null object.
-///
-///     Other return codes are passed through from basiclu_solve_sparse().
-///
-/// Arguments:
-///
-///     struct BasicLUObject *obj
-///
-///         Pointer to an initialized BASICLU object.
-///
-///     The other arguments are passed through to basiclu_solve_sparse().
-pub fn basiclu_obj_solve_sparse(
-    obj: &mut BasicLUObject,
-    nzrhs: LUInt,
-    irhs: &[LUInt],
-    xrhs: &[f64],
-    trans: char,
-) -> LUInt {
-    if !isvalid(obj) {
-        return BASICLU_ERROR_INVALID_OBJECT;
+        basiclu_solve_dense(&mut self.lu, rhs, lhs, trans)
     }
 
-    lu_clear_lhs(obj);
-    basiclu_solve_sparse(
-        &mut obj.istore,
-        &mut obj.xstore,
-        &obj.l_i,
-        &obj.l_x,
-        &obj.u_i,
-        &obj.u_x,
-        &obj.w_i,
-        &obj.w_x,
-        nzrhs,
-        irhs,
-        xrhs,
-        &mut obj.nzlhs,
-        &mut obj.ilhs,
-        &mut obj.lhs,
-        trans,
-    )
-}
+    /// Purpose:
+    ///
+    ///     Call basiclu_solve_sparse() on a BASICLU object. On success, the solution
+    ///     is provided in obj.lhs and the nonzero pattern is stored in
+    ///     obj.ilhs[0..obj.nzlhs-1].
+    ///
+    /// Return:
+    ///
+    ///     BASICLU_ERROR_INVALID_OBJECT
+    ///
+    ///         obj is NULL or initialized to a null object.
+    ///
+    ///     Other return codes are passed through from basiclu_solve_sparse().
+    ///
+    /// Arguments:
+    ///
+    ///     struct BasicLUObject *obj
+    ///
+    ///         Pointer to an initialized BASICLU object.
+    ///
+    ///     The other arguments are passed through to basiclu_solve_sparse().
+    pub fn solve_sparse(
+        &mut self,
+        nzrhs: LUInt,
+        irhs: &[LUInt],
+        xrhs: &[f64],
+        trans: char,
+    ) -> LUInt {
+        if !isvalid(self) {
+            return BASICLU_ERROR_INVALID_OBJECT;
+        }
 
-/// Purpose:
-///
-///     Call basiclu_solve_for_update() on a BASICLU object. On success, if the
-///     solution was requested, it is provided in obj.lhs and the nonzero pattern
-///     is stored in obj.ilhs[0..obj.nzlhs-1].
-///
-/// Return:
-///
-///     BASICLU_ERROR_INVALID_OBJECT
-///
-///         obj is NULL or initialized to a null object.
-///
-///     BASICLU_ERROR_OUT_OF_MEMORY
-///
-///         reallocation failed because of insufficient memory.
-///
-///     Other return codes are passed through from basiclu_solve_for_update().
-///
-/// Arguments:
-///
-///     struct BasicLUObject *obj
-///
-///         Pointer to an initialized BASICLU object.
-///
-///     lu_int want_solution
-///
-///         Nonzero to compute the solution to the linear system,
-///         zero to only prepare the update.
-///
-///     The other arguments are passed through to basiclu_solve_for_update().
-pub fn basiclu_obj_solve_for_update(
-    obj: &mut BasicLUObject,
-    nzrhs: LUInt,
-    irhs: &[LUInt],
-    xrhs: Option<&[f64]>,
-    trans: char,
-    want_solution: LUInt,
-) -> LUInt {
-    let mut status = BASICLU_OK;
-
-    if !isvalid(obj) {
-        return BASICLU_ERROR_INVALID_OBJECT;
-    }
-
-    lu_clear_lhs(obj);
-    while status == BASICLU_OK {
-        let mut nzlhs: LUInt = -1;
-        status = basiclu_solve_for_update(
-            &mut obj.istore,
-            &mut obj.xstore,
-            &mut obj.l_i,
-            &mut obj.l_x,
-            &mut obj.u_i,
-            &mut obj.u_x,
-            &mut obj.w_i,
-            &mut obj.w_x,
+        lu_clear_lhs(self);
+        basiclu_solve_sparse(
+            &mut self.lu,
             nzrhs,
             irhs,
             xrhs,
-            Some(&mut nzlhs),
-            Some(&mut obj.ilhs),
-            Some(&mut obj.lhs),
+            &mut self.nzlhs,
+            &mut self.ilhs,
+            &mut self.lhs,
             trans,
-        );
-        if want_solution != 0 {
-            obj.nzlhs = nzlhs;
-        }
-        if status != BASICLU_REALLOCATE {
-            break;
-        }
-        status = lu_realloc_obj(obj);
+        )
     }
 
-    status
-}
+    /// Purpose:
+    ///
+    ///     Call basiclu_solve_for_update() on a BASICLU object. On success, if the
+    ///     solution was requested, it is provided in obj.lhs and the nonzero pattern
+    ///     is stored in obj.ilhs[0..obj.nzlhs-1].
+    ///
+    /// Return:
+    ///
+    ///     BASICLU_ERROR_INVALID_OBJECT
+    ///
+    ///         obj is NULL or initialized to a null object.
+    ///
+    ///     BASICLU_ERROR_OUT_OF_MEMORY
+    ///
+    ///         reallocation failed because of insufficient memory.
+    ///
+    ///     Other return codes are passed through from basiclu_solve_for_update().
+    ///
+    /// Arguments:
+    ///
+    ///     struct BasicLUObject *obj
+    ///
+    ///         Pointer to an initialized BASICLU object.
+    ///
+    ///     lu_int want_solution
+    ///
+    ///         Nonzero to compute the solution to the linear system,
+    ///         zero to only prepare the update.
+    ///
+    ///     The other arguments are passed through to basiclu_solve_for_update().
+    pub fn solve_for_update(
+        &mut self,
+        nzrhs: LUInt,
+        irhs: &[LUInt],
+        xrhs: Option<&[f64]>,
+        trans: char,
+        want_solution: LUInt,
+    ) -> LUInt {
+        let mut status = BASICLU_OK;
 
-/// Purpose:
-///
-///     Call basiclu_update() on a BASICLU object.
-///
-/// Return:
-///
-///     BASICLU_ERROR_INVALID_OBJECT
-///
-///         obj is NULL or initialized to a null object.
-///
-///     BASICLU_ERROR_OUT_OF_MEMORY
-///
-///         reallocation failed because of insufficient memory.
-///
-///     Other return codes are passed through from basiclu_update().
-///
-/// Arguments:
-///
-///     struct BasicLUObject *obj
-///
-///         Pointer to an initialized BASICLU object.
-///
-///     The other arguments are passed through to basiclu_update().
-pub fn basiclu_obj_update(obj: &mut BasicLUObject, xtbl: f64) -> LUInt {
-    let mut status = BASICLU_OK;
-
-    if !isvalid(obj) {
-        return BASICLU_ERROR_INVALID_OBJECT;
-    }
-
-    while status == BASICLU_OK {
-        status = basiclu_update(
-            &mut obj.istore,
-            &mut obj.xstore,
-            &mut obj.l_i,
-            &mut obj.l_x,
-            &mut obj.u_i,
-            &mut obj.u_x,
-            &mut obj.w_i,
-            &mut obj.w_x,
-            xtbl,
-        );
-        if status != BASICLU_REALLOCATE {
-            break;
+        if !isvalid(self) {
+            return BASICLU_ERROR_INVALID_OBJECT;
         }
-        status = lu_realloc_obj(obj);
+
+        lu_clear_lhs(self);
+        while status == BASICLU_OK {
+            let mut nzlhs: LUInt = -1;
+            status = basiclu_solve_for_update(
+                &mut self.lu,
+                nzrhs,
+                irhs,
+                xrhs,
+                Some(&mut nzlhs),
+                Some(&mut self.ilhs),
+                Some(&mut self.lhs),
+                trans,
+            );
+            if want_solution != 0 {
+                self.nzlhs = nzlhs;
+            }
+            if status != BASICLU_REALLOCATE {
+                break;
+            }
+            status = lu_realloc_obj(self);
+        }
+
+        status
     }
 
-    status
+    /// Purpose:
+    ///
+    ///     Call basiclu_update() on a BASICLU object.
+    ///
+    /// Return:
+    ///
+    ///     BASICLU_ERROR_INVALID_OBJECT
+    ///
+    ///         obj is NULL or initialized to a null object.
+    ///
+    ///     BASICLU_ERROR_OUT_OF_MEMORY
+    ///
+    ///         reallocation failed because of insufficient memory.
+    ///
+    ///     Other return codes are passed through from basiclu_update().
+    ///
+    /// Arguments:
+    ///
+    ///     struct BasicLUObject *obj
+    ///
+    ///         Pointer to an initialized BASICLU object.
+    ///
+    ///     The other arguments are passed through to basiclu_update().
+    pub fn update(&mut self, xtbl: f64) -> LUInt {
+        let mut status = BASICLU_OK;
+
+        if !isvalid(self) {
+            return BASICLU_ERROR_INVALID_OBJECT;
+        }
+
+        while status == BASICLU_OK {
+            status = basiclu_update(&mut self.lu, xtbl);
+            if status != BASICLU_REALLOCATE {
+                break;
+            }
+            status = lu_realloc_obj(self);
+        }
+
+        status
+    }
 }
 
 // reallocate two arrays
@@ -493,36 +422,42 @@ fn lu_reallocix(nz: LUInt, a_i: &mut Vec<LUInt>, a_x: &mut Vec<f64>) -> LUInt {
 //
 // Return: BASICLU_OK or BASICLU_ERROR_OUT_OF_MEMORY
 fn lu_realloc_obj(obj: &mut BasicLUObject) -> LUInt {
-    let xstore = &mut obj.xstore;
-    let addmem_l = xstore[BASICLU_ADD_MEMORYL];
-    let addmem_u = xstore[BASICLU_ADD_MEMORYU];
-    let addmem_w = xstore[BASICLU_ADD_MEMORYW];
+    // let xstore = &mut obj.xstore;
+    // let addmem_l = xstore[BASICLU_ADD_MEMORYL];
+    // let addmem_u = xstore[BASICLU_ADD_MEMORYU];
+    // let addmem_w = xstore[BASICLU_ADD_MEMORYW];
+    let addmem_l = obj.lu.addmem_l;
+    let addmem_u = obj.lu.addmem_u;
+    let addmem_w = obj.lu.addmem_w;
     let realloc_factor = f64::max(1.0, obj.realloc_factor);
     // lu_int nelem;
     let mut status = BASICLU_OK;
 
-    if status == BASICLU_OK && addmem_l > 0.0 {
-        let mut nelem = xstore[BASICLU_MEMORYL] + addmem_l;
-        nelem *= realloc_factor;
-        status = lu_reallocix(nelem as LUInt, &mut obj.l_i, &mut obj.l_x);
+    if status == BASICLU_OK && addmem_l > 0 {
+        let mut nelem = obj.lu.l_mem + addmem_l;
+        nelem = ((nelem as f64) * realloc_factor) as LUInt;
+        status = lu_reallocix(nelem as LUInt, &mut obj.lu.l_index, &mut obj.lu.l_value);
         if status == BASICLU_OK {
-            xstore[BASICLU_MEMORYL] = nelem;
+            // xstore[BASICLU_MEMORYL] = nelem;
+            obj.lu.l_mem = nelem;
         }
     }
-    if status == BASICLU_OK && addmem_u > 0.0 {
-        let mut nelem = xstore[BASICLU_MEMORYU] + addmem_u;
-        nelem *= realloc_factor;
-        status = lu_reallocix(nelem as LUInt, &mut obj.u_i, &mut obj.u_x);
+    if status == BASICLU_OK && addmem_u > 0 {
+        let mut nelem = obj.lu.u_mem + addmem_u;
+        nelem = ((nelem as f64) * realloc_factor) as LUInt;
+        status = lu_reallocix(nelem as LUInt, &mut obj.lu.u_index, &mut obj.lu.u_value);
         if status == BASICLU_OK {
-            xstore[BASICLU_MEMORYU] = nelem;
+            // xstore[BASICLU_MEMORYU] = nelem;
+            obj.lu.u_mem = nelem;
         }
     }
-    if status == BASICLU_OK && addmem_w > 0.0 {
-        let mut nelem = xstore[BASICLU_MEMORYW] + addmem_w;
-        nelem *= realloc_factor;
-        status = lu_reallocix(nelem as LUInt, &mut obj.w_i, &mut obj.w_x);
+    if status == BASICLU_OK && addmem_w > 0 {
+        let mut nelem = obj.lu.w_mem + addmem_w;
+        nelem = ((nelem as f64) * realloc_factor) as LUInt;
+        status = lu_reallocix(nelem as LUInt, &mut obj.lu.w_index, &mut obj.lu.w_value);
         if status == BASICLU_OK {
-            xstore[BASICLU_MEMORYW] = nelem;
+            // xstore[BASICLU_MEMORYW] = nelem;
+            obj.lu.w_mem = nelem;
         }
     }
     status
@@ -530,13 +465,14 @@ fn lu_realloc_obj(obj: &mut BasicLUObject) -> LUInt {
 
 // Test if @obj is an allocated BASICLU object
 fn isvalid(obj: &BasicLUObject) -> bool {
-    !obj.istore.is_empty() && !obj.xstore.is_empty()
+    // !obj.istore.is_empty() && !obj.xstore.is_empty()
+    true
 }
 
 // reset contents of lhs to zero
 fn lu_clear_lhs(obj: &mut BasicLUObject) {
-    let m = obj.xstore[BASICLU_DIM];
-    let nzsparse = (obj.xstore[BASICLU_SPARSE_THRESHOLD] * m) as LUInt;
+    let m = obj.lu.m as f64;
+    let nzsparse = (obj.lu.sparse_thres * m) as LUInt;
     let nz = obj.nzlhs;
 
     if nz != 0 {

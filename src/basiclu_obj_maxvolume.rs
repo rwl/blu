@@ -2,7 +2,6 @@
 
 use crate::basiclu::*;
 use crate::basiclu_object::BasicLUObject;
-use crate::{basiclu_obj_factorize, basiclu_obj_solve_for_update, basiclu_obj_update};
 
 /// Purpose:
 ///
@@ -103,10 +102,9 @@ pub fn basiclu_obj_maxvolume(
     // number of basis updates done.
 
     let mut nupdate = 0;
-    let mut status = BASICLU_OK;
 
     if volumetol < 1.0 {
-        status = BASICLU_ERROR_INVALID_ARGUMENT;
+        let status = BASICLU_ERROR_INVALID_ARGUMENT;
         // goto_cleanup();
         if let Some(p_nupdate) = p_nupdate {
             *p_nupdate = nupdate;
@@ -115,7 +113,7 @@ pub fn basiclu_obj_maxvolume(
     }
 
     // Compute initial factorization.
-    status = factorize(obj, a_p, a_i, a_x, basis);
+    let mut status = factorize(obj, a_p, a_i, a_x, basis);
     if status != BASICLU_OK {
         // goto_cleanup;
         if let Some(p_nupdate) = p_nupdate {
@@ -132,8 +130,7 @@ pub fn basiclu_obj_maxvolume(
         // compute B^{-1}*a_j
         let nzrhs = a_p[(j + 1) as usize] - a_p[j as usize];
         let begin = a_p[j as usize] as usize;
-        status =
-            basiclu_obj_solve_for_update(obj, nzrhs, &a_i[begin..], Some(&a_x[begin..]), 'N', 1);
+        status = obj.solve_for_update(nzrhs, &a_i[begin..], Some(&a_x[begin..]), 'N', 1);
         if status != BASICLU_OK {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
@@ -167,7 +164,7 @@ pub fn basiclu_obj_maxvolume(
         nupdate += 1;
 
         // Prepare to update factorization.
-        status = basiclu_obj_solve_for_update(obj, 0, &imax_vec, None, 'T', 0);
+        status = obj.solve_for_update(0, &imax_vec, None, 'T', 0);
         if status != BASICLU_OK {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
@@ -176,7 +173,7 @@ pub fn basiclu_obj_maxvolume(
             return status;
         }
 
-        status = basiclu_obj_update(obj, xtbl);
+        status = obj.update(xtbl);
         if status != BASICLU_OK {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
@@ -209,8 +206,9 @@ fn factorize(
     a_x: &[f64],
     basis: &[LUInt],
 ) -> LUInt {
-    let xstore = &obj.xstore;
-    let m = xstore[BASICLU_DIM] as LUInt;
+    // let xstore = &obj.xstore;
+    // let m = xstore[BASICLU_DIM] as LUInt;
+    let m = obj.lu.m;
     // lu_int *begin = NULL;
     // lu_int *end = NULL;
     // lu_int i, status = BASICLU_OK;
@@ -227,7 +225,7 @@ fn factorize(
         end[i as usize] = a_p[basis[i as usize] as usize + 1];
     }
 
-    basiclu_obj_factorize(obj, &begin, &end, a_i, a_x)
+    obj.factorize(&begin, &end, a_i, a_x)
 }
 
 // refactorize the basis if required or favourable
@@ -249,11 +247,13 @@ fn refactorize_if_needed(
 ) -> LUInt {
     let mut status = BASICLU_OK;
     let piverr_tol = 1e-8;
-    let xstore = &obj.xstore;
+    // let xstore = &obj.xstore;
 
-    if xstore[BASICLU_NFORREST] == xstore[BASICLU_DIM]
-        || xstore[BASICLU_PIVOT_ERROR] > piverr_tol
-        || xstore[BASICLU_UPDATE_COST] > 1.0
+    // if xstore[BASICLU_NFORREST] == xstore[BASICLU_DIM]
+    //     || xstore[BASICLU_PIVOT_ERROR] > piverr_tol
+    //     || xstore[BASICLU_UPDATE_COST] > 1.0
+    // {
+    if obj.lu.nforrest == obj.lu.m || obj.lu.pivot_error > piverr_tol || obj.lu.update_cost() > 1.0
     {
         status = factorize(obj, a_p, a_i, a_x, basis);
     }

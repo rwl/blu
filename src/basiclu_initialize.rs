@@ -1,5 +1,4 @@
 use crate::basiclu::{LUInt, BASICLU_ERROR_INVALID_ARGUMENT, BASICLU_OK};
-use crate::lu_initialize::lu_initialize;
 
 /// Purpose:
 ///
@@ -115,6 +114,6 @@ pub fn basiclu_initialize(m: LUInt, /*istore: &mut [lu_int],*/ xstore: &mut [f64
     if m <= 0 {
         return BASICLU_ERROR_INVALID_ARGUMENT;
     }
-    lu_initialize(m, /*istore,*/ xstore);
+    // lu_initialize(m, /*istore,*/ xstore);
     BASICLU_OK
 }

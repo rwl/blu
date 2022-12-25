@@ -1,6 +1,5 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::LUInt;
 use crate::lu_garbage_perm::lu_garbage_perm;
 use crate::lu_internal::*;
 
