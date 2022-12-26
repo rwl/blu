@@ -3,22 +3,20 @@
 use crate::basiclu::*;
 use crate::lu_internal::*;
 
-/// Purpose:
+/// Extract the row and column permutation and the LU factors. This routine can
+/// be used only after [`basiclu_factorize()`] has completed and before a call to
+/// [`basiclu_update()`]. At that point the factorized form of matrix `B` is
 ///
-///     Extract the row and column permutation and the LU factors. This routine can
-///     be used only after basiclu_factorize() has completed and before a call to
-///     basiclu_update(). At that point the factorized form of matrix B is
+///     B[rowperm,colperm] = L*U,
 ///
-///         B[rowperm,colperm] = L*U,
+/// where `L` is unit lower triangular and `U` is upper triangular. If the
+/// factorization was singular (`rank` < `m`), then columns `colperm[rank..m-1]`
+/// of `B` have been replaced by unit columns with entry 1 in position
+/// `rowperm[rank..m-1]`.
 ///
-///     where L is unit lower triangular and U is upper triangular. If the
-///     factorization was singular (rank < m), then columns colperm[rank..m-1]
-///     of B have been replaced by unit columns with entry 1 in position
-///     rowperm[rank..m-1].
-///
-///     basiclu_get_factors() is intended when the user needs direct access to the
-///     matrix factors. It is not required to solve linear systems with the factors
-///     (see basiclu_solve_dense() and basiclu_solve_sparse() instead).
+/// `basiclu_get_factors()` is intended when the user needs direct access to the
+/// matrix factors. It is not required to solve linear systems with the factors
+/// (see [`basiclu_solve_dense()`] and [`basiclu_solve_sparse()`] instead).
 ///
 /// Return:
 ///
@@ -29,14 +27,7 @@ use crate::lu_internal::*;
 ///
 /// Arguments:
 ///
-///     lu_int istore[]
-///     double xstore[]
-///     lu_int l_i[]
-///     double l_x[]
-///     lu_int Ui[]
-///     double Ux[]
-///     lu_int w_i[]
-///     double w_x[]
+///     LU lu
 ///
 ///         The BASICLU instance after basiclu_factorize() has completed.
 ///

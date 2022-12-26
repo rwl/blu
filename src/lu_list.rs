@@ -2,7 +2,7 @@
 //
 // Implementation of doubly linked lists (see [1] section 5.5)
 //
-// Maintain nelem elements in nlist doubly linked lists. Each element can belong
+// Maintain nelem elements in `nlist` doubly linked lists. Each element can belong
 // to zero or one list at a time.
 //
 // The implementation uses arrays
@@ -10,7 +10,7 @@
 //     flink[0..nelem+nlist-1],
 //     blink[0..nelem+nlist-1].
 //
-// In each array, the leading nelem entries store links, the trailing nlist
+// In each array, the leading `nelem` entries store links, the trailing `nlist`
 // entries store heads. That is, for 0 <= i < nelem and 0 <= j < nlist:
 //
 //     flink[i]        next element in the list containing element i
@@ -23,8 +23,8 @@
 // empty lists the heads point to themselves. When an element is not in any list
 // its links point to itself.
 //
-// Optionally the quantity min_list >= 1 can be updated such that lists
-// 1..min_list-1 are empty. Notice that list 0 is not covered by min_list.
+// Optionally the quantity `min_list` >= 1 can be updated such that lists
+// `1..min_list-1` are empty. Notice that list 0 is not covered by `min_list`.
 //
 //    [1] Istvan Maros, Computational Techniques of the Simplex Method
 use crate::basiclu::LUInt;
@@ -46,8 +46,8 @@ pub(crate) fn lu_list_init(
     }
 }
 
-/// Add element @elem to list @list. @elem must not be in any list already.
-/// If list > 0 and min_list != NULL, update *min_list = min(*min_list, list).
+/// Add element `elem` to list `list`. `elem` must not be in any list already.
+/// If `list` > 0 and `min_list` != None, update `*min_list = min(*min_list, list)`.
 pub(crate) fn lu_list_add(
     elem: LUInt,
     list: LUInt,
@@ -73,7 +73,7 @@ pub(crate) fn lu_list_add(
     }
 }
 
-/// Remove element @elem from its list. If @elem was not in a list before,
+/// Remove element `elem` from its list. If `elem` was not in a list before,
 /// then do nothing.
 pub(crate) fn lu_list_remove(flink: &mut [LUInt], blink: &mut [LUInt], elem: LUInt) {
     flink[blink[elem as usize] as usize] = flink[elem as usize];
@@ -82,7 +82,7 @@ pub(crate) fn lu_list_remove(flink: &mut [LUInt], blink: &mut [LUInt], elem: LUI
     blink[elem as usize] = elem;
 }
 
-/// Remove element @elem from its list (if in a list) and add it to list @list.
+/// Remove element `elem` from its list (if in a list) and add it to list `list`.
 pub(crate) fn lu_list_move(
     elem: LUInt,
     list: LUInt,
@@ -95,7 +95,7 @@ pub(crate) fn lu_list_move(
     lu_list_add(elem, list, flink, blink, nelem, min_list);
 }
 
-/// Swap elements @e1 and @e2, which both must be in a list. If @e1 and @e2
+/// Swap elements `e1` and `e2`, which both must be in a list. If `e1` and `e2`
 /// are in the same list, then their positions are swapped. If they are in
 /// different lists, then each is moved to the other's list.
 pub(crate) fn lu_list_swap(flink: &mut [LUInt], blink: &mut [LUInt], e1: LUInt, e2: LUInt) {

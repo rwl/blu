@@ -9,11 +9,9 @@ use crate::lu_setup_bump::lu_setup_bump;
 use crate::lu_singletons::lu_singletons;
 use std::time::Instant;
 
-/// Purpose:
-///
-///     Factorize the matrix B into its LU factors. Choose pivot elements by a
-///     Markowitz criterion subject to columnwise threshold pivoting (the pivot may
-///     not be smaller than a factor of the largest entry in its column).
+/// Factorize the matrix B into its LU factors. Choose pivot elements by a
+/// Markowitz criterion subject to columnwise threshold pivoting (the pivot
+/// may not be smaller than a factor of the largest entry in its column).
 ///
 /// Return:
 ///
@@ -68,175 +66,6 @@ use std::time::Instant;
 ///
 ///         zero to start a new factorization; nonzero to continue a factorization
 ///         after reallocation.
-///
-/// Parameters:
-///
-///     xstore[BASICLU_DROP_TOLERANCE]
-///
-///         Nonzeros which magnitude is less than or equal to the drop tolerance can
-///         be removed after each pivot step. They are guaranteed removed at the end
-///         of the factorization. Default: 1e-20
-///
-///     xstore[BASICLU_ABS_PIVOT_TOLERANCE]
-///
-///         A pivot element must be nonzero and in absolute value must be greater
-///         than or equal to xstore[BASICLU_ABS_PIVOT_TOLERANCE]. Default: 1e-14
-///
-///     xstore[BASICLU_REL_PIVOT_TOLERANCE]
-///
-///         A pivot element must be (in absolute value) greater than or equal to
-///         xstore[BASICLU_REL_PIVOT_TOLERANCE] times the largest entry in its
-///         column. A value greater than or equal to 1.0 is treated as 1.0 and
-///         enforces partial pivoting. Default: 0.1
-///
-///     xstore[BASICLU_BIAS_NONZEROS]
-///
-///         When this value is greater than or equal to zero, the pivot choice
-///         attempts to keep L sparse, putting entries into U when possible.
-///         When this value is less than zero, the pivot choice attempts to keep U
-///         sparse, putting entries into L when possible. Default: 1
-///
-///     xstore[BASICLU_MAXN_SEARCH_PIVOT]
-///
-///         The Markowitz search is terminated after searching
-///         xstore[BASICLU_MAXN_SERACH_PIVOT] rows or columns if a numerically
-///         stable pivot element has been found. Default: 3
-///
-///     xstore[BASICLU_SEARCH_ROWS]
-///
-///         If xstore[BASICLU_SEARCH_ROWS] is zero, then the Markowitz search only
-///         scans columns. If nonzero, then both columns and rows are searched in
-///         increasing order of number of entries. Default: 1
-///
-///     xstore[BASICLU_PAD]
-///     xstore[BASICLU_STRETCH]
-///
-///         When a row or column cannot be updated by the pivot operation in place,
-///         it is appended to the end of the workspace. For a row or column with nz
-///         elements, xstore[BASICLU_PAD] + nz * xstore[BASICLU_STRETCH] elements
-///         extra space are added for later fill-in.
-///         Default: xstore[BASICLU_PAD] = 4, xstore[BASICLU_STRETCH] = 0.3
-///
-///     xstore[BASICLU_REMOVE_COLUMNS]
-///
-///         This parameter is present for compatibility to previous versions but has
-///         no effect. If during factorization the maximum entry of a column of the
-///         active submatrix becomes zero or less than
-///         xstore[BASICLU_ABS_PIVOT_TOLERANCE], then that column is immediately
-///         removed without choosing a pivot.
-///
-/// Info:
-///
-///     xstore[BASICLU_STATUS]: status code.
-///
-///         BASICLU_OK
-///
-///             The factorization has successfully completed.
-///
-///         BASICLU_WARNING_SINGULAR_MATRIX
-///
-///             The factorization did xstore[BASICLU_RANK] < xstore[BASICLU_DIM]
-///             pivot steps. The remaining elements in the active submatrix are zero
-///             or less than xstore[BASICLU_ABS_PIVOT_TOLERANCE]. The factors have
-///             been augmented by unit columns to form a square matrix. See
-///             basiclu_get_factors() on how to get the indices of linearly
-///             dependent columns.
-///
-///         BASICLU_ERROR_ARGUMENT_MISSING
-///
-///             One or more of the pointer/array arguments are NULL.
-///
-///         BASICLU_ERROR_INVALID_CALL
-///
-///             c0ntinue is nonzero, but the factorization was not started before.
-///
-///         BASICLU_ERROR_INVALID_ARGUMENT
-///
-///             The matrix is invalid (a column has a negative number of entries,
-///             a row index is out of range, or a column has duplicate entries).
-///
-///         BASICLU_REALLOCATE
-///
-///             Factorization requires more memory in l_i,l_x and/or u_i,u_x and/or
-///             w_i,w_x. The number of additional elements in each of the array pairs
-///             required for the next pivot operation is given by:
-///
-///                 xstore[BASICLU_ADD_MEMORYL] >= 0
-///                 xstore[BASICLU_ADD_MEMORYU] >= 0
-///                 xstore[BASICLU_ADD_MEMORYW] >= 0
-///
-///             The user must reallocate the arrays for which additional memory is
-///             required. It is recommended to reallocate for the requested number
-///             of additional elements plus some extra space (e.g. 0.5 times the
-///             current array length). The new array lengths must be provided in
-///
-///                 xstore[BASICLU_MEMORYL]: length of l_i and l_x
-///                 xstore[BASICLU_MEMORYU]: length of u_i and u_x
-///                 xstore[BASICLU_MEMORYW]: length of w_i and w_x
-///
-///             basiclu_factorize() can be called again with c0ntinue not equal to
-///             zero to continue the factorization.
-///
-///     xstore[BASICLU_MATRIX_NZ] number of nonzeros in B
-///
-///     xstore[BASICLU_MATRIX_ONENORM]
-///     xstore[BASICLU_MATRIX_INFNORM] 1-norm and inf-norm of the input matrix
-///                                    after replacing dependent columns by unit
-///                                    columns.
-///
-///     xstore[BASICLU_RANK] number of pivot steps performed
-///
-///     xstore[BASICLU_BUMP_SIZE] dimension of matrix after removing singletons
-///
-///     xstore[BASICLU_BUMP_NZ] # nonzeros in matrix after removing singletons
-///
-///     xstore[BASICLU_NSEARCH_PIVOT] total # columns/rows searched for pivots
-///
-///     xstore[BASICLU_NEXPAND] # columns/rows which had to be appended to the end
-///                             of the workspace for the rank-1 update
-///
-///     xstore[BASICLU_NGARBAGE] # garbage collections
-///
-///     xstore[BASICLU_FACTOR_FLOPS] # floating point operations performed,
-///                                  counting multiply-add as one flop
-///
-///     xstore[BASICLU_TIME_SINGLETONS] wall clock time for removing the initial
-///                                     triangular factors
-///
-///     xstore[BASICLU_TIME_SEARCH_PIVOT] wall clock time for Markowitz search
-///
-///     xstore[BASIClU_TIME_ELIM_PIVOT] wall clock time for pivot elimination
-///
-///     xstore[BASICLU_RESIDUAL_TEST]
-///
-///             An estimate for numerical stability of the factorization.
-///             xstore[BASICLU_RESIDUAL_TEST] is the maximum of the scaled residuals
-///
-///               ||b-b_x|| / (||b|| + ||B||*||x||)
-///
-///             and
-///
-///               ||c-B'y|| / (||c|| + ||B'||*||y||),
-///
-///             where x=B\b and y=B'\c are computed from the LU factors, b and c
-///             have components +/-1 that are chosen to make x respectively y large,
-///             and ||.|| is the 1-norm. Here B is the input matrix after replacing
-///             dependent columns by unit columns.
-///
-///             If xstore[BASICLU_RESIDUAL_TEST] > 1e-12, say, the factorization is
-///             numerically unstable. (This is independent of the condition number
-///             of B.) In this case tightening the relative pivot tolerance and
-///             refactorizing is appropriate.
-///
-///     xstore[BASICLU_NORM_L]
-///     xstore[BASICLU_NORM_U] 1-norm of L and U.
-///
-///     xstore[BASICLU_NORMEST_LINV]
-///     xstore[BASICLU_NORMEST_UINV] Estimated 1-norm of L^{-1} and U^{-1},
-///                                  computed by the LINPACK algorithm.
-///
-///     xstore[BASICLU_CONDEST_L]
-///     xstore[BASICLU_CONDEST_U] Estimated 1-norm condition number of L and U.
 pub fn basiclu_factorize(
     lu: &mut LU,
     b_begin: &[LUInt],
@@ -344,8 +173,8 @@ pub fn basiclu_factorize(
         Some(&p!(lu)),
         0,
         &mut lu.work1,
-        &mut lu.norm_l,
-        &mut lu.normest_l_inv,
+        Some(&mut lu.norm_l),
+        Some(&mut lu.normest_l_inv),
     );
     lu.condest_u = lu_condest(
         lu.m,
@@ -356,8 +185,8 @@ pub fn basiclu_factorize(
         Some(&p!(lu)),
         1,
         &mut lu.work1,
-        &mut lu.norm_u,
-        &mut lu.normest_u_inv,
+        Some(&mut lu.norm_u),
+        Some(&mut lu.normest_u_inv),
     );
 
     // measure numerical stability of the factorization

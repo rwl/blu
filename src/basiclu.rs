@@ -25,13 +25,27 @@ pub const BASICLU_SIZE_XSTORE_M: LUInt = 4;
 // status codes //
 
 pub const BASICLU_OK: LUInt = 0;
+/// Insufficient memory in `w_i`, `w_x`. The number of additional elements
+/// required is given by `addmem_w`.
+///
+/// The user must reallocate `w_i`, `w_x`. It is recommended to reallocate for
+/// the requested number of additional elements plus some extra space
+/// for further updates (e.g. 0.5 times the current array length). The
+/// new array length must be provided in `w_mem`.
 pub const BASICLU_REALLOCATE: LUInt = 1;
+/// The factorization did [`rank`] < [`m`] pivot steps. The remaining elements
+/// in the active submatrix are zero or less than [`abstol`]. The factors have
+/// been augmented by unit columns to form a square matrix. See
+/// [`basiclu_get_factors()`] on how to get the indices of linearly dependent
+/// columns.
 pub const BASICLU_WARNING_SINGULAR_MATRIX: LUInt = 2;
 pub const BASICLU_ERROR_INVALID_STORE: LUInt = -1;
 pub const BASICLU_ERROR_INVALID_CALL: LUInt = -2;
 pub const BASICLU_ERROR_ARGUMENT_MISSING: LUInt = -3;
 pub const BASICLU_ERROR_INVALID_ARGUMENT: LUInt = -4;
 pub const BASICLU_ERROR_MAXIMUM_UPDATES: LUInt = -5;
+/// The updated factorization would be (numerically) singular. No update
+/// has been computed and the old factorization is still valid.
 pub const BASICLU_ERROR_SINGULAR_UPDATE: LUInt = -6;
 
 pub const BASICLU_ERROR_INVALID_OBJECT: LUInt = -8;

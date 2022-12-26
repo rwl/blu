@@ -2,27 +2,27 @@
 
 use crate::basiclu::LUInt;
 
-/// Substitution with triangular matrix.
-///
-/// The symbolic nonzero pattern of the solution must be given in topological
-/// order in pattern_symb[0..nz_symb-1]. On return pattern[0..nz-1] holds the
-/// nonzero pattern of the solution after dropping numerical zeros; nz is
-/// returned. pattern and pattern_symb can point to the same array.
-///
-/// Entries in the solution that are less than or equal to droptol are set to
-/// zero. When droptol is zero or negative, then no entries will be set to zero.
-///
-/// Note: The nonzero pattern of the solution never includes zeros. That means,
-///       even if droptol is negative, the output pattern is not identical to
-///       the symbolic pattern when exact cancellation happens.
-///
-/// The pivot elements must be stored separately to the matrix. When pivot is
-/// NULL, then the pivot elements are assumed to be 1. The matrix is given in
-/// parallel arrays index, value. When end is not NULL, column j has elements
-///
-///   index[begin[j]..end[j]-1], value[begin[j]..end[j]-1].
-///
-/// When end is NULL, then each column must be terminated by a negative index.
+// Substitution with triangular matrix.
+//
+// The symbolic nonzero pattern of the solution must be given in topological
+// order in `pattern_symb[0..nz_symb-1]`. On return `pattern[0..nz-1]` holds the
+// nonzero pattern of the solution after dropping numerical zeros; `nz` is
+// returned. `pattern` and `pattern_symb` can point to the same array.
+//
+// Entries in the solution that are less than or equal to `droptol` are set to
+// zero. When `droptol` is zero or negative, then no entries will be set to zero.
+//
+// Note: The nonzero pattern of the solution never includes zeros. That means,
+//       even if `droptol` is negative, the output pattern is not identical to
+//       the symbolic pattern when exact cancellation happens.
+//
+// The pivot elements must be stored separately to the matrix. When `pivot` is
+// `None`, then the pivot elements are assumed to be 1. The matrix is given in
+// parallel arrays index, value. When `end` is not `None`, column `j` has elements
+//
+//     index[begin[j]..end[j]-1], value[begin[j]..end[j]-1].
+//
+// When `end` is `None`, then each column must be terminated by a negative index.
 pub(crate) fn lu_solve_triangular(
     nz_symb: LUInt,
     pattern_symb: &[LUInt],

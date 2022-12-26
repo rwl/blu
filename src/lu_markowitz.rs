@@ -8,23 +8,23 @@ use std::time::Instant;
 /// Search for pivot element with small Markowitz cost. An eligible pivot
 /// must be nonzero and satisfy
 ///
-///  (1) abs(piv) >= abstol,
-///  (2) abs(piv) >= reltol * max[pivot column].
+/// 1. `abs(piv) >= abstol`,
+/// 2. `abs(piv) >= reltol * max[pivot column]`.
 ///
-///  From all eligible pivots search for one that minimizes
+/// From all eligible pivots search for one that minimizes
 ///
-///   mc := (nnz[pivot row] - 1) * (nnz[pivot column] - 1).
+///     mc := (nnz[pivot row] - 1) * (nnz[pivot column] - 1).
 ///
-/// The search is terminated when maxsearch rows or columns with eligible pivots
+/// The search is terminated when `maxsearch` rows or columns with eligible pivots
 /// have been searched (if not before). The row and column of the cheapest one
-/// found is stored in pivot_row and pivot_col.
+/// found is stored in `pivot_row` and `pivot_col`.
 ///
 /// When the active submatrix contains columns with column count = 0, then such a
-/// column is chosen immediately and pivot_row = -1 is returned. Otherwise, when
-/// the Markowitz search does not find a pivot that is nonzero and >= abstol,
-/// then pivot_col = pivot_row = -1 is returned. (The latter cannot happen in the
-/// current version of the code because lu_pivot() erases columns of the active
-/// submatrix whose maximum absolute value drops below abstol.)
+/// column is chosen immediately and `pivot_row` = -1 is returned. Otherwise, when
+/// the Markowitz search does not find a pivot that is nonzero and >= `abstol`,
+/// then `pivot_col` = `pivot_row` = -1 is returned. (The latter cannot happen in the
+/// current version of the code because [`lu_pivot()`] erases columns of the active
+/// submatrix whose maximum absolute value drops below `abstol`.)
 ///
 /// The Markowitz search is implemented as described in [1].
 ///

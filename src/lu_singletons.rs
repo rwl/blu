@@ -2,38 +2,36 @@ use crate::basiclu::*;
 use crate::lu_internal::*;
 use std::time::Instant;
 
-/// lu_singletons()
-///
 /// Initialize the data structures which store the LU factors during
 /// factorization and eliminate pivots with Markowitz cost zero.
 ///
-/// During factorization the inverse pivot sequence is recorded in pinv, qinv:
+/// During factorization the inverse pivot sequence is recorded in `pinv`, `qinv`:
 ///
 /// - `pinv[i]` >=  0   if row i was pivot row in stage `pinv[i]`
 /// - `pinv[i]` == -1   if row i has not been pivot row yet
 /// - `qinv[j]` >=  0   if col j was pivot col in stage `qinv[j]`
 /// - `qinv[j]` == -1   if col j has not been pivot col yet
 ///
-/// The lower triangular factor is composed columnwise in Lindex, Lvalue.
-/// The upper triangular factor is composed rowwise in Uindex, Uvalue.
+/// The lower triangular factor is composed columnwise in `l_index`, `l_value`.
+/// The upper triangular factor is composed rowwise in `u_index`, `u_value`.
 /// After rank steps of factorization:
 ///
-/// - `Lbegin_p[rank]` is the next unused position in Lindex, Lvalue.
+/// - `l_begin_p[rank]` is the next unused position in `l_index`, `l_value`.
 ///
-/// - `Lindex[Lbegin_p[k]..]`, `Lvalue[Lbegin_p[k]..]` for 0 <= k < rank
-///   stores the column of L computed in stage k without the unit diagonal.
+/// - `l_index[l_begin_p[k]..]`, `l_value[l_begin_p[k]..]` for `0 <= k < rank`
+///   stores the column of `L` computed in stage `k` without the unit diagonal.
 ///   The column is terminated by a negative index.
 ///
-/// - `Ubegin[rank]` is the next unused position in Uindex, Uvalue.
+/// - `u_begin[rank]` is the next unused position in `u_index`, `u_value`.
 ///
-/// - `Uindex[Ubegin[k]..Ubegin[k+1]-1]`, `Uvalue[Ubegin[k]..Ubegin[k+1]-1]`
-///   stores the row of U computed in stage k without the pivot element.
+/// - `u_index[u_begin[k]..u_begin[k+1]-1]`, `u_value[u_begin[k]..u_begin[k+1]-1]`
+///   stores the row of `U` computed in stage `k` without the pivot element.
 ///
-/// `lu_singletons()` does rank >= 0 steps of factorization until no singletons are
+/// `lu_singletons()` does `rank >= 0` steps of factorization until no singletons are
 /// left. We can either eliminate singleton columns before singleton rows or vice
-/// versa. When nzbias >= 0, then eliminate singleton columns first to keep L
+/// versa. When `nzbias >= 0`, then eliminate singleton columns first to keep `L`
 /// sparse. Otherwise eliminate singleton rows first. The resulting permutations
-/// P, Q (stored in inverse form) make PBQ' of the form
+/// `P`, `Q` (stored in inverse form) make `PBQ'` of the form
 ///
 ///             \uuuuuuuuuuuuuuuuuuuuuuu
 ///              \u                    u
@@ -61,21 +59,21 @@ use std::time::Instant;
 ///             l    l    \u|          |
 ///             llllll     \|__________|
 ///
-/// Off-diagonals from singleton columns (u) are stored in U, off-diagonals from
-/// singleton rows (l) are stored in L and divided by the diagonal. Diagonals (\)
-/// are stored in col_pivot.
+/// Off-diagonals from singleton columns (`u`) are stored in `U`, off-diagonals from
+/// singleton rows (`l`) are stored in `L` and divided by the diagonal. Diagonals (\)
+/// are stored in `col_pivot`.
 ///
-/// Do not pivot on elements which are zero or less than abstol in magnitude.
+/// Do not pivot on elements which are zero or less than `abstol` in magnitude.
 /// When such pivots occur, the row/column remains in the active submatrix and
 /// the bump factorization will detect the singularity.
 ///
 /// Return:
 ///
-/// - BASICLU_REALLOCATE              less than nnz(B) memory in L, U or W
-/// - BASICLU_ERROR_INVALID_ARGUMENT  matrix B is invalid (negative number of
-///                                   entries in column, index out of range,
-///                                   duplicates)
-/// - BASICLU_OK
+/// - `BASICLU_REALLOCATE`              less than `nnz(B)` memory in `L`, `U` or `W`
+/// - `BASICLU_ERROR_INVALID_ARGUMENT`  matrix `B` is invalid (negative number of
+///                                     entries in column, index out of range,
+///                                     duplicates)
+/// - `BASICLU_OK`
 pub(crate) fn lu_singletons(
     lu: &mut LU,
     b_begin: &[LUInt],
@@ -259,24 +257,22 @@ pub(crate) fn lu_singletons(
     BASICLU_OK
 }
 
-/// singleton_cols()
-///
 /// The method successively removes singleton cols from an active submatrix.
-/// The active submatrix is composed of columns j for which qinv[j] < 0 and
-/// rows i for which pinv[i] < 0. When removing a singleton column and its
+/// The active submatrix is composed of columns `j` for which `qinv[j] < 0` and
+/// rows `i` for which `pinv[i] < 0`. When removing a singleton column and its
 /// associated row generates new singleton columns, these are appended to a
 /// queue. The method stops when the active submatrix has no more singleton
 /// columns.
 ///
-/// For each active column j iset[j] is the XOR of row indices in the column
+/// For each active column `j` `iset[j]` is the XOR of row indices in the column
 /// in the active submatrix. For a singleton column, this is its single row
 /// index. The technique is due to J. Gilbert and described in [1], ex 3.7.
 ///
-/// For each eliminated column its associated row is stored in U without the
-/// pivot element. The pivot elements are stored in col_pivot. For each
-/// eliminated pivot an empty column is appended to L.
+/// For each eliminated column its associated row is stored in `U` without the
+/// pivot element. The pivot elements are stored in `col_pivot`. For each
+/// eliminated pivot an empty column is appended to `L`.
 ///
-/// Pivot elements which are zero or less than abstol, and empty columns in
+/// Pivot elements which are zero or less than `abstol`, and empty columns in
 /// the active submatrix are not eliminated. In these cases the matrix is
 /// numerically or structurally singular and the bump factorization handles
 /// it. (We want singularities at the end of the pivot sequence.)
@@ -390,11 +386,9 @@ pub(crate) fn singleton_cols(
     rank
 }
 
-/// singleton_rows()
-///
-/// Analogeous singleton_cols except that for each singleton row the
-/// associated column is stored in L and divided by the pivot element. The
-/// pivot element is stored in col_pivot.
+/// Analogous [`singleton_cols`] except that for each singleton row the
+/// associated column is stored in `L` and divided by the pivot element. The
+/// pivot element is stored in `col_pivot`.
 fn singleton_rows(
     m: LUInt,
     b_begin: &[LUInt], // B columnwise

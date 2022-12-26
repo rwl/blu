@@ -18,16 +18,16 @@
 //     begin[nlines]   pointer to the first element of unused space
 //     end[nlines]     holds fmem
 //
-// next, prev hold the line numbers (0..nlines-1) in a double linked list in
-// the order in which they appear in memory. That is, for line 0 <= k < nlines,
-// next[k] and prev[k] are the line which comes before respectively after line
-// k in memory. next[nlines] and prev[nlines] are the first respectively last
+// `next`, `prev` hold the line numbers (`0..nlines-1`) in a double linked list in
+// the order in which they appear in memory. That is, for line `0 <= k < nlines`,
+// `next[k]` and `prev[k]` are the line which comes before respectively after line
+// `k` in memory. `next[nlines]` and `prev[nlines]` are the first respectively last
 // line in memory order.
 
 use crate::basiclu::LUInt;
 use crate::lu_list::lu_list_move;
 
-/// Initialize empty file with @fmem memory space.
+/// Initialize empty file with `fmem` memory space.
 pub(crate) fn lu_file_empty(
     nlines: LUInt,
     begin: &mut [LUInt],
@@ -50,8 +50,8 @@ pub(crate) fn lu_file_empty(
     prev[0] = nlines;
 }
 
-/// Reappend line to file end and add @extra_space elements room. The file must
-/// have at least length(line) + @extra_space elements free space.
+/// Reappend line to file end and add `extra_space` elements room. The file must
+/// have at least length(line) + `extra_space` elements free space.
 pub(crate) fn lu_file_reappend(
     line: LUInt,
     nlines: LUInt,
@@ -84,7 +84,7 @@ pub(crate) fn lu_file_reappend(
 }
 
 /// Compress file to reuse memory gaps. The ordering of lines in the file is
-/// unchanged. To each line with nz entries add @stretch*nz+@pad elements extra
+/// unchanged. To each line with `nz` entries add `stretch*nz+pad` elements extra
 /// space. Chop extra space if it would overlap the following line in memory.
 ///
 /// Return: number of entries in file
@@ -135,14 +135,14 @@ pub(crate) fn lu_file_compress(
 
 // lu_file_diff (for debugging)
 //
-// @begin_row, @end_row, @begin_col, @end_col are pointer into @index, @value,
+// `begin_row`, `end_row`, `begin_col`, `end_col` are pointer into `index`, `value`,
 // defining lines of the "row file" and the "column file".
 //
 // Task:
 //
-//  val == NULL: count row file entries that are missing in column file.
-//  val != NULL: count row file entries that are missing in column file
-//               or which values are different.
+// - val == None: count row file entries that are missing in column file.
+// - val != None: count row file entries that are missing in column file
+//                or which values are different.
 //
 // The method does a column file search for each row file entry. To check
 // consistency of rowwise and columnwise storage, the method must be called

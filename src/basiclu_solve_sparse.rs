@@ -4,11 +4,9 @@ use crate::basiclu::*;
 use crate::lu_internal::LU;
 use crate::lu_solve_sparse::lu_solve_sparse;
 
-/// Purpose:
-///
-///     Given the factorization computed by basiclu_factorize() or basiclu_update()
-///     and the sparse right-hand side, rhs, solve a linear system for the solution
-///     lhs.
+/// Given the factorization computed by `basiclu_factorize()` or `basiclu_update()`
+/// and the sparse right-hand side, rhs, solve a linear system for the solution
+/// lhs.
 ///
 /// Return:
 ///
@@ -19,14 +17,7 @@ use crate::lu_solve_sparse::lu_solve_sparse;
 ///
 /// Arguments:
 ///
-///     lu_int istore[]
-///     double xstore[]
-///     lu_int l_i[]
-///     double l_x[]
-///     lu_int u_i[]
-///     double u_x[]
-///     lu_int w_i[]
-///     double w_x[]
+///     LU lu
 ///
 ///         Factorization computed by basiclu_factorize() or basiclu_update().
 ///

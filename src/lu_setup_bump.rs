@@ -3,39 +3,39 @@ use crate::lu_file::{lu_file_diff, lu_file_empty};
 use crate::lu_internal::LU;
 use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
 
-/// The bump is composed of rows i and columns j for which pinv[i] < 0 and
-/// qinv[j] < 0. For the factorization, the bump is stored in Windex, Wvalue
+/// The bump is composed of rows `i` and columns `j` for which `pinv[i] < 0` and
+/// `qinv[j] < 0`. For the factorization, the bump is stored in `w_index`, `w_value`
 /// columnwise and additionally the nonzero pattern rowwise:
 ///
-///  Wbegin[j]   points to the first element in column j.
-///  Wend[j]     points to one past the last element in colum j.
-///  Wbegin[m+i] points to the first element in row i.
-///  Wend[m+i]   points to one past the last element in row i.
+/// - `w_begin[j]`   points to the first element in column `j`.
+/// - `w_end[j]`     points to one past the last element in colum `j`.
+/// - `w_begin[m+i]` points to the first element in row `i`.
+/// - `w_end[m+i]`   points to one past the last element in row `i`.
 ///
-///  Wflink, Wblink hold the 2*m lines in a double linked list in memory order.
+/// `w_flink`, `w_blink` hold the `2*m` lines in a double linked list in memory order.
 ///
-/// When a row or column is empty, then Wbegin == Wend. In the rowwise storage
-/// the entries in Wvalue are undefined.
+/// When a row or column is empty, then `w_begin` == `w_end`. In the rowwise storage
+/// the entries in `w_value` are undefined.
 ///
 /// The Markowitz search requires double linked lists of columns with equal
 /// column counts and rows with equal row counts:
 ///
-///  colcount_flink, colcount_blink
-///  rowcount_flink, rowcount_blink
+///     colcount_flink, colcount_blink
+///     rowcount_flink, rowcount_blink
 ///
-/// They organize m elements (cols/rows) in m+2 lists. Column j is in list
-/// 0 <= nz <= m when it has nz nonzeros in the active submatrix. Row i can
-/// alternatively be in list m+1 to exclude it temporarily from the search.
+/// They organize m elements (cols/rows) in `m+2` lists. Column `j` is in list
+/// `0 <= nz <= m` when it has `nz` nonzeros in the active submatrix. Row `i` can
+/// alternatively be in list `m+1` to exclude it temporarily from the search.
 /// A column/row not in the active submatrix is not in any list.
 ///
 /// The Markowitz search also requires the maximum in each column of the
-/// active submatrix. For column j the maximum is stored in col_pivot[j].
-/// When j becomes pivot column, the maximum is replaced by the pivot element.
+/// active submatrix. For column `j` the maximum is stored in `col_pivot[j]`.
+/// When `j` becomes pivot column, the maximum is replaced by the pivot element.
 ///
 /// Return:
 ///
-///  BASICLU_REALLOCATE  require more memory in W
-///  BASICLU_OK
+/// - `BASICLU_REALLOCATE`  require more memory in `W`
+/// - `BASICLU_OK`
 pub(crate) fn lu_setup_bump(
     lu: &mut LU,
     b_begin: &[LUInt],

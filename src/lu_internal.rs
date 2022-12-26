@@ -27,71 +27,201 @@ pub(crate) const BASICLU_PIVOTLEN: usize = 269;
 #[derive(Default)]
 pub struct LU {
     // user parameters, not modified //
+    /// length of `l_i` and `l_x`
     pub l_mem: LUInt,
+    /// length of `u_i` and `u_x`
     pub u_mem: LUInt,
+    /// length of `w_i` and `w_x`
     pub w_mem: LUInt,
+    /// Nonzeros which magnitude is less than or equal to the drop tolerance
+    /// are removed. They are guaranteed removed at the end of the factorization.
+    /// Default: 1e-20
     pub droptol: f64,
+    /// A pivot element must be nonzero and in absolute value must be greater
+    /// than or equal to `abstol`. Default: 1e-14
     pub abstol: f64,
+    /// A pivot element must be (in absolute value) greater than or equal to
+    /// `reltol` times the largest entry in its column. A value greater than or
+    /// equal to 1.0 is treated as 1.0 and enforces partial pivoting. Default: 0.1
     pub reltol: f64,
+    /// When this value is greater than or equal to zero, the pivot choice
+    /// attempts to keep L sparse, putting entries into U when possible.
+    /// When this value is less than zero, the pivot choice attempts to keep U
+    /// sparse, putting entries into L when possible. Default: 1
     pub nzbias: LUInt,
+    /// The Markowitz search is terminated after searching `maxsearch` rows or
+    /// columns if a numerically stable pivot element has been found. Default: 3
     pub maxsearch: LUInt,
+    /// When a row or column cannot be updated by the pivot operation in place,
+    /// it is appended to the end of the workspace. For a row or column with nz
+    /// elements, `pad` + nz * `stretch` elements extra space are added for later
+    /// fill-in. Default: 4
     pub pad: LUInt,
+    /// Default: 0.3
     pub stretch: f64,
     pub compress_thres: f64,
+    /// Defines which method is used for solving a triangular system. A
+    /// triangular solve can be done either by the two phase method of Gilbert
+    /// and Peierls ("sparse solve") or by a sequential pass through the vector
+    /// ("sequential solve").
+    ///
+    /// Solving `B*x=b` requires two triangular solves. The first triangular solve
+    /// is done sparse. The second triangular solve is done sparse if its
+    /// right-hand side has not more than `m * sparse_thres` nonzeros. Otherwise
+    /// the sequential solve is used.
+    ///
+    /// Default: 0.05
     pub sparse_thres: f64,
+    /// If `search_rows` is zero, then the Markowitz search only scans columns.
+    /// If nonzero, then both columns and rows are searched in increasing order of
+    /// number of entries. Default: 1
     pub search_rows: LUInt,
 
     // user readable //
+    /// Matrix dimension (constant).
     pub m: LUInt,
+
+    /// Factorization requires more memory in `l_i`,`l_x`. The number of additional
+    /// elements in each of the array pairs required for the next pivot operation.
+    ///
+    /// The user must reallocate the arrays for which additional memory is
+    /// required. It is recommended to reallocate for the requested number
+    /// of additional elements plus some extra space (e.g. 0.5 times the
+    /// current array length). The new array lengths must be provided in `l_mem`.
+    ///
+    /// [`basiclu_factorize()`] can be called again with `c0ntinue` not equal to
+    /// zero to continue the factorization.
     pub addmem_l: LUInt,
+    /// Factorization requires more memory in `u_i`,`u_x`. The number of additional
+    /// elements in each of the array pairs required for the next pivot operation.
     pub addmem_u: LUInt,
+    /// Factorization requires more memory in `w_i`,`w_x`. The number of additional
+    /// elements in each of the array pairs required for the next pivot operation.
     pub addmem_w: LUInt,
 
+    /// Number of updates since last factorization. This is
+    /// the sum of Forrest-Tomlin updates and permutation
+    /// updates.
     pub nupdate: LUInt,
+    /// Number of Forrest-Tomlin updates since last factorization.
+    /// The upper limit on Forrest-Tomlin updates before refactorization is `m`,
+    /// but that is far too much for performance reasons and numerical stability.
     pub nforrest: LUInt,
+    /// Number of factorizations since initialization.
     pub nfactorize: LUInt,
+    /// Number of updates since initialization.
     pub nupdate_total: LUInt,
+    /// Number of Forrest-Tomlin updates since initialization.
     pub nforrest_total: LUInt,
+    /// Number of symmetric permutation updates since initialization.
+    /// A permutation update is "symmetric" if the row and column
+    /// permutation can be updated symmetrically.
     pub nsymperm_total: LUInt,
-    pub l_nz: LUInt, // nz in L excluding diagonal
-    pub u_nz: LUInt, // nz in U excluding diagonal
-    pub r_nz: LUInt, // nz in update etas excluding diagonal
+    /// Number of nonzeros in `L` excluding diagonal elements (not changed by updates).
+    pub l_nz: LUInt,
+    /// Number of nonzeros in `U` excluding diagonal elements (changed by updates).
+    pub u_nz: LUInt,
+    /// Number of nonzeros in update ETA vectors excluding diagonal elements (zero after
+    /// factorization, increased by Forrest-Tomlin updates).
+    pub r_nz: LUInt,
+    /// The smallest pivot element after factorization.
+    /// Replaced when a smaller pivot occurs in an update.
     pub min_pivot: f64,
+    /// The largest pivot element after factorization.
+    /// Replaced when a larger pivot occurs in an update.
     pub max_pivot: f64,
+    /// The maximum entry (in absolute value) in the eta vectors from the
+    /// Forrest-Tomlin update. A large value, say > 1e6, indicates that pivoting
+    /// on diagonal element was unstable and refactorization might be necessary.
     pub max_eta: f64,
     pub update_cost_numer: f64,
     pub update_cost_denom: f64,
+    /// Wall clock time for last factorization.
     pub time_factorize: f64,
+    /// Wall clock time for all calls to [`basiclu_solve_sparse()`] and
+    /// [`basiclu_solve_for_update`] since last factorization.
     pub time_solve: f64,
+    /// Wall clock time for all calls to [`basiclu_update`] since last factorization.
     pub time_update: f64,
+    /// Analogous to above, but summing up all calls since initialization.
     pub time_factorize_total: f64,
+    /// Analogous to above, but summing up all calls since initialization.
     pub time_solve_total: f64,
+    /// Analogous to above, but summing up all calls since initialization.
     pub time_update_total: f64,
+    /// Number of flops for operations with `L` vectors in calls to
+    /// [`basiclu_solve_sparse`] and [`basiclu_solve_for_update`] since last factorization.
     pub l_flops: LUInt,
+    /// Number of flops for operations with `U` vectors in calls to
+    /// [`basiclu_solve_sparse`] and [`basiclu_solve_for_update`] since last factorization.
     pub u_flops: LUInt,
+    /// Number of flops for operations with update ETA vectors in calls to
+    /// [`basiclu_solve_sparse`] and [`basiclu_solve_for_update`] since last factorization.
     pub r_flops: LUInt,
+    /// Estimated 1-norm condition number of `L`.
     pub condest_l: f64,
+    /// Estimated 1-norm condition number of `U`.
     pub condest_u: f64,
+    /// 1-norm of `L`.
     pub norm_l: f64,
+    /// 1-norm of `U`.
     pub norm_u: f64,
+    /// Estimated 1-norm of `L^{-1}`, computed by the LINPACK algorithm.
     pub normest_l_inv: f64,
+    /// Estimated 1-norm of `U^{-1}`, computed by the LINPACK algorithm.
     pub normest_u_inv: f64,
-    pub onenorm: f64,       // 1-norm and inf-norm of matrix after fresh
-    pub infnorm: f64,       // factorization with dependent cols replaced
+    /// 1-norm of the input matrix after replacing dependent columns by unit columns.
+    pub onenorm: f64,
+    /// Inf-norm of the input matrix after replacing dependent columns by unit columns.
+    pub infnorm: f64,
+    /// An estimate for numerical stability of the factorization.
+    /// `residual_test` is the maximum of the scaled residuals
+    ///
+    ///     ||b-b_x|| / (||b|| + ||B||*||x||)
+    ///
+    /// and
+    ///
+    ///     ||c-B'y|| / (||c|| + ||B'||*||y||),
+    ///
+    /// where `x=B\b` and `y=B'\c` are computed from the LU factors, `b` and `c`
+    /// have components +/-1 that are chosen to make `x` respectively `y` large,
+    /// and `||.||` is the 1-norm. Here `B` is the input matrix after replacing
+    /// dependent columns by unit columns.
+    ///
+    /// If `residual_test` > 1e-12, say, the factorization is numerically unstable.
+    /// (This is independent of the condition number of B.) In this case tightening
+    /// the relative pivot tolerance and refactorizing is appropriate.
     pub residual_test: f64, // computed by lu_residual_test()
 
-    pub matrix_nz: LUInt, // nz in basis matrix when factorized
-    pub rank: LUInt,      // rank of basis matrix when factorized
+    /// Number of nonzeros in basis matrix (`B`) when factorized.
+    pub matrix_nz: LUInt,
+    /// number of pivot steps performed
+    pub rank: LUInt, // rank of basis matrix when factorized
+    /// Dimension of matrix after removing singletons.
     pub bump_size: LUInt,
+    /// Number of nonzeros in matrix after removing singletons.
     pub bump_nz: LUInt,
-    pub nsearch_pivot: LUInt, // # rows/cols searched for pivot
-    pub nexpand: LUInt,       // # rows/cols expanded in factorize
-    pub ngarbage: LUInt,      // # garbage collections in factorize
-    pub factor_flops: LUInt,  // # flops in factorize
+    /// Total number of columns/rows searched for pivots.
+    pub nsearch_pivot: LUInt,
+    /// Number of columns/rows which had to be appended to the end
+    /// of the workspace for the rank-1 update.
+    pub nexpand: LUInt,
+    /// Number of garbage collections in factorize.
+    pub ngarbage: LUInt,
+    /// Number of floating point operations performed in factorize,
+    /// counting multiply-add as one flop.
+    pub factor_flops: LUInt,
+    /// Wall clock time for removing the initial triangular factors.
     pub time_singletons: f64,
+    /// Wall clock time for Markowitz search.
     pub time_search_pivot: f64,
+    /// Wall clock time for pivot elimination.
     pub time_elim_pivot: f64,
 
+    /// A measure for numerical stability. It is the difference between two
+    /// computations of the new pivot element relative to the new pivot element.
+    /// A value larger than 1e-10 indicates numerical instability and suggests
+    /// refactorization (and possibly tightening the pivot tolerance).
     pub pivot_error: f64, // error estimate for pivot in last update
 
     // private //
@@ -107,7 +237,12 @@ pub struct LU {
     pub(crate) min_colnz: LUInt, // colcount lists 1..min_colnz-1 are empty
     pub(crate) min_rownz: LUInt, // rowcount lists 1..min_rownz-1 are empty
 
-    // aliases to user arrays //
+    /// Arrays used for workspace during the factorization and to store the
+    /// final factors.
+    ///
+    /// When the allocated length is insufficient to complete the factorization,
+    /// [`basiclu_factorize()`] returns to the caller for reallocation. A successful
+    /// factorization requires at least `nnz(B)` length for each of the arrays.
     pub(crate) l_index: Vec<LUInt>,
     pub(crate) u_index: Vec<LUInt>,
     pub(crate) w_index: Vec<LUInt>,
@@ -513,6 +648,9 @@ impl LU {
         (xstore, status)
     }
 
+    /// Deterministic measure of solve/update cost compared to cost of last factorization. This
+    /// value is zero after factorization and monotonically increases with solves/updates.
+    /// When > 1.0, then a refactorization is good for performance.
     pub(crate) fn update_cost(&mut self) -> f64 {
         self.update_cost_numer / self.update_cost_denom
     }

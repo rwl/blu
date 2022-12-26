@@ -2,112 +2,111 @@
 //
 // Build rowwise and columnwise form of L and U
 
-// BASICLU maintains the factorization in the form
-//
-//   B = L * R^1 * R^2 * ... * R^{nforrest} * U,
-//
-// where L[p,p] is unit lower triangular and U[pivotrow,pivotcol] is upper
-// triangular. After refactorization nforrest = 0 and p and pivotrow hold the
-// same permutation. pivotrow and pivotcol are modified by updates, p is not.
-//
-// The permutations are stored as follows:
-// ---------------------------------------
-//
-//   p[0..m-1] is a vector.
-//
-//   pivotrow[0..pivotlen-1],
-//   pivotcol[0..pivotlen-1]
-//
-//     are vectors of length m <= pivotlen < 2*m which may contain duplicate
-//     indices. For each index its last occurance is its position in the pivot
-//     sequence, see lu_garbage_perm().
-//
-//   pmap[0..m-1],
-//   qmap[0..m-1]
-//
-//     are vectors such that i = pmap[j] and j = qmap[i] when element (i,j) of
-//     U is pivot element.
-//
-// The matrix L is stored as follows:
-// ----------------------------------
-//
-//   Lindex[0..Lnz+m-1],
-//   Lvalue[0..Lnz+m-1]
-//
-//     hold L columnwise without the unit diagonal. Each column is terminated
-//     by index -1. Row indices are row indices of B.
-//
-//   l_begin[i]       points to the first element in column i.
-//   Lbegin_p[k]     points to the first element in column p[k].
-//
-//   Lindex[Lnz+m..2*(Lnz+m)-1],
-//   Lvalue[Lnz+m..2*(Lnz+m)-1]
-//
-//     hold L rowwise without the unit diagonal. Each row is terminated
-//     by index -1. Column indices are such that column i holds the elimination
-//     factors from the pivot step in which row i was pivot row.
-//
-//   lt_begin[i]      points to the first element in row i.
-//   lt_begin_p[k]    points to the first element in row p[k].
-//
-// The matrices R^k are stored as follows:
-// ---------------------------------------
-//
-//   Lindex[r_begin[k]..r_begin[k+1]-1],
-//   Lvalue[r_begin[k]..r_begin[k+1]-1]
-//
-//     hold the nontrivial column of R^k without the unit diagonal.
-//     Row indices are row indices of B. r_begin[0] is one past the last
-//     element of the L storage.
-//
-//   eta_row[k]
-//
-//     holds the row index of the diagonal element of the nontrivial column
-//     of R^k. These are row indices of B.
-//
-// The matrix U is stored as follows:
-// ----------------------------------
-//
-//   Uindex[1..Unz+m],
-//   Uvalue[1..Unz+m]
-//
-//     hold U columnwise without the pivot elements. Each column is terminated
-//     by index -1. Row indices are row indices of B. Updates will introduce
-//     gaps into the data structure.
-//
-//     Uindex[0] stores index -1. All empty columns (ie. column in U with no
-//     off-diagonal elements) are stored in Uindex[0]. For each empty column
-//     the length of the data structure decreases by 1.
-//
-//   Ubegin[i]       points to the first element in column qmap[i].
-//
-//   Windex[..],
-//   Wvalue[..]
-//
-//     hold U rowwise without the pivot elements. Column indices are column
-//     indices of B. The rows are stored in a dynamic file structure with gaps
-//     between them and out of order.
-//
-//   Wbegin[j]       points to the first element in row pmap[j].
-//   Wend[j]         points to one past the last element in row pmap[j].
-//   Wflink, Wblink  double linked list of rows in memory order.
-//
-//   col_pivot[0..m-1],
-//   row_pivot[0..m-1]
-//
-//     hold the pivot elements by column and by row index.
-
+/// BASICLU maintains the factorization in the form
+///
+///     B = L * R^1 * R^2 * ... * R^{nforrest} * U,
+///
+/// where `L[p,p]` is unit lower triangular and `U[pivotrow,pivotcol]` is upper
+/// triangular. After refactorization `nforrest` = 0 and `p` and `pivotrow` hold the
+/// same permutation. `pivotrow` and `pivotcol` are modified by updates, `p` is not.
+///
+/// The permutations are stored as follows:
+/// ---------------------------------------
+///
+/// `p[0..m-1]` is a vector.
+///
+///     pivotrow[0..pivotlen-1],
+///     pivotcol[0..pivotlen-1]
+///
+/// are vectors of length `m <= pivotlen < 2*m` which may contain duplicate
+/// indices. For each index its last occurrence is its position in the pivot
+/// sequence, see [`lu_garbage_perm()`].
+///
+///     pmap[0..m-1],
+///     qmap[0..m-1]
+///
+/// are vectors such that `i = pmap[j]` and `j = qmap[i]` when element (`i`,`j`) of
+/// `U` is pivot element.
+///
+/// The matrix `L` is stored as follows:
+/// ------------------------------------
+///
+///     l_index[0..l_nz+m-1],
+///     l_value[0..l_nz+m-1]
+///
+/// hold `L` columnwise without the unit diagonal. Each column is terminated
+/// by index -1. Row indices are row indices of `B`.
+///
+///     l_begin[i]       points to the first element in column i.
+///     l_begin_p[k]     points to the first element in column p[k].
+///
+///     l_index[l_nz+m..2*(l_nz+m)-1],
+///     l_value[l_nz+m..2*(l_nz+m)-1]
+///
+/// hold `L` rowwise without the unit diagonal. Each row is terminated
+/// by index -1. Column indices are such that column `i` holds the elimination
+/// factors from the pivot step in which row i was pivot row.
+///
+///     lt_begin[i]      points to the first element in row i.
+///     lt_begin_p[k]    points to the first element in row p[k].
+///
+/// The matrices `R^k` are stored as follows:
+/// -----------------------------------------
+///
+///     l_index[r_begin[k]..r_begin[k+1]-1],
+///     l_value[r_begin[k]..r_begin[k+1]-1]
+///
+/// hold the nontrivial column of `R^k` without the unit diagonal.
+/// Row indices are row indices of `B`. `r_begin[0]` is one past the last
+/// element of the `L` storage.
+///
+///     eta_row[k]
+///
+/// holds the row index of the diagonal element of the nontrivial column
+/// of `R^k`. These are row indices of `B`.
+///
+/// The matrix `U` is stored as follows:
+/// ------------------------------------
+///
+///     u_index[1..u_nz+m],
+///     u_value[1..u_nz+m]
+///
+/// hold `U` columnwise without the pivot elements. Each column is terminated
+/// by index -1. Row indices are row indices of `B`. Updates will introduce
+/// gaps into the data structure.
+///
+/// `u_index[0]` stores index -1. All empty columns (ie. column in `U` with no
+/// off-diagonal elements) are stored in `u_index[0]`. For each empty column
+/// the length of the data structure decreases by 1.
+///
+/// `u_begin[i]` points to the first element in column qmap[i].
+///
+///     w_index[..],
+///     w_value[..]
+///
+/// hold `U` rowwise without the pivot elements. Column indices are column
+/// indices of `B`. The rows are stored in a dynamic file structure with gaps
+/// between them and out of order.
+///
+/// `w_begin[j]` points to the first element in row pmap[j].
+/// `w_end[j]` points to one past the last element in row pmap[j].
+/// `w_flink`, `w_blink` double linked list of rows in memory order.
+///
+///     col_pivot[0..m-1],
+///     row_pivot[0..m-1]
+///
+/// hold the pivot elements by column and by row index.
 use crate::basiclu::{LUInt, BASICLU_OK, BASICLU_REALLOCATE};
 use crate::lu_file::lu_file_empty;
 use crate::lu_internal::*;
 use crate::lu_list::lu_list_move;
 
-/// lu_build_factors() - build data structures for L, R, U and permutations
+/// Build data structures for `L`, `R`, `U` and permutations.
 ///
 /// Return:
 ///
-///  BASICLU_REALLOCATE  require more memory in L, U, and/or W
-///  BASICLU_OK
+/// - `BASICLU_REALLOCATE`  require more memory in `L`, `U`, and/or `W`
+/// - `BASICLU_OK`
 pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;

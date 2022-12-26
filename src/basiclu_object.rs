@@ -7,29 +7,16 @@ use crate::{
     basiclu_solve_sparse, basiclu_update,
 };
 
-/// A variable of type struct BasicLUObject must be defined in user code. Its
-/// members are set and maintained by basiclu_obj_* routines. User code should only
-/// access the following members:
-///
-///     xstore (read/write)
-///
-///         set parameters and get info values
-///
-///     lhs, ilhs, nzlhs (read only)
-///
-///         holds solution after solve_sparse() and solve_for_update()
-///
-///     realloc_factor (read/write)
-///
-///         Arrays are reallocated for max(realloc_factor, 1.0) times the
-///         required size. Default: 1.5
 pub struct BasicLUObject {
     pub lu: LU,
 
+    /// Holds solution after `solve_sparse()` and `solve_for_update()`.
     pub lhs: Vec<f64>,
     pub ilhs: Vec<LUInt>,
     pub nzlhs: LUInt,
 
+    /// Arrays are reallocated for max(realloc_factor, 1.0) times the
+    /// required size. Default: 1.5
     pub realloc_factor: f64,
 }
 

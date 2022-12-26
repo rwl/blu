@@ -4,19 +4,17 @@ use crate::basiclu::{LUInt, BASICLU_ERROR_INVALID_CALL};
 use crate::lu_internal::LU;
 use crate::lu_update::lu_update;
 
-/// Purpose:
+/// Update the factorization to replace one column of the factorized matrix.
+/// A call to `basiclu_update()` must be preceded by calls to
+/// [`basiclu_solve_for_update()`] to provide the column to be inserted and the
+/// index of the column to be replaced.
 ///
-///     Update the factorization to replace one column of the factorized matrix.
-///     A call to basiclu_update() must be preceded by calls to
-///     basiclu_solve_for_update() to provide the column to be inserted and the
-///     index of the column to be replaced.
+/// The column to be inserted is defined as the right-hand side in the last call
+/// to [`basiclu_solve_for_update()`] in which the forward system was solved.
 ///
-///     The column to be inserted is defined as the right-hand side in the last call
-///     to basiclu_solve_for_update() in which the forward system was solved.
-///
-///     The index of the column to be replaced is defined by the unit vector in the
-///     last call to basiclu_solve_for_update() in which the transposed system was
-///     solved.
+/// The index of the column to be replaced is defined by the unit vector in the
+/// last call to [`basiclu_solve_for_update()`] in which the transposed system was
+/// solved.
 ///
 /// Return:
 ///
