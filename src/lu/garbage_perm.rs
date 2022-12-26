@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::lu_internal::*;
+use crate::lu::lu::*;
 
 // The sequence of pivot columns and pivot rows is stored in
 //
@@ -12,7 +12,7 @@ use crate::lu_internal::*;
 //
 // This routine removes duplicates and compresses the indices such that
 // `pivotlen` == `m`.
-pub(crate) fn lu_garbage_perm(lu: &mut LU) {
+pub(crate) fn garbage_perm(lu: &mut LU) {
     let m = lu.m;
     let pivotlen = lu.pivotlen;
     let pivotcol = &mut pivotcol!(lu);

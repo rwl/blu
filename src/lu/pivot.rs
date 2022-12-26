@@ -2,7 +2,7 @@
 //
 // Pivot elimination from active submatrix
 //
-// lu_pivot() is the only routine callable from extern. It branches out the
+// pivot() is the only routine callable from extern. It branches out the
 // implementation of the pivot operation. The pivot operation removes row
 // this.pivot_row and column this.pivot_col from the active submatrix and
 // applies a rank-1 update to the remaining active submatrix. It updates the
@@ -26,25 +26,25 @@
 // of the column (and likewise for rows).
 
 use crate::blu::*;
-use crate::lu_def::*;
-use crate::lu_file::*;
-use crate::lu_internal::LU;
-use crate::lu_list::*;
+use crate::lu::def::*;
+use crate::lu::file::*;
+use crate::lu::list::*;
+use crate::lu::LU;
 use std::time::Instant;
 
 // MAXROW_SMALL is the maximum number of off-diagonal elements in the pivot
-// column handled by lu_pivot_small(). lu_pivot_small() uses int64_t integers
+// column handled by pivot_small(). pivot_small() uses int64_t integers
 // for bit masking. Since each row to be updated requires one bit, the routine
 // can handle pivot operations for up to 64 rows (excluding pivot row).
 //
 // Since int64_t is optional in the C99 standard, using it limits portability
 // of the code. However, using a fixed threshold to switch between
-// lu_pivot_small() and lu_pivot_any() guarantees identical pivot operations
+// pivot_small() and pivot_any() guarantees identical pivot operations
 // on all architectures. If int64_t does not exist, then the user can adapt it
 // by hand and is aware of it.
 const MAXROW_SMALL: LUInt = 64;
 
-pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
+pub(crate) fn pivot(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
     let l_mem = lu.l_mem;
@@ -85,15 +85,15 @@ pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
 
     // Branch out implementation of pivot operation.
     if nz_row == 1 {
-        status = lu_pivot_singleton_row(lu);
+        status = pivot_singleton_row(lu);
     } else if nz_col == 1 {
-        status = lu_pivot_singleton_col(lu);
+        status = pivot_singleton_col(lu);
     } else if nz_col == 2 {
-        status = lu_pivot_doubleton_col(lu);
+        status = pivot_doubleton_col(lu);
     } else if nz_col - 1 <= MAXROW_SMALL {
-        status = lu_pivot_small(lu);
+        status = pivot_small(lu);
     } else {
-        status = lu_pivot_any(lu);
+        status = pivot_any(lu);
     }
 
     // Remove all entries in columns whose maximum entry has dropped below
@@ -103,7 +103,7 @@ pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
             let j = lu.u_index[pos as usize];
             assert_ne!(j, pivot_col);
             if lu.col_pivot[j as usize] == 0.0 || lu.col_pivot[j as usize] < lu.abstol {
-                lu_remove_col(lu, j);
+                remove_col(lu, j);
             }
         }
     }
@@ -113,7 +113,7 @@ pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
     status
 }
 
-fn lu_pivot_any(lu: &mut LU) -> LUInt {
+fn pivot_any(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -168,8 +168,8 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
         }
     }
     assert!(where_ >= 0);
-    lu_iswap(w_index, cbeg, where_);
-    lu_fswap(w_value, cbeg, where_);
+    iswap(w_index, cbeg, where_);
+    fswap(w_value, cbeg, where_);
     let pivot = w_value[cbeg as usize];
     assert_ne!(pivot, 0.0);
     where_ = -1;
@@ -184,10 +184,10 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
         }
     }
     assert!(where_ >= 0);
-    lu_iswap(w_index, rbeg, where_);
+    iswap(w_index, rbeg, where_);
     let mut room = w_end[(2 * m) as usize] - w_begin[(2 * m) as usize];
     if grow > room {
-        lu_file_compress(
+        file_compress(
             2 * m,
             w_begin,
             w_end,
@@ -260,8 +260,8 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
         }
         assert!(where_ >= 0);
         w_end[j as usize] = put;
-        lu_iswap(w_index, pos1, where_);
-        lu_fswap(w_value, pos1, where_);
+        iswap(w_index, pos1, where_);
+        fswap(w_value, pos1, where_);
         let xrj = w_value[pos1 as usize]; // pivot row entry
 
         // Reappend column if no room for update.
@@ -269,7 +269,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
         if room < cnz1 {
             let nz = w_end[j as usize] - w_begin[j as usize];
             room = cnz1 + (stretch as LUInt) * (nz + cnz1) + pad;
-            lu_file_reappend(
+            file_reappend(
                 j,
                 2 * m,
                 w_begin,
@@ -317,7 +317,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
 
         // Move column to new list and update min_colnz.
         let nz = w_end[j as usize] - w_begin[j as usize];
-        lu_list_move(
+        list_move(
             j,
             nz,
             colcount_flink,
@@ -365,7 +365,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
         if room < rnz1 {
             let nz = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
             room = rnz1 + (stretch as LUInt) * (nz + rnz1) + pad;
-            lu_file_reappend(
+            file_reappend(
                 m + i,
                 2 * m,
                 w_begin,
@@ -389,7 +389,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
         // Move to new list. The row must be reinserted even if nz are
         // unchanged since it might have been taken out in Markowitz search.
         let nz = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
-        lu_list_move(
+        list_move(
             i,
             nz,
             rowcount_flink,
@@ -424,14 +424,14 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
     colmax[pivot_col as usize] = pivot;
     w_end[pivot_col as usize] = cbeg;
     w_end[(m + pivot_row) as usize] = rbeg;
-    lu_list_remove(colcount_flink, colcount_blink, pivot_col);
-    lu_list_remove(rowcount_flink, rowcount_blink, pivot_row);
+    list_remove(colcount_flink, colcount_blink, pivot_col);
+    list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
     // Check that row file and column file are consistent. Only use when
     // DEBUG_EXTRA since this check is really expensive.
     if cfg!(feature = "debug_extra") {
         assert_eq!(
-            lu_file_diff(
+            file_diff(
                 m,
                 &w_begin[m as usize..],
                 &w_end[m as usize..],
@@ -443,7 +443,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
             0
         );
         assert_eq!(
-            lu_file_diff(
+            file_diff(
                 m,
                 w_begin,
                 w_end,
@@ -459,7 +459,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
     BLU_OK
 }
 
-fn lu_pivot_small(lu: &mut LU) -> LUInt {
+fn pivot_small(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -518,8 +518,8 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         }
     }
     assert!(where_ >= 0);
-    lu_iswap(w_index, cbeg, where_);
-    lu_fswap(w_value, cbeg, where_);
+    iswap(w_index, cbeg, where_);
+    fswap(w_value, cbeg, where_);
     let pivot = w_value[cbeg as usize];
     assert_ne!(pivot, 0.0);
     where_ = -1;
@@ -534,10 +534,10 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         }
     }
     assert!(where_ >= 0);
-    lu_iswap(w_index, rbeg, where_);
+    iswap(w_index, rbeg, where_);
     let mut room = w_end[(2 * m) as usize] - w_begin[(2 * m) as usize];
     if grow > room {
-        lu_file_compress(
+        file_compress(
             2 * m,
             w_begin,
             w_end,
@@ -613,8 +613,8 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         }
         assert!(where_ >= 0);
         w_end[j as usize] = put;
-        lu_iswap(w_index, pos1, where_);
-        lu_fswap(w_value, pos1, where_);
+        iswap(w_index, pos1, where_);
+        fswap(w_value, pos1, where_);
         let xrj = w_value[pos1 as usize]; // pivot row entry
 
         // Reappend column if no room for update.
@@ -622,7 +622,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         if room < cnz1 {
             let nz = w_end[j as usize] - w_begin[j as usize];
             room = cnz1 + (stretch as LUInt) * (nz + cnz1) + pad;
-            lu_file_reappend(
+            file_reappend(
                 j,
                 2 * m,
                 w_begin,
@@ -677,7 +677,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
 
         // Move column to new list and update min_colnz.
         let nz = w_end[j as usize] - w_begin[j as usize];
-        lu_list_move(
+        list_move(
             j,
             nz,
             colcount_flink,
@@ -731,7 +731,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         if room < rnz1 {
             let nz = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
             room = rnz1 + (stretch as LUInt) * (nz + rnz1) + pad;
-            lu_file_reappend(
+            file_reappend(
                 m + i,
                 2 * m,
                 w_begin,
@@ -760,7 +760,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         // Move to new list. The row must be reinserted even if nz are
         // unchanged since it might have been taken out in Markowitz search.
         let nz = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
-        lu_list_move(
+        list_move(
             i,
             nz,
             rowcount_flink,
@@ -797,8 +797,8 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
     colmax[pivot_col as usize] = pivot;
     w_end[pivot_col as usize] = cbeg;
     w_end[(m + pivot_row) as usize] = rbeg;
-    lu_list_remove(colcount_flink, colcount_blink, pivot_col);
-    lu_list_remove(rowcount_flink, rowcount_blink, pivot_row);
+    list_remove(colcount_flink, colcount_blink, pivot_col);
+    list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
     // Check that row file and column file are consistent. Only use when
     // DEBUG_EXTRA since this check is really expensive.
@@ -806,7 +806,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         // let (_, Wbegin_m) = Wbegin.split_at(m as usize);
         // let (_, Wend_m) = Wend.split_at(m as usize);
         assert_eq!(
-            lu_file_diff(
+            file_diff(
                 m,
                 &w_begin[m as usize..],
                 &w_end[m as usize..],
@@ -818,7 +818,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
             0
         );
         assert_eq!(
-            lu_file_diff(
+            file_diff(
                 m,
                 w_begin,
                 w_end,
@@ -834,7 +834,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
     BLU_OK
 }
 
-fn lu_pivot_singleton_row(lu: &mut LU) -> LUInt {
+fn pivot_singleton_row(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -904,7 +904,7 @@ fn lu_pivot_singleton_row(lu: &mut LU) -> LUInt {
         w_end[(m + i) as usize] -= 1;
         w_index[where_ as usize] = w_index[w_end[(m + i) as usize] as usize];
         let nz = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
-        lu_list_move(
+        list_move(
             i,
             nz,
             rowcount_flink,
@@ -921,13 +921,13 @@ fn lu_pivot_singleton_row(lu: &mut LU) -> LUInt {
     colmax[pivot_col as usize] = pivot;
     w_end[pivot_col as usize] = cbeg;
     w_end[(m + pivot_row) as usize] = rbeg;
-    lu_list_remove(colcount_flink, colcount_blink, pivot_col);
-    lu_list_remove(rowcount_flink, rowcount_blink, pivot_row);
+    list_remove(colcount_flink, colcount_blink, pivot_col);
+    list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
     BLU_OK
 }
 
-fn lu_pivot_singleton_col(lu: &mut LU) -> LUInt {
+fn pivot_singleton_col(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -994,7 +994,7 @@ fn lu_pivot_singleton_col(lu: &mut LU) -> LUInt {
         w_index[where_ as usize] = w_index[w_end[j as usize] as usize];
         w_value[where_ as usize] = w_value[w_end[j as usize] as usize];
         let nz = w_end[j as usize] - w_begin[j as usize];
-        lu_list_move(
+        list_move(
             j,
             nz,
             colcount_flink,
@@ -1020,13 +1020,13 @@ fn lu_pivot_singleton_col(lu: &mut LU) -> LUInt {
     colmax[pivot_col as usize] = pivot;
     w_end[pivot_col as usize] = cbeg;
     w_end[(m + pivot_row) as usize] = rbeg;
-    lu_list_remove(colcount_flink, colcount_blink, pivot_col);
-    lu_list_remove(rowcount_flink, rowcount_blink, pivot_row);
+    list_remove(colcount_flink, colcount_blink, pivot_col);
+    list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
     BLU_OK
 }
 
-fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
+fn pivot_doubleton_col(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -1068,8 +1068,8 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
 
     /* Move pivot element to front of pivot column and pivot row. */
     if w_index[cbeg as usize] != pivot_row {
-        lu_iswap(w_index, cbeg, cbeg + 1);
-        lu_fswap(w_value, cbeg, cbeg + 1);
+        iswap(w_index, cbeg, cbeg + 1);
+        fswap(w_value, cbeg, cbeg + 1);
     }
     assert_eq!(w_index[cbeg as usize], pivot_row);
     let pivot = w_value[cbeg as usize];
@@ -1081,7 +1081,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
         assert!(where_ < rend - 1);
         where_ += 1;
     }
-    lu_iswap(w_index, rbeg, where_);
+    iswap(w_index, rbeg, where_);
 
     // Check if room is available in W.
     // Columns can be updated in place but the updated row may need to be
@@ -1090,7 +1090,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
     let grow = nz + rnz1 + (stretch as LUInt) * (nz + rnz1) + pad;
     let mut room = w_end[(2 * m) as usize] - w_begin[(2 * m) as usize];
     if grow > room {
-        lu_file_compress(
+        file_compress(
             2 * m,
             w_begin,
             w_end,
@@ -1171,7 +1171,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
 
                 // Decrease column count.
                 nz = end - w_begin[j as usize];
-                lu_list_move(
+                list_move(
                     j,
                     nz,
                     colcount_flink,
@@ -1209,7 +1209,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
 
             // Decrease column count.
             nz = w_end[j as usize] - w_begin[j as usize];
-            lu_list_move(
+            list_move(
                 j,
                 nz,
                 colcount_flink,
@@ -1262,7 +1262,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
     if nfill > room {
         let nz = w_end[(m + other_row) as usize] - w_begin[(m + other_row) as usize];
         let space = nfill + (stretch as LUInt) * (nz + nfill) + pad;
-        lu_file_reappend(
+        file_reappend(
             m + other_row,
             2 * m,
             w_begin,
@@ -1286,7 +1286,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
 
     // Reinsert other row into row counts.
     let nz = w_end[(m + other_row) as usize] - w_begin[(m + other_row) as usize];
-    lu_list_move(
+    list_move(
         other_row,
         nz,
         rowcount_flink,
@@ -1314,14 +1314,14 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
     colmax[pivot_col as usize] = pivot;
     w_end[pivot_col as usize] = cbeg;
     w_end[(m + pivot_row) as usize] = rbeg;
-    lu_list_remove(colcount_flink, colcount_blink, pivot_col);
-    lu_list_remove(rowcount_flink, rowcount_blink, pivot_row);
+    list_remove(colcount_flink, colcount_blink, pivot_col);
+    list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
     // Check that row file and column file are consistent. Only use when
     // DEBUG_EXTRA since this check is really expensive.
     if cfg!(feature = "debug_extra") {
         assert_eq!(
-            lu_file_diff(
+            file_diff(
                 m,
                 &w_begin[m as usize..],
                 &w_end[m as usize..],
@@ -1333,7 +1333,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
             0
         );
         assert_eq!(
-            lu_file_diff(
+            file_diff(
                 m,
                 w_begin,
                 w_end,
@@ -1349,7 +1349,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
     BLU_OK
 }
 
-fn lu_remove_col(lu: &mut LU, j: LUInt) {
+fn remove_col(lu: &mut LU, j: LUInt) {
     let m = lu.m;
     let colcount_flink = &mut lu.colcount_flink;
     let colcount_blink = &mut lu.colcount_blink;
@@ -1376,7 +1376,7 @@ fn lu_remove_col(lu: &mut LU, j: LUInt) {
         w_end[(m + i) as usize] -= 1;
         w_index[where_ as usize] = w_index[w_end[(m + i) as usize] as usize];
         let nz = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
-        lu_list_move(
+        list_move(
             i,
             nz,
             rowcount_flink,
@@ -1389,7 +1389,7 @@ fn lu_remove_col(lu: &mut LU, j: LUInt) {
     // Remove column j from column file.
     colmax[j as usize] = 0.0;
     w_end[j as usize] = cbeg;
-    lu_list_move(
+    list_move(
         j,
         0,
         colcount_flink,

@@ -3,11 +3,11 @@
 // Forrest-Tomlin update with reordering.
 
 use crate::blu::*;
-use crate::lu_dfs::lu_dfs;
-use crate::lu_file::{lu_file_compress, lu_file_reappend};
-use crate::lu_garbage_perm::lu_garbage_perm;
-use crate::lu_internal::*;
-use crate::lu_list::lu_list_swap;
+use crate::lu::dfs::dfs;
+use crate::lu::file::{file_compress, file_reappend};
+use crate::lu::garbage_perm::garbage_perm;
+use crate::lu::list::list_swap;
+use crate::lu::lu::*;
 use std::time::Instant;
 
 const GAP: LUInt = -1;
@@ -215,7 +215,7 @@ fn permute(lu: &mut LU, jlist: &[LUInt], nswap: LUInt) {
         // then it is indexed by j now.
         w_begin[j as usize] = w_begin[jprev as usize];
         w_end[j as usize] = w_end[jprev as usize];
-        lu_list_swap(w_flink, w_blink, j, jprev);
+        list_swap(w_flink, w_blink, j, jprev);
 
         // That row must have an entry in column j because (jprev,j) is an
         // edge in the augmenting path. This entry becomes a pivot element.
@@ -383,7 +383,7 @@ fn check_consistency(lu: &LU, p_col: &mut LUInt, p_row: &mut LUInt) {
 //  BLU_OK                      update successfully completed
 //  BLU_REALLOCATE              require more memory in W
 //  BLU_ERROR_SINGULAR_UPDATE   new pivot element is zero or < abstol
-pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
+pub(crate) fn update(lu: &mut LU, xtbl: f64) -> LUInt {
     let m = lu.m;
     let nforrest = lu.nforrest;
     let mut u_nz = lu.u_nz;
@@ -580,7 +580,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
         if lu.w_end[j as usize] == lu.w_begin[jnext as usize] {
             nz = lu.w_end[j as usize] - lu.w_begin[j as usize];
             let room = 1 + (stretch as LUInt) * (nz + 1) + pad;
-            lu_file_reappend(
+            file_reappend(
                 j,
                 m,
                 &mut lu.w_begin,
@@ -734,7 +734,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
                 );
                 assert!(where_ < lu.w_end[j as usize]);
                 lu.w_index[where_ as usize] = j; // take out for a moment
-                rtop = lu_dfs(
+                rtop = dfs(
                     j,
                     &lu.w_begin,
                     Some(&lu.w_end),
@@ -766,7 +766,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
             let pstack = &mut lu.work1;
 
             let j = path[(m - 1) as usize];
-            rtop = lu_dfs(
+            rtop = dfs(
                 j,
                 &lu.w_begin,
                 Some(&lu.w_end),
@@ -900,7 +900,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
     // Update permutations //
 
     if lu.pivotlen + nreach > 2 * m {
-        lu_garbage_perm(lu);
+        garbage_perm(lu);
     }
 
     // append row indices row_reach[0..nreach-1] to end of pivot sequence
@@ -932,7 +932,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
     let used = lu.w_begin[m as usize];
     let need = u_nz + (stretch as LUInt) * u_nz + m * pad;
     if (used - need) > (lu.compress_thres as LUInt) * used {
-        nz = lu_file_compress(
+        nz = file_compress(
             m,
             &mut lu.w_begin,
             &mut lu.w_end,

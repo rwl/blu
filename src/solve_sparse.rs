@@ -1,8 +1,8 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::blu::*;
-use crate::lu_internal::LU;
-use crate::lu_solve_sparse::lu_solve_sparse;
+use crate::lu;
+use crate::lu::LU;
 
 /// Given the factorization computed by `factorize()` or `update()`
 /// and the sparse right-hand side, rhs, solve a linear system for the solution
@@ -124,7 +124,7 @@ pub fn solve_sparse(
     };
 
     if status == BLU_OK {
-        lu_solve_sparse(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        lu::solve_sparse(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
     // lu_save(&lu, /*istore,*/ xstore, status)

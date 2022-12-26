@@ -1,8 +1,8 @@
 // Copyright (C) 2016-2019  ERGO-Code
 
 use crate::blu::*;
-use crate::lu_internal::LU;
-use crate::lu_list::lu_list_move;
+use crate::lu::list::list_move;
+use crate::lu::LU;
 use std::time::Instant;
 
 /// Search for pivot element with small Markowitz cost. An eligible pivot
@@ -30,7 +30,7 @@ use std::time::Instant;
 ///
 /// [1] U. Suhl, L. Suhl, "Computing Sparse LU Factorizations for Large-Scale
 ///     Linear Programming Bases", ORSA Journal on Computing (1990)
-pub(crate) fn lu_markowitz(lu: &mut LU) -> LUInt {
+pub(crate) fn markowitz(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let w_begin = &lu.w_begin;
     let w_end = &lu.w_end;
@@ -172,7 +172,7 @@ pub(crate) fn lu_markowitz(lu: &mut LU) -> LUInt {
             // If row i has cheap entries but none of them is numerically
             // acceptable, then don't search the row again until updated.
             if cheap != 0 && found == 0 {
-                lu_list_move(i, m + 1, rowcount_flink, rowcount_blink, m, None);
+                list_move(i, m + 1, rowcount_flink, rowcount_blink, m, None);
             } else {
                 assert!(mc64 < m64 * m64);
                 // if (++nsearch >= maxsearch)

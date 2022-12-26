@@ -1,10 +1,10 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::lu_garbage_perm::lu_garbage_perm;
-use crate::lu_internal::*;
+use crate::lu::garbage_perm::garbage_perm;
+use crate::lu::lu::*;
 
-pub(crate) fn lu_solve_dense(lu: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) {
-    lu_garbage_perm(lu);
+pub(crate) fn solve_dense(lu: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) {
+    garbage_perm(lu);
     assert_eq!(lu.pivotlen, lu.m);
 
     let m = lu.m;

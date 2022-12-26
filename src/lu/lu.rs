@@ -1,7 +1,7 @@
 // Functions to load/save/reset struct lu objects //
 
 use crate::blu::*;
-use crate::lu_def::{BLU_HASH, NO_TASK};
+use crate::lu::def::{BLU_HASH, NO_TASK};
 
 // private entries in xstore
 pub(crate) const BLU_TASK: usize = 256;
@@ -191,7 +191,7 @@ pub struct LU {
     /// If `residual_test` > 1e-12, say, the factorization is numerically unstable.
     /// (This is independent of the condition number of B.) In this case tightening
     /// the relative pivot tolerance and refactorizing is appropriate.
-    pub residual_test: f64, // computed by lu_residual_test()
+    pub residual_test: f64, // computed by residual_test()
 
     /// Number of nonzeros in basis matrix (`B`) when factorized.
     pub matrix_nz: LUInt,

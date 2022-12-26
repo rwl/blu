@@ -1,12 +1,12 @@
 use crate::blu::*;
-use crate::lu_build_factors::lu_build_factors;
-use crate::lu_condest::lu_condest;
-use crate::lu_def::*;
-use crate::lu_factorize_bump::lu_factorize_bump;
-use crate::lu_internal::*;
-use crate::lu_residual_test::lu_residual_test;
-use crate::lu_setup_bump::lu_setup_bump;
-use crate::lu_singletons::lu_singletons;
+use crate::lu::build_factors;
+use crate::lu::condest;
+use crate::lu::def::*;
+use crate::lu::factorize_bump;
+use crate::lu::lu::*;
+use crate::lu::residual_test;
+use crate::lu::setup_bump;
+use crate::lu::singletons;
 use std::time::Instant;
 
 /// Factorize the matrix B into its LU factors. Choose pivot elements by a
@@ -106,39 +106,39 @@ pub fn factorize(
     match lu.task {
         SINGLETONS => {
             // lu.task = SINGLETONS;
-            let status = lu_singletons(lu, b_begin, b_end, b_i, b_x);
+            let status = singletons(lu, b_begin, b_end, b_i, b_x);
             if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = SETUP_BUMP;
-            let status = lu_setup_bump(lu, b_begin, b_end, b_i, b_x);
+            let status = setup_bump(lu, b_begin, b_end, b_i, b_x);
             if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(lu);
+            let status = factorize_bump(lu);
             if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         SETUP_BUMP => {
             // lu.task = SETUP_BUMP;
-            let status = lu_setup_bump(lu, b_begin, b_end, b_i, b_x);
+            let status = setup_bump(lu, b_begin, b_end, b_i, b_x);
             if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(lu);
+            let status = factorize_bump(lu);
             if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         FACTORIZE_BUMP => {
             // lu.task = FACTORIZE_BUMP;
-            let status = lu_factorize_bump(lu);
+            let status = factorize_bump(lu);
             if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
@@ -152,7 +152,7 @@ pub fn factorize(
     };
 
     lu.task = BUILD_FACTORS;
-    let status = lu_build_factors(lu);
+    let status = build_factors(lu);
     if status != BLU_OK {
         return return_to_caller(tic, lu, /*xstore,*/ status);
     }
@@ -164,7 +164,7 @@ pub fn factorize(
     lu.btran_for_update = -1;
     lu.nfactorize += 1;
 
-    lu.condest_l = lu_condest(
+    lu.condest_l = condest(
         lu.m,
         &l_begin!(lu),
         &lu.l_index,
@@ -176,7 +176,7 @@ pub fn factorize(
         Some(&mut lu.norm_l),
         Some(&mut lu.normest_l_inv),
     );
-    lu.condest_u = lu_condest(
+    lu.condest_u = condest(
         lu.m,
         &lu.u_begin,
         &lu.u_index,
@@ -190,7 +190,7 @@ pub fn factorize(
     );
 
     // measure numerical stability of the factorization
-    lu_residual_test(lu, b_begin, b_end, b_i, b_x);
+    residual_test(lu, b_begin, b_end, b_i, b_x);
 
     // factor_cost is a deterministic measure of the factorization cost.
     // The parameters have been adjusted such that (on my computer)

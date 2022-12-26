@@ -1,5 +1,5 @@
 use crate::blu::*;
-use crate::lu_internal::LU;
+use crate::lu::LU;
 
 impl LU {
     /// Make a BLU instance. Set parameters to defaults and initialize global counters.

@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::blu::*;
-use crate::lu_internal::*;
+use crate::lu::lu::*;
 
 /// Extract the row and column permutation and the LU factors. This routine can
 /// be used only after [`factorize()`] has completed and before a call to

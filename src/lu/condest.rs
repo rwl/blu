@@ -10,8 +10,8 @@ use crate::blu::LUInt;
 /// If `norminv` is not None, it holds the estimated 1-norm of the inverse on
 /// return.
 ///  
-/// The other function arguments are the same as in [`lu_normest()`].
-pub(crate) fn lu_condest(
+/// The other function arguments are the same as in [`normest()`].
+pub(crate) fn condest(
     m: LUInt,
     u_begin: &[LUInt],
     u_i: &[LUInt],
@@ -40,7 +40,7 @@ pub(crate) fn lu_condest(
     }
 
     // estimate 1-norm of U^{-1}
-    let u_invnorm = lu_normest(m, u_begin, u_i, u_x, pivot, perm, upper, work);
+    let u_invnorm = normest(m, u_begin, u_i, u_x, pivot, perm, upper, work);
 
     if let Some(norm) = norm {
         *norm = u_norm;
@@ -70,7 +70,7 @@ pub(crate) fn lu_condest(
 // Return: estimate for 1-norm of `U^{-1}`
 //
 // [1] I. Duff, A. Erisman, J. Reid, "Direct Methods for Sparse Matrices"
-pub(crate) fn lu_normest(
+pub(crate) fn normest(
     m: LUInt,
     u_begin: &[LUInt],
     u_i: &[LUInt],

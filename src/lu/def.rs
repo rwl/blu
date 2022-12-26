@@ -8,13 +8,13 @@ pub(crate) const SETUP_BUMP: LUInt = 2;
 pub(crate) const FACTORIZE_BUMP: LUInt = 3;
 pub(crate) const BUILD_FACTORS: LUInt = 4;
 
-pub(crate) fn lu_iswap(x: &mut [LUInt], i: LUInt, j: LUInt) {
+pub(crate) fn iswap(x: &mut [LUInt], i: LUInt, j: LUInt) {
     let t = x[i as usize];
     x[i as usize] = x[j as usize];
     x[j as usize] = t;
 }
 
-pub(crate) fn lu_fswap(x: &mut [f64], i: LUInt, j: LUInt) {
+pub(crate) fn fswap(x: &mut [f64], i: LUInt, j: LUInt) {
     let t = x[i as usize];
     x[i as usize] = x[j as usize];
     x[j as usize] = t;

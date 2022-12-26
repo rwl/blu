@@ -97,9 +97,9 @@
 ///
 /// hold the pivot elements by column and by row index.
 use crate::blu::{LUInt, BLU_OK, BLU_REALLOCATE};
-use crate::lu_file::lu_file_empty;
-use crate::lu_internal::*;
-use crate::lu_list::lu_list_move;
+use crate::lu::file::file_empty;
+use crate::lu::list::list_move;
+use crate::lu::lu::*;
 
 /// Build data structures for `L`, `R`, `U` and permutations.
 ///
@@ -107,7 +107,7 @@ use crate::lu_list::lu_list_move;
 ///
 /// - `BLU_REALLOCATE`  require more memory in `L`, `U`, and/or `W`
 /// - `BLU_OK`
-pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
+pub(crate) fn build_factors(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
     let l_mem = lu.l_mem;
@@ -283,7 +283,7 @@ pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
     // Upper triangular factor //
 
     // U rowwise.
-    lu_file_empty(
+    file_empty(
         m,
         &mut lu.w_begin,
         &mut lu.w_end,
@@ -314,7 +314,7 @@ pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
             }
             lu.w_end[jpivot as usize] = put;
             put += stretch * nz + pad;
-            lu_list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
+            list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
         }
     } else {
         u_nz = 0; // actual number of nonzeros
@@ -336,7 +336,7 @@ pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
             }
             lu.w_end[jpivot as usize] = put;
             put += stretch * nz + pad;
-            lu_list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
+            list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
             u_nz += nz;
         }
         for k in rank..m {
@@ -344,7 +344,7 @@ pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
             lu.w_begin[jpivot as usize] = put;
             lu.w_end[jpivot as usize] = put;
             put += pad;
-            lu_list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
+            list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
         }
     }
     assert!(put <= lu.w_end[m as usize]);

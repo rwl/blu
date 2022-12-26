@@ -23,7 +23,7 @@ use crate::blu::LUInt;
 //     index[begin[j]..end[j]-1], value[begin[j]..end[j]-1].
 //
 // When `end` is `None`, then each column must be terminated by a negative index.
-pub(crate) fn lu_solve_triangular(
+pub(crate) fn solve_triangular(
     nz_symb: LUInt,
     pattern_symb: &[LUInt],
     begin: &[LUInt],

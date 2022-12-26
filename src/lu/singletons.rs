@@ -1,5 +1,5 @@
 use crate::blu::*;
-use crate::lu_internal::*;
+use crate::lu::lu::*;
 use std::time::Instant;
 
 /// Initialize the data structures which store the LU factors during
@@ -27,7 +27,7 @@ use std::time::Instant;
 /// - `u_index[u_begin[k]..u_begin[k+1]-1]`, `u_value[u_begin[k]..u_begin[k+1]-1]`
 ///   stores the row of `U` computed in stage `k` without the pivot element.
 ///
-/// `lu_singletons()` does `rank >= 0` steps of factorization until no singletons are
+/// `singletons()` does `rank >= 0` steps of factorization until no singletons are
 /// left. We can either eliminate singleton columns before singleton rows or vice
 /// versa. When `nzbias >= 0`, then eliminate singleton columns first to keep `L`
 /// sparse. Otherwise eliminate singleton rows first. The resulting permutations
@@ -74,7 +74,7 @@ use std::time::Instant;
 ///                                     entries in column, index out of range,
 ///                                     duplicates)
 /// - `BLU_OK`
-pub(crate) fn lu_singletons(
+pub(crate) fn singletons(
     lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],

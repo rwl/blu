@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::blu::LUInt;
-use crate::lu_dfs::lu_dfs;
+use crate::lu::dfs::dfs;
 
 // Symbolic solve with triangular matrix.
 //
@@ -15,7 +15,7 @@ use crate::lu_dfs::lu_dfs;
 //
 // The method is due to J. Gilbert and T. Peierls, "Sparse partial pivoting
 // in time proportional to arithmetic operations", (1988).
-pub(crate) fn lu_solve_symbolic(
+pub(crate) fn solve_symbolic(
     m: LUInt,
     begin: &[LUInt],
     end: Option<&[LUInt]>,
@@ -32,7 +32,7 @@ pub(crate) fn lu_solve_symbolic(
     for n in 0..nrhs {
         if marked[irhs[n as usize] as usize] != marker {
             let i = irhs[n as usize];
-            top = lu_dfs(i, begin, end, index, top, ilhs, pstack, marked, marker);
+            top = dfs(i, begin, end, index, top, ilhs, pstack, marked, marker);
         }
     }
     top

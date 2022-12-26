@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::blu::*;
-use crate::lu_internal::LU;
+use crate::lu::LU;
 use crate::{factorize, get_factors, solve_dense, solve_for_update, solve_sparse, update};
 
 pub struct BLU {

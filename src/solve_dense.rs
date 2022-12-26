@@ -1,8 +1,9 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::blu::*;
-use crate::lu_internal::LU;
-use crate::lu_solve_dense::lu_solve_dense;
+use crate::lu;
+use crate::lu::LU;
+// use crate::lu::solve_dense::solve_dense;
 
 /// Purpose:
 ///
@@ -77,7 +78,7 @@ pub fn solve_dense(lu: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) -> LU
     //     return lu_save(&lu, /*istore,*/ xstore, status);
     // }
 
-    lu_solve_dense(lu, rhs, lhs, trans);
+    lu::solve_dense(lu, rhs, lhs, trans);
 
     // lu_save(&lu, /*istore,*/ xstore, status)
     BLU_OK

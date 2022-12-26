@@ -25,10 +25,10 @@
 // line in memory order.
 
 use crate::blu::LUInt;
-use crate::lu_list::lu_list_move;
+use crate::lu::list::list_move;
 
 /// Initialize empty file with `fmem` memory space.
-pub(crate) fn lu_file_empty(
+pub(crate) fn file_empty(
     nlines: LUInt,
     begin: &mut [LUInt],
     end: &mut [LUInt],
@@ -52,7 +52,7 @@ pub(crate) fn lu_file_empty(
 
 /// Reappend line to file end and add `extra_space` elements room. The file must
 /// have at least length(line) + `extra_space` elements free space.
-pub(crate) fn lu_file_reappend(
+pub(crate) fn file_reappend(
     line: LUInt,
     nlines: LUInt,
     begin: &mut [LUInt],
@@ -80,7 +80,7 @@ pub(crate) fn lu_file_reappend(
     assert!(room >= extra_space);
     used += extra_space;
     begin[nlines as usize] = used; // beginning of unused space
-    lu_list_move(line, 0, next, prev, nlines, None);
+    list_move(line, 0, next, prev, nlines, None);
 }
 
 /// Compress file to reuse memory gaps. The ordering of lines in the file is
@@ -88,7 +88,7 @@ pub(crate) fn lu_file_reappend(
 /// space. Chop extra space if it would overlap the following line in memory.
 ///
 /// Return: number of entries in file
-pub(crate) fn lu_file_compress(
+pub(crate) fn file_compress(
     nlines: LUInt,
     begin: &mut [LUInt],
     end: &mut [LUInt],
@@ -133,7 +133,7 @@ pub(crate) fn lu_file_compress(
     nz
 }
 
-// lu_file_diff (for debugging)
+// file_diff (for debugging)
 //
 // `begin_row`, `end_row`, `begin_col`, `end_col` are pointer into `index`, `value`,
 // defining lines of the "row file" and the "column file".
@@ -147,7 +147,7 @@ pub(crate) fn lu_file_compress(
 // The method does a column file search for each row file entry. To check
 // consistency of rowwise and columnwise storage, the method must be called
 // twice with row pointers and column pointers swapped.
-pub(crate) fn lu_file_diff(
+pub(crate) fn file_diff(
     nrow: LUInt,
     begin_row: &[LUInt],
     end_row: &[LUInt],

@@ -1,7 +1,7 @@
 use crate::blu::*;
-use crate::lu_file::{lu_file_diff, lu_file_empty};
-use crate::lu_internal::LU;
-use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
+use crate::lu::file::{file_diff, file_empty};
+use crate::lu::list::{list_add, list_init, list_move};
+use crate::lu::LU;
 
 /// The bump is composed of rows `i` and columns `j` for which `pinv[i] < 0` and
 /// `qinv[j] < 0`. For the factorization, the bump is stored in `w_index`, `w_value`
@@ -36,7 +36,7 @@ use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
 ///
 /// - `BLU_REALLOCATE`  require more memory in `W`
 /// - `BLU_OK`
-pub(crate) fn lu_setup_bump(
+pub(crate) fn setup_bump(
     lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
@@ -95,10 +95,10 @@ pub(crate) fn lu_setup_bump(
         return BLU_REALLOCATE;
     }
 
-    lu_file_empty(2 * m, w_begin, w_end, w_flink, w_blink, w_mem);
+    file_empty(2 * m, w_begin, w_end, w_flink, w_blink, w_mem);
 
     // Build columnwise storage. Build row counts in iwork0.
-    lu_list_init(
+    list_init(
         colcount_flink,
         colcount_blink,
         m,
@@ -123,7 +123,7 @@ pub(crate) fn lu_setup_bump(
         if cmx == 0.0 || cmx < abstol {
             // Leave column of active submatrix empty.
             colmax[j as usize] = 0.0;
-            lu_list_add(
+            list_add(
                 j,
                 0,
                 colcount_flink,
@@ -135,7 +135,7 @@ pub(crate) fn lu_setup_bump(
         } else {
             // Copy column into active submatrix.
             colmax[j as usize] = cmx;
-            lu_list_add(
+            list_add(
                 j,
                 cnz,
                 colcount_flink,
@@ -157,12 +157,12 @@ pub(crate) fn lu_setup_bump(
             w_end[j as usize] = put;
             put += (stretch as LUInt) * cnz + pad;
             // reappend line to list end
-            lu_list_move(j, 0, w_flink, w_blink, 2 * m, None);
+            list_move(j, 0, w_flink, w_blink, 2 * m, None);
         }
     }
 
     //  Build rowwise storage (pattern only).
-    lu_list_init(
+    list_init(
         rowcount_flink,
         rowcount_blink,
         m,
@@ -176,7 +176,7 @@ pub(crate) fn lu_setup_bump(
         }
         let rnz = iwork0[i as usize];
         iwork0[i as usize] = 0;
-        lu_list_add(
+        list_add(
             i,
             rnz,
             rowcount_flink,
@@ -188,7 +188,7 @@ pub(crate) fn lu_setup_bump(
         w_end2[i as usize] = put;
         put += rnz;
         // reappend line to list end
-        lu_list_move(m + i, 0, w_flink, w_blink, 2 * m, None);
+        list_move(m + i, 0, w_flink, w_blink, 2 * m, None);
         put += (stretch as LUInt) * rnz + pad;
     }
     for j in 0..m {
@@ -203,11 +203,11 @@ pub(crate) fn lu_setup_bump(
     assert!(w_begin[(2 * m) as usize] <= w_end[(2 * m) as usize]);
 
     assert_eq!(
-        lu_file_diff(m, w_begin, w_end, w_begin2, w_end2, w_index, None),
+        file_diff(m, w_begin, w_end, w_begin2, w_end2, w_index, None),
         0
     );
     assert_eq!(
-        lu_file_diff(m, w_begin2, w_end2, w_begin, w_end, w_index, None),
+        file_diff(m, w_begin2, w_end2, w_begin, w_end, w_index, None),
         0
     );
 

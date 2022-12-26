@@ -1,8 +1,8 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::blu::*;
-use crate::lu_internal::*;
-use crate::lu_solve_for_update::lu_solve_for_update;
+use crate::lu;
+use crate::lu::lu::*;
 
 /// Purpose:
 ///
@@ -201,7 +201,7 @@ pub fn solve_for_update(
 
     if status == BLU_OK {
         // may request reallocation
-        status = lu_solve_for_update(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        status = lu::solve_for_update(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 
     // lu_save(&lu, /*istore,*/ xstore, status)

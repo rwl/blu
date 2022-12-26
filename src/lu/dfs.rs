@@ -21,7 +21,7 @@ use crate::blu::LUInt;
 /// On return nodes `xi[newtop..top-1]` are marked.
 ///
 /// If node `i` is marked on entry, the function does nothing.
-pub(crate) fn lu_dfs(
+pub(crate) fn dfs(
     i: LUInt,
     begin: &[LUInt],
     end: Option<&[LUInt]>,
@@ -40,7 +40,7 @@ pub(crate) fn lu_dfs(
     if let Some(end) = end {
         dfs_end(i, begin, end, index, top, xi, pstack, marked, m)
     } else {
-        dfs(i, begin, index, top, xi, pstack, marked, m)
+        dfs_begin(i, begin, index, top, xi, pstack, marked, m)
     }
 }
 
@@ -94,7 +94,7 @@ fn dfs_end(
 }
 
 // adapted from T. Davis, CSPARSE
-fn dfs(
+fn dfs_begin(
     mut i: LUInt,
     begin: &[LUInt],
     index: &[LUInt],

@@ -3,10 +3,10 @@
 // Stability test of fresh LU factorization based on relative residual.
 
 use crate::blu::LUInt;
-use crate::lu_internal::*;
-use crate::lu_matrix_norm::lu_matrix_norm;
+use crate::lu::lu::*;
+use crate::lu::matrix_norm::matrix_norm;
 
-fn lu_onenorm(m: LUInt, x: &[f64]) -> f64 {
+fn onenorm(m: LUInt, x: &[f64]) -> f64 {
     let mut d = 0.0;
     for i in 0..m {
         d += x[i as usize].abs();
@@ -14,7 +14,7 @@ fn lu_onenorm(m: LUInt, x: &[f64]) -> f64 {
     d
 }
 
-pub(crate) fn lu_residual_test(
+pub(crate) fn residual_test(
     lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
@@ -87,8 +87,8 @@ pub(crate) fn lu_residual_test(
         let ipivot = pivotrow[k as usize] as usize;
         rhs[ipivot] -= lhs[ipivot];
     }
-    let norm_ftran = lu_onenorm(m, lhs);
-    let norm_ftran_res = lu_onenorm(m, rhs);
+    let norm_ftran = onenorm(m, lhs);
+    let norm_ftran_res = onenorm(m, rhs);
 
     // Residual Test with Backward System //
 
@@ -135,12 +135,12 @@ pub(crate) fn lu_residual_test(
         let ipivot = pivotrow[k as usize];
         rhs[ipivot as usize] -= lhs[ipivot as usize];
     }
-    let norm_btran = lu_onenorm(m, lhs);
-    let norm_btran_res = lu_onenorm(m, rhs);
+    let norm_btran = onenorm(m, lhs);
+    let norm_btran_res = onenorm(m, rhs);
 
     // Finalize //
 
-    lu_matrix_norm(lu, b_begin, b_end, b_i, b_x);
+    matrix_norm(lu, b_begin, b_end, b_i, b_x);
     assert!(lu.onenorm > 0.0);
     assert!(lu.infnorm > 0.0);
     lu.residual_test = f64::max(

@@ -1,8 +1,8 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
 use crate::blu::{LUInt, BLU_ERROR_INVALID_CALL};
-use crate::lu_internal::LU;
-use crate::lu_update::lu_update;
+use crate::lu;
+use crate::lu::LU;
 
 /// Update the factorization to replace one column of the factorized matrix.
 /// A call to `update()` must be preceded by calls to
@@ -124,7 +124,7 @@ pub fn update(lu: &mut LU, xtbl: f64) -> LUInt {
     let status = if lu.nupdate < 0 || lu.ftran_for_update < 0 || lu.btran_for_update < 0 {
         BLU_ERROR_INVALID_CALL
     } else {
-        lu_update(lu, xtbl)
+        lu::update(lu, xtbl)
     };
     // lu_save(&mut lu, /*istore,*/ xstore, status)
     status
