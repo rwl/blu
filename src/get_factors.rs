@@ -1,11 +1,11 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_internal::*;
 
 /// Extract the row and column permutation and the LU factors. This routine can
-/// be used only after [`basiclu_factorize()`] has completed and before a call to
-/// [`basiclu_update()`]. At that point the factorized form of matrix `B` is
+/// be used only after [`factorize()`] has completed and before a call to
+/// [`update()`]. At that point the factorized form of matrix `B` is
 ///
 ///     B[rowperm,colperm] = L*U,
 ///
@@ -14,22 +14,22 @@ use crate::lu_internal::*;
 /// of `B` have been replaced by unit columns with entry 1 in position
 /// `rowperm[rank..m-1]`.
 ///
-/// `basiclu_get_factors()` is intended when the user needs direct access to the
+/// `get_factors()` is intended when the user needs direct access to the
 /// matrix factors. It is not required to solve linear systems with the factors
-/// (see [`basiclu_solve_dense()`] and [`basiclu_solve_sparse()`] instead).
+/// (see [`blu_solve_dense()`] and [`blu_solve_sparse()`] instead).
 ///
 /// Return:
 ///
-///     BASICLU_ERROR_INVALID_STORE if istore, xstore do not hold a BASICLU
-///     instance. In this case xstore[BASICLU_STATUS] is not set.
+///     BLU_ERROR_INVALID_STORE if istore, xstore do not hold a BLU
+///     instance. In this case xstore[BLU_STATUS] is not set.
 ///
-///     Otherwise return the status code. See xstore[BASICLU_STATUS] below.
+///     Otherwise return the status code. See xstore[BLU_STATUS] below.
 ///
 /// Arguments:
 ///
 ///     LU lu
 ///
-///         The BASICLU instance after basiclu_factorize() has completed.
+///         The BLU instance after factorize() has completed.
 ///
 ///     lu_int rowperm[m]
 ///
@@ -43,7 +43,7 @@ use crate::lu_internal::*;
 ///
 ///     lu_int l_colptr[m+1]
 ///     lu_int l_rowidx[m+Lnz]
-///     double Lvalue[m+Lnz], where Lnz = xstore[BASICLU_LNZ]
+///     double Lvalue[m+Lnz], where Lnz = xstore[BLU_LNZ]
 ///
 ///         If all three arguments are not NULL, then they are filled with L in
 ///         compressed column form. The indices in each column are sorted with the
@@ -54,7 +54,7 @@ use crate::lu_internal::*;
 ///
 ///     lu_int u_colptr[m+1]
 ///     lu_int u_rowidx[m+Unz]
-///     double Uvalue[m+Unz], where Unz = xstore[BASICLU_UNZ]
+///     double Uvalue[m+Unz], where Unz = xstore[BLU_UNZ]
 ///
 ///         If all three arguments are not NULL, then they are filled with U in
 ///         compressed column form. The indices in each column are sorted with the
@@ -65,22 +65,22 @@ use crate::lu_internal::*;
 ///
 /// Info:
 ///
-///     xstore[BASICLU_STATUS]: status code.
+///     xstore[BLU_STATUS]: status code.
 ///
-///         BASICLU_OK
+///         BLU_OK
 ///
 ///             The requested quantities have been returned successfully.
 ///
-///         BASICLU_ERROR_ARGUMENT_MISSING
+///         BLU_ERROR_ARGUMENT_MISSING
 ///
 ///             One or more of the mandatory pointer/array arguments are NULL.
 ///
-///         BASICLU_ERROR_INVALID_CALL
+///         BLU_ERROR_INVALID_CALL
 ///
-///             The BASICLU instance does not hold a fresh factorization (either
-///             basiclu_factorize() has not completed or basiclu_update() has been
+///             The BLU instance does not hold a fresh factorization (either
+///             factorize() has not completed or update() has been
 ///             called in the meanwhile).
-pub fn basiclu_get_factors(
+pub fn get_factors(
     lu: &mut LU,
     rowperm: Option<&[LUInt]>,
     colperm: Option<&[LUInt]>,
@@ -92,12 +92,12 @@ pub fn basiclu_get_factors(
     u_value_: Option<&mut [f64]>,
 ) -> LUInt {
     // let status = lu.load(xstore);
-    // if status != BASICLU_OK {
+    // if status != BLU_OK {
     //     return status;
     // }
     assert_eq!(lu.nupdate, 0);
     // if lu.nupdate != 0 {
-    //     let status = BASICLU_ERROR_INVALID_CALL;
+    //     let status = BLU_ERROR_INVALID_CALL;
     //     return lu.save(xstore, status);
     // }
     let m = lu.m;
@@ -222,5 +222,5 @@ pub fn basiclu_get_factors(
         }
     }
 
-    BASICLU_OK
+    BLU_OK
 }

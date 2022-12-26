@@ -1,25 +1,25 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_internal::LU;
 use crate::lu_solve_sparse::lu_solve_sparse;
 
-/// Given the factorization computed by `basiclu_factorize()` or `basiclu_update()`
+/// Given the factorization computed by `factorize()` or `update()`
 /// and the sparse right-hand side, rhs, solve a linear system for the solution
 /// lhs.
 ///
 /// Return:
 ///
-///     BASICLU_ERROR_INVALID_STORE if istore, xstore do not hold a BASICLU
-///     instance. In this case xstore[BASICLU_STATUS] is not set.
+///     BLU_ERROR_INVALID_STORE if istore, xstore do not hold a BLU
+///     instance. In this case xstore[BLU_STATUS] is not set.
 ///
-///     Otherwise return the status code. See xstore[BASICLU_STATUS] below.
+///     Otherwise return the status code. See xstore[BLU_STATUS] below.
 ///
 /// Arguments:
 ///
 ///     LU lu
 ///
-///         Factorization computed by basiclu_factorize() or basiclu_update().
+///         Factorization computed by factorize() or update().
 ///
 ///     lu_int nzrhs
 ///     const lu_int irhs[nzrhs]
@@ -47,7 +47,7 @@ use crate::lu_solve_sparse::lu_solve_sparse;
 ///
 /// Parameters:
 ///
-///     xstore[BASICLU_SPARSE_THRESHOLD]
+///     xstore[BLU_SPARSE_THRESHOLD]
 ///
 ///         Defines which method is used for solving a triangular system. A
 ///         triangular solve can be done either by the two phase method of Gilbert
@@ -56,37 +56,37 @@ use crate::lu_solve_sparse::lu_solve_sparse;
 ///
 ///         Solving B*x=b requires two triangular solves. The first triangular solve
 ///         is done sparse. The second triangular solve is done sparse if its
-///         right-hand side has not more than m * xstore[BASICLU_SPARSE_THRESHOLD]
+///         right-hand side has not more than m * xstore[BLU_SPARSE_THRESHOLD]
 ///         nonzeros. Otherwise the sequential solve is used.
 ///
 ///         Default: 0.05
 ///
-///     xstore[BASICLU_DROP_TOLERANCE]
+///     xstore[BLU_DROP_TOLERANCE]
 ///
 ///         Nonzeros which magnitude is less than or equal to the drop tolerance
 ///         are removed after each triangular solve. Default: 1e-20
 ///
 /// Info:
 ///
-///     xstore[BASICLU_STATUS]: status code.
+///     xstore[BLU_STATUS]: status code.
 ///
-///         BASICLU_OK
+///         BLU_OK
 ///
 ///             The linear system has been successfully solved.
 ///
-///         BASICLU_ERROR_ARGUMENT_MISSING
+///         BLU_ERROR_ARGUMENT_MISSING
 ///
 ///             One or more of the pointer/array arguments are NULL.
 ///
-///         BASICLU_ERROR_INVALID_CALL
+///         BLU_ERROR_INVALID_CALL
 ///
 ///             The factorization is invalid.
 ///
-///         BASICLU_ERROR_INVALID_ARGUMENT
+///         BLU_ERROR_INVALID_ARGUMENT
 ///
 ///             The right-hand side is invalid (nzrhs < 0 or nzrhs > m or one or
 ///             more indices out of range).
-pub fn basiclu_solve_sparse(
+pub fn solve_sparse(
     lu: &mut LU,
     nzrhs: LUInt,
     irhs: &[LUInt],
@@ -97,16 +97,16 @@ pub fn basiclu_solve_sparse(
     trans: char,
 ) -> LUInt {
     // let status = lu.load(xstore);
-    // if status != BASICLU_OK {
+    // if status != BLU_OK {
     //     return status;
     // }
 
     // if (! (l_i && l_x && u_i && u_x && w_i && w_x && irhs && xrhs && p_nzlhs && ilhs
     //        && lhs)) {
-    //     status = BASICLU_ERROR_ARGUMENT_MISSING;
+    //     status = BLU_ERROR_ARGUMENT_MISSING;
     // }
     let status = if lu.nupdate < 0 {
-        BASICLU_ERROR_INVALID_CALL
+        BLU_ERROR_INVALID_CALL
     } else {
         // check RHS indices
         let mut ok = nzrhs >= 0 && nzrhs <= lu.m;
@@ -117,13 +117,13 @@ pub fn basiclu_solve_sparse(
             ok = ok && irhs[n] >= 0 && irhs[n] < lu.m;
         }
         if !ok {
-            BASICLU_ERROR_INVALID_ARGUMENT
+            BLU_ERROR_INVALID_ARGUMENT
         } else {
-            BASICLU_OK
+            BLU_OK
         }
     };
 
-    if status == BASICLU_OK {
+    if status == BLU_OK {
         lu_solve_sparse(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
     }
 

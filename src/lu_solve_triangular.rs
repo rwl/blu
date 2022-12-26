@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 
 // Substitution with triangular matrix.
 //

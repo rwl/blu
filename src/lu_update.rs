@@ -2,7 +2,7 @@
 //
 // Forrest-Tomlin update with reordering.
 
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_dfs::lu_dfs;
 use crate::lu_file::{lu_file_compress, lu_file_reappend};
 use crate::lu_garbage_perm::lu_garbage_perm;
@@ -380,9 +380,9 @@ fn check_consistency(lu: &LU, p_col: &mut LUInt, p_row: &mut LUInt) {
 //
 // Return:
 //
-//  BASICLU_OK                      update successfully completed
-//  BASICLU_REALLOCATE              require more memory in W
-//  BASICLU_ERROR_SINGULAR_UPDATE   new pivot element is zero or < abstol
+//  BLU_OK                      update successfully completed
+//  BLU_REALLOCATE              require more memory in W
+//  BLU_ERROR_SINGULAR_UPDATE   new pivot element is zero or < abstol
 pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
     let m = lu.m;
     let nforrest = lu.nforrest;
@@ -416,7 +416,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
     let jpivot = lu.btran_for_update;
     let ipivot = pmap!(lu)[jpivot as usize];
     let oldpiv = lu.col_pivot[jpivot as usize];
-    let mut status = BASICLU_OK;
+    let mut status = BLU_OK;
 
     let mut ipivot_vec = vec![ipivot]; // FIXME
     let mut jpivot_vec = vec![jpivot];
@@ -505,7 +505,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
 
     // singularity test
     if newpiv == 0.0 || newpiv.abs() < lu.abstol {
-        status = BASICLU_ERROR_SINGULAR_UPDATE;
+        status = BLU_ERROR_SINGULAR_UPDATE;
         return status;
     }
 
@@ -532,7 +532,7 @@ pub(crate) fn lu_update(lu: &mut LU, xtbl: f64) -> LUInt {
     let room = lu.w_end[m as usize] - lu.w_begin[m as usize];
     if grow > room {
         lu.addmem_w = grow - room;
-        status = BASICLU_REALLOCATE;
+        status = BLU_REALLOCATE;
         return status;
     }
 

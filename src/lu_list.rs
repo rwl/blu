@@ -27,7 +27,7 @@
 // `1..min_list-1` are empty. Notice that list 0 is not covered by `min_list`.
 //
 //    [1] Istvan Maros, Computational Techniques of the Simplex Method
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 
 /// Initialize all lists to empty.
 pub(crate) fn lu_list_init(

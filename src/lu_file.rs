@@ -24,7 +24,7 @@
 // `k` in memory. `next[nlines]` and `prev[nlines]` are the first respectively last
 // line in memory order.
 
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 use crate::lu_list::lu_list_move;
 
 /// Initialize empty file with `fmem` memory space.

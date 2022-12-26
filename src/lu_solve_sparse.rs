@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 use crate::lu_internal::*;
 use crate::lu_solve_symbolic::lu_solve_symbolic;
 use crate::lu_solve_triangular::lu_solve_triangular;

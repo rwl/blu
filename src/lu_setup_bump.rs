@@ -1,4 +1,4 @@
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_file::{lu_file_diff, lu_file_empty};
 use crate::lu_internal::LU;
 use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
@@ -34,8 +34,8 @@ use crate::lu_list::{lu_list_add, lu_list_init, lu_list_move};
 ///
 /// Return:
 ///
-/// - `BASICLU_REALLOCATE`  require more memory in `W`
-/// - `BASICLU_OK`
+/// - `BLU_REALLOCATE`  require more memory in `W`
+/// - `BLU_OK`
 pub(crate) fn lu_setup_bump(
     lu: &mut LU,
     b_begin: &[LUInt],
@@ -92,7 +92,7 @@ pub(crate) fn lu_setup_bump(
     let need = 2 * need; // rowwise + columnwise
     if need > w_mem {
         lu.addmem_w = need - w_mem;
-        return BASICLU_REALLOCATE;
+        return BLU_REALLOCATE;
     }
 
     lu_file_empty(2 * m, w_begin, w_end, w_flink, w_blink, w_mem);
@@ -221,5 +221,5 @@ pub(crate) fn lu_setup_bump(
     lu.min_colnz = min_colnz;
     lu.min_rownz = min_rownz;
 
-    BASICLU_OK
+    BLU_OK
 }

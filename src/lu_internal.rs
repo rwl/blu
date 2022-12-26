@@ -1,21 +1,21 @@
 // Functions to load/save/reset struct lu objects //
 
-use crate::basiclu::*;
-use crate::lu_def::{BASICLU_HASH, NO_TASK};
+use crate::blu::*;
+use crate::lu_def::{BLU_HASH, NO_TASK};
 
 // private entries in xstore
-pub(crate) const BASICLU_TASK: usize = 256;
-pub(crate) const BASICLU_FTCOLUMN_IN: usize = 257;
-pub(crate) const BASICLU_FTCOLUMN_OUT: usize = 258;
-pub(crate) const BASICLU_PIVOT_ROW: usize = 259;
-pub(crate) const BASICLU_PIVOT_COL: usize = 260;
-pub(crate) const BASICLU_RANKDEF: usize = 261;
-pub(crate) const BASICLU_MIN_COLNZ: usize = 262;
-pub(crate) const BASICLU_MIN_ROWNZ: usize = 263;
-pub(crate) const BASICLU_MARKER: usize = 266;
-pub(crate) const BASICLU_UPDATE_COST_NUMER: usize = 267;
-pub(crate) const BASICLU_UPDATE_COST_DENOM: usize = 268;
-pub(crate) const BASICLU_PIVOTLEN: usize = 269;
+pub(crate) const BLU_TASK: usize = 256;
+pub(crate) const BLU_FTCOLUMN_IN: usize = 257;
+pub(crate) const BLU_FTCOLUMN_OUT: usize = 258;
+pub(crate) const BLU_PIVOT_ROW: usize = 259;
+pub(crate) const BLU_PIVOT_COL: usize = 260;
+pub(crate) const BLU_RANKDEF: usize = 261;
+pub(crate) const BLU_MIN_COLNZ: usize = 262;
+pub(crate) const BLU_MIN_ROWNZ: usize = 263;
+pub(crate) const BLU_MARKER: usize = 266;
+pub(crate) const BLU_UPDATE_COST_NUMER: usize = 267;
+pub(crate) const BLU_UPDATE_COST_DENOM: usize = 268;
+pub(crate) const BLU_PIVOTLEN: usize = 269;
 
 /// This data structure provides access to istore, xstore.
 ///
@@ -89,7 +89,7 @@ pub struct LU {
     /// of additional elements plus some extra space (e.g. 0.5 times the
     /// current array length). The new array lengths must be provided in `l_mem`.
     ///
-    /// [`basiclu_factorize()`] can be called again with `c0ntinue` not equal to
+    /// [`blu_factorize()`] can be called again with `c0ntinue` not equal to
     /// zero to continue the factorization.
     pub addmem_l: LUInt,
     /// Factorization requires more memory in `u_i`,`u_x`. The number of additional
@@ -138,10 +138,10 @@ pub struct LU {
     pub update_cost_denom: f64,
     /// Wall clock time for last factorization.
     pub time_factorize: f64,
-    /// Wall clock time for all calls to [`basiclu_solve_sparse()`] and
-    /// [`basiclu_solve_for_update`] since last factorization.
+    /// Wall clock time for all calls to [`blu_solve_sparse()`] and
+    /// [`blu_solve_for_update`] since last factorization.
     pub time_solve: f64,
-    /// Wall clock time for all calls to [`basiclu_update`] since last factorization.
+    /// Wall clock time for all calls to [`blu_update`] since last factorization.
     pub time_update: f64,
     /// Analogous to above, but summing up all calls since initialization.
     pub time_factorize_total: f64,
@@ -150,13 +150,13 @@ pub struct LU {
     /// Analogous to above, but summing up all calls since initialization.
     pub time_update_total: f64,
     /// Number of flops for operations with `L` vectors in calls to
-    /// [`basiclu_solve_sparse`] and [`basiclu_solve_for_update`] since last factorization.
+    /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
     pub l_flops: LUInt,
     /// Number of flops for operations with `U` vectors in calls to
-    /// [`basiclu_solve_sparse`] and [`basiclu_solve_for_update`] since last factorization.
+    /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
     pub u_flops: LUInt,
     /// Number of flops for operations with update ETA vectors in calls to
-    /// [`basiclu_solve_sparse`] and [`basiclu_solve_for_update`] since last factorization.
+    /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
     pub r_flops: LUInt,
     /// Estimated 1-norm condition number of `L`.
     pub condest_l: f64,
@@ -241,7 +241,7 @@ pub struct LU {
     /// final factors.
     ///
     /// When the allocated length is insufficient to complete the factorization,
-    /// [`basiclu_factorize()`] returns to the caller for reallocation. A successful
+    /// [`blu_factorize()`] returns to the caller for reallocation. A successful
     /// factorization requires at least `nnz(B)` length for each of the arrays.
     pub(crate) l_index: Vec<LUInt>,
     pub(crate) u_index: Vec<LUInt>,
@@ -353,100 +353,96 @@ pub(crate) use {
 };
 
 impl LU {
-    // Initialize @lu from @istore, @xstore if these are a valid BASICLU
+    // Initialize @lu from @istore, @xstore if these are a valid BLU
     // instance. The remaining arguments are copied only and can be NULL.
     //
-    // Return `BASICLU_OK` or `BASICLU_ERROR_INVALID_STORE`
+    // Return `BLU_OK` or `BLU_ERROR_INVALID_STORE`
     pub(crate) fn load(&mut self, xstore: &[f64]) -> LUInt {
-        if xstore[0] != BASICLU_HASH as f64 {
-            return BASICLU_ERROR_INVALID_STORE;
+        if xstore[0] != BLU_HASH as f64 {
+            return BLU_ERROR_INVALID_STORE;
         }
 
         // user parameters
-        self.l_mem = xstore[BASICLU_MEMORYL] as LUInt;
-        self.u_mem = xstore[BASICLU_MEMORYU] as LUInt;
-        self.w_mem = xstore[BASICLU_MEMORYW] as LUInt;
-        self.droptol = xstore[BASICLU_DROP_TOLERANCE];
-        self.abstol = xstore[BASICLU_ABS_PIVOT_TOLERANCE];
-        self.reltol = xstore[BASICLU_REL_PIVOT_TOLERANCE];
+        self.l_mem = xstore[BLU_MEMORYL] as LUInt;
+        self.u_mem = xstore[BLU_MEMORYU] as LUInt;
+        self.w_mem = xstore[BLU_MEMORYW] as LUInt;
+        self.droptol = xstore[BLU_DROP_TOLERANCE];
+        self.abstol = xstore[BLU_ABS_PIVOT_TOLERANCE];
+        self.reltol = xstore[BLU_REL_PIVOT_TOLERANCE];
         self.reltol = f64::min(self.reltol, 1.0);
-        self.nzbias = xstore[BASICLU_BIAS_NONZEROS] as LUInt;
-        self.maxsearch = xstore[BASICLU_MAXN_SEARCH_PIVOT] as LUInt;
-        self.pad = xstore[BASICLU_PAD] as LUInt;
-        self.stretch = xstore[BASICLU_STRETCH];
-        self.compress_thres = xstore[BASICLU_COMPRESSION_THRESHOLD];
-        self.sparse_thres = xstore[BASICLU_SPARSE_THRESHOLD];
-        self.search_rows = if xstore[BASICLU_SEARCH_ROWS] != 0.0 {
-            1
-        } else {
-            0
-        };
+        self.nzbias = xstore[BLU_BIAS_NONZEROS] as LUInt;
+        self.maxsearch = xstore[BLU_MAXN_SEARCH_PIVOT] as LUInt;
+        self.pad = xstore[BLU_PAD] as LUInt;
+        self.stretch = xstore[BLU_STRETCH];
+        self.compress_thres = xstore[BLU_COMPRESSION_THRESHOLD];
+        self.sparse_thres = xstore[BLU_SPARSE_THRESHOLD];
+        self.search_rows = if xstore[BLU_SEARCH_ROWS] != 0.0 { 1 } else { 0 };
 
         // user readable
-        let m = xstore[BASICLU_DIM];
+        let m = xstore[BLU_DIM];
         self.m = m as LUInt;
         self.addmem_l = 0;
         self.addmem_u = 0;
         self.addmem_w = 0;
 
-        self.nupdate = xstore[BASICLU_NUPDATE] as LUInt;
-        self.nforrest = xstore[BASICLU_NFORREST] as LUInt;
-        self.nfactorize = xstore[BASICLU_NFACTORIZE] as LUInt;
-        self.nupdate_total = xstore[BASICLU_NUPDATE_TOTAL] as LUInt;
-        self.nforrest_total = xstore[BASICLU_NFORREST_TOTAL] as LUInt;
-        self.nsymperm_total = xstore[BASICLU_NSYMPERM_TOTAL] as LUInt;
-        self.l_nz = xstore[BASICLU_LNZ] as LUInt;
-        self.u_nz = xstore[BASICLU_UNZ] as LUInt;
-        self.r_nz = xstore[BASICLU_RNZ] as LUInt;
-        self.min_pivot = xstore[BASICLU_MIN_PIVOT];
-        self.max_pivot = xstore[BASICLU_MAX_PIVOT];
-        self.max_eta = xstore[BASICLU_MAX_ETA];
-        self.update_cost_numer = xstore[BASICLU_UPDATE_COST_NUMER];
-        self.update_cost_denom = xstore[BASICLU_UPDATE_COST_DENOM];
-        self.time_factorize = xstore[BASICLU_TIME_FACTORIZE];
-        self.time_solve = xstore[BASICLU_TIME_SOLVE];
-        self.time_update = xstore[BASICLU_TIME_UPDATE];
-        self.time_factorize_total = xstore[BASICLU_TIME_FACTORIZE_TOTAL];
-        self.time_solve_total = xstore[BASICLU_TIME_SOLVE_TOTAL];
-        self.time_update_total = xstore[BASICLU_TIME_UPDATE_TOTAL];
-        self.l_flops = xstore[BASICLU_LFLOPS] as LUInt;
-        self.u_flops = xstore[BASICLU_UFLOPS] as LUInt;
-        self.r_flops = xstore[BASICLU_RFLOPS] as LUInt;
-        self.condest_l = xstore[BASICLU_CONDEST_L];
-        self.condest_u = xstore[BASICLU_CONDEST_U];
-        self.norm_l = xstore[BASICLU_NORM_L];
-        self.norm_u = xstore[BASICLU_NORM_U];
-        self.normest_l_inv = xstore[BASICLU_NORMEST_LINV];
-        self.normest_u_inv = xstore[BASICLU_NORMEST_UINV];
-        self.onenorm = xstore[BASICLU_MATRIX_ONENORM];
-        self.infnorm = xstore[BASICLU_MATRIX_INFNORM];
-        self.residual_test = xstore[BASICLU_RESIDUAL_TEST];
+        self.nupdate = xstore[BLU_NUPDATE] as LUInt;
+        self.nforrest = xstore[BLU_NFORREST] as LUInt;
+        self.nfactorize = xstore[BLU_NFACTORIZE] as LUInt;
+        self.nupdate_total = xstore[BLU_NUPDATE_TOTAL] as LUInt;
+        self.nforrest_total = xstore[BLU_NFORREST_TOTAL] as LUInt;
+        self.nsymperm_total = xstore[BLU_NSYMPERM_TOTAL] as LUInt;
+        self.l_nz = xstore[BLU_LNZ] as LUInt;
+        self.u_nz = xstore[BLU_UNZ] as LUInt;
+        self.r_nz = xstore[BLU_RNZ] as LUInt;
+        self.min_pivot = xstore[BLU_MIN_PIVOT];
+        self.max_pivot = xstore[BLU_MAX_PIVOT];
+        self.max_eta = xstore[BLU_MAX_ETA];
+        self.update_cost_numer = xstore[BLU_UPDATE_COST_NUMER];
+        self.update_cost_denom = xstore[BLU_UPDATE_COST_DENOM];
+        self.time_factorize = xstore[BLU_TIME_FACTORIZE];
+        self.time_solve = xstore[BLU_TIME_SOLVE];
+        self.time_update = xstore[BLU_TIME_UPDATE];
+        self.time_factorize_total = xstore[BLU_TIME_FACTORIZE_TOTAL];
+        self.time_solve_total = xstore[BLU_TIME_SOLVE_TOTAL];
+        self.time_update_total = xstore[BLU_TIME_UPDATE_TOTAL];
+        self.l_flops = xstore[BLU_LFLOPS] as LUInt;
+        self.u_flops = xstore[BLU_UFLOPS] as LUInt;
+        self.r_flops = xstore[BLU_RFLOPS] as LUInt;
+        self.condest_l = xstore[BLU_CONDEST_L];
+        self.condest_u = xstore[BLU_CONDEST_U];
+        self.norm_l = xstore[BLU_NORM_L];
+        self.norm_u = xstore[BLU_NORM_U];
+        self.normest_l_inv = xstore[BLU_NORMEST_LINV];
+        self.normest_u_inv = xstore[BLU_NORMEST_UINV];
+        self.onenorm = xstore[BLU_MATRIX_ONENORM];
+        self.infnorm = xstore[BLU_MATRIX_INFNORM];
+        self.residual_test = xstore[BLU_RESIDUAL_TEST];
 
-        self.matrix_nz = xstore[BASICLU_MATRIX_NZ] as LUInt;
-        self.rank = xstore[BASICLU_RANK] as LUInt;
-        self.bump_size = xstore[BASICLU_BUMP_SIZE] as LUInt;
-        self.bump_nz = xstore[BASICLU_BUMP_NZ] as LUInt;
-        self.nsearch_pivot = xstore[BASICLU_NSEARCH_PIVOT] as LUInt;
-        self.nexpand = xstore[BASICLU_NEXPAND] as LUInt;
-        self.ngarbage = xstore[BASICLU_NGARBAGE] as LUInt;
-        self.factor_flops = xstore[BASICLU_FACTOR_FLOPS] as LUInt;
-        self.time_singletons = xstore[BASICLU_TIME_SINGLETONS];
-        self.time_search_pivot = xstore[BASICLU_TIME_SEARCH_PIVOT];
-        self.time_elim_pivot = xstore[BASICLU_TIME_ELIM_PIVOT];
+        self.matrix_nz = xstore[BLU_MATRIX_NZ] as LUInt;
+        self.rank = xstore[BLU_RANK] as LUInt;
+        self.bump_size = xstore[BLU_BUMP_SIZE] as LUInt;
+        self.bump_nz = xstore[BLU_BUMP_NZ] as LUInt;
+        self.nsearch_pivot = xstore[BLU_NSEARCH_PIVOT] as LUInt;
+        self.nexpand = xstore[BLU_NEXPAND] as LUInt;
+        self.ngarbage = xstore[BLU_NGARBAGE] as LUInt;
+        self.factor_flops = xstore[BLU_FACTOR_FLOPS] as LUInt;
+        self.time_singletons = xstore[BLU_TIME_SINGLETONS];
+        self.time_search_pivot = xstore[BLU_TIME_SEARCH_PIVOT];
+        self.time_elim_pivot = xstore[BLU_TIME_ELIM_PIVOT];
 
-        self.pivot_error = xstore[BASICLU_PIVOT_ERROR];
+        self.pivot_error = xstore[BLU_PIVOT_ERROR];
 
         // private
-        self.task = xstore[BASICLU_TASK] as LUInt;
-        self.pivot_row = xstore[BASICLU_PIVOT_ROW] as LUInt;
-        self.pivot_col = xstore[BASICLU_PIVOT_COL] as LUInt;
-        self.ftran_for_update = xstore[BASICLU_FTCOLUMN_IN] as LUInt;
-        self.btran_for_update = xstore[BASICLU_FTCOLUMN_OUT] as LUInt;
-        self.marker = xstore[BASICLU_MARKER] as LUInt;
-        self.pivotlen = xstore[BASICLU_PIVOTLEN] as LUInt;
-        self.rankdef = xstore[BASICLU_RANKDEF] as LUInt;
-        self.min_colnz = xstore[BASICLU_MIN_COLNZ] as LUInt;
-        self.min_rownz = xstore[BASICLU_MIN_ROWNZ] as LUInt;
+        self.task = xstore[BLU_TASK] as LUInt;
+        self.pivot_row = xstore[BLU_PIVOT_ROW] as LUInt;
+        self.pivot_col = xstore[BLU_PIVOT_COL] as LUInt;
+        self.ftran_for_update = xstore[BLU_FTCOLUMN_IN] as LUInt;
+        self.btran_for_update = xstore[BLU_FTCOLUMN_OUT] as LUInt;
+        self.marker = xstore[BLU_MARKER] as LUInt;
+        self.pivotlen = xstore[BLU_PIVOTLEN] as LUInt;
+        self.rankdef = xstore[BLU_RANKDEF] as LUInt;
+        self.min_colnz = xstore[BLU_MIN_COLNZ] as LUInt;
+        self.min_rownz = xstore[BLU_MIN_ROWNZ] as LUInt;
 
         // aliases to user arrays
         // self.Lindex = Li;
@@ -567,7 +563,7 @@ impl LU {
             self.w_end[2 * m as usize] = self.w_mem;
         }
 
-        BASICLU_OK
+        BLU_OK
     }
 
     /// Copy scalar entries (except for user parameters) from @lu to @istore,
@@ -575,75 +571,75 @@ impl LU {
     ///
     /// Return @status
     pub(crate) fn save(&mut self, status: LUInt) -> (Vec<f64>, LUInt) {
-        let mut xstore = vec![0.0; BASICLU_SIZE_XSTORE_1 as usize];
+        let mut xstore = vec![0.0; BLU_SIZE_XSTORE_1 as usize];
 
-        xstore[0] = BASICLU_HASH as f64;
+        xstore[0] = BLU_HASH as f64;
 
         // user readable
-        xstore[BASICLU_STATUS] = status as f64;
-        xstore[BASICLU_ADD_MEMORYL] = self.addmem_l as f64;
-        xstore[BASICLU_ADD_MEMORYU] = self.addmem_u as f64;
-        xstore[BASICLU_ADD_MEMORYW] = self.addmem_w as f64;
+        xstore[BLU_STATUS] = status as f64;
+        xstore[BLU_ADD_MEMORYL] = self.addmem_l as f64;
+        xstore[BLU_ADD_MEMORYU] = self.addmem_u as f64;
+        xstore[BLU_ADD_MEMORYW] = self.addmem_w as f64;
 
-        xstore[BASICLU_NUPDATE] = self.nupdate as f64;
-        xstore[BASICLU_NFORREST] = self.nforrest as f64;
-        xstore[BASICLU_NFACTORIZE] = self.nfactorize as f64;
-        xstore[BASICLU_NUPDATE_TOTAL] = self.nupdate_total as f64;
-        xstore[BASICLU_NFORREST_TOTAL] = self.nforrest_total as f64;
-        xstore[BASICLU_NSYMPERM_TOTAL] = self.nsymperm_total as f64;
-        xstore[BASICLU_LNZ] = self.l_nz as f64;
-        xstore[BASICLU_UNZ] = self.u_nz as f64;
-        xstore[BASICLU_RNZ] = self.r_nz as f64;
-        xstore[BASICLU_MIN_PIVOT] = self.min_pivot;
-        xstore[BASICLU_MAX_PIVOT] = self.max_pivot;
-        xstore[BASICLU_MAX_ETA] = self.max_eta;
-        xstore[BASICLU_UPDATE_COST_NUMER] = self.update_cost_numer;
-        xstore[BASICLU_UPDATE_COST_DENOM] = self.update_cost_denom;
-        xstore[BASICLU_UPDATE_COST] = self.update_cost_numer / self.update_cost_denom;
-        xstore[BASICLU_TIME_FACTORIZE] = self.time_factorize;
-        xstore[BASICLU_TIME_SOLVE] = self.time_solve;
-        xstore[BASICLU_TIME_UPDATE] = self.time_update;
-        xstore[BASICLU_TIME_FACTORIZE_TOTAL] = self.time_factorize_total;
-        xstore[BASICLU_TIME_SOLVE_TOTAL] = self.time_solve_total;
-        xstore[BASICLU_TIME_UPDATE_TOTAL] = self.time_update_total;
-        xstore[BASICLU_LFLOPS] = self.l_flops as f64;
-        xstore[BASICLU_UFLOPS] = self.u_flops as f64;
-        xstore[BASICLU_RFLOPS] = self.r_flops as f64;
-        xstore[BASICLU_CONDEST_L] = self.condest_l;
-        xstore[BASICLU_CONDEST_U] = self.condest_u;
-        xstore[BASICLU_NORM_L] = self.norm_l;
-        xstore[BASICLU_NORM_U] = self.norm_u;
-        xstore[BASICLU_NORMEST_LINV] = self.normest_l_inv;
-        xstore[BASICLU_NORMEST_UINV] = self.normest_u_inv;
-        xstore[BASICLU_MATRIX_ONENORM] = self.onenorm;
-        xstore[BASICLU_MATRIX_INFNORM] = self.infnorm;
-        xstore[BASICLU_RESIDUAL_TEST] = self.residual_test;
+        xstore[BLU_NUPDATE] = self.nupdate as f64;
+        xstore[BLU_NFORREST] = self.nforrest as f64;
+        xstore[BLU_NFACTORIZE] = self.nfactorize as f64;
+        xstore[BLU_NUPDATE_TOTAL] = self.nupdate_total as f64;
+        xstore[BLU_NFORREST_TOTAL] = self.nforrest_total as f64;
+        xstore[BLU_NSYMPERM_TOTAL] = self.nsymperm_total as f64;
+        xstore[BLU_LNZ] = self.l_nz as f64;
+        xstore[BLU_UNZ] = self.u_nz as f64;
+        xstore[BLU_RNZ] = self.r_nz as f64;
+        xstore[BLU_MIN_PIVOT] = self.min_pivot;
+        xstore[BLU_MAX_PIVOT] = self.max_pivot;
+        xstore[BLU_MAX_ETA] = self.max_eta;
+        xstore[BLU_UPDATE_COST_NUMER] = self.update_cost_numer;
+        xstore[BLU_UPDATE_COST_DENOM] = self.update_cost_denom;
+        xstore[BLU_UPDATE_COST] = self.update_cost_numer / self.update_cost_denom;
+        xstore[BLU_TIME_FACTORIZE] = self.time_factorize;
+        xstore[BLU_TIME_SOLVE] = self.time_solve;
+        xstore[BLU_TIME_UPDATE] = self.time_update;
+        xstore[BLU_TIME_FACTORIZE_TOTAL] = self.time_factorize_total;
+        xstore[BLU_TIME_SOLVE_TOTAL] = self.time_solve_total;
+        xstore[BLU_TIME_UPDATE_TOTAL] = self.time_update_total;
+        xstore[BLU_LFLOPS] = self.l_flops as f64;
+        xstore[BLU_UFLOPS] = self.u_flops as f64;
+        xstore[BLU_RFLOPS] = self.r_flops as f64;
+        xstore[BLU_CONDEST_L] = self.condest_l;
+        xstore[BLU_CONDEST_U] = self.condest_u;
+        xstore[BLU_NORM_L] = self.norm_l;
+        xstore[BLU_NORM_U] = self.norm_u;
+        xstore[BLU_NORMEST_LINV] = self.normest_l_inv;
+        xstore[BLU_NORMEST_UINV] = self.normest_u_inv;
+        xstore[BLU_MATRIX_ONENORM] = self.onenorm;
+        xstore[BLU_MATRIX_INFNORM] = self.infnorm;
+        xstore[BLU_RESIDUAL_TEST] = self.residual_test;
 
-        xstore[BASICLU_MATRIX_NZ] = self.matrix_nz as f64;
-        xstore[BASICLU_RANK] = self.rank as f64;
-        xstore[BASICLU_BUMP_SIZE] = self.bump_size as f64;
-        xstore[BASICLU_BUMP_NZ] = self.bump_nz as f64;
-        xstore[BASICLU_NSEARCH_PIVOT] = self.nsearch_pivot as f64;
-        xstore[BASICLU_NEXPAND] = self.nexpand as f64;
-        xstore[BASICLU_NGARBAGE] = self.ngarbage as f64;
-        xstore[BASICLU_FACTOR_FLOPS] = self.factor_flops as f64;
-        xstore[BASICLU_TIME_SINGLETONS] = self.time_singletons;
-        xstore[BASICLU_TIME_SEARCH_PIVOT] = self.time_search_pivot;
-        xstore[BASICLU_TIME_ELIM_PIVOT] = self.time_elim_pivot;
+        xstore[BLU_MATRIX_NZ] = self.matrix_nz as f64;
+        xstore[BLU_RANK] = self.rank as f64;
+        xstore[BLU_BUMP_SIZE] = self.bump_size as f64;
+        xstore[BLU_BUMP_NZ] = self.bump_nz as f64;
+        xstore[BLU_NSEARCH_PIVOT] = self.nsearch_pivot as f64;
+        xstore[BLU_NEXPAND] = self.nexpand as f64;
+        xstore[BLU_NGARBAGE] = self.ngarbage as f64;
+        xstore[BLU_FACTOR_FLOPS] = self.factor_flops as f64;
+        xstore[BLU_TIME_SINGLETONS] = self.time_singletons;
+        xstore[BLU_TIME_SEARCH_PIVOT] = self.time_search_pivot;
+        xstore[BLU_TIME_ELIM_PIVOT] = self.time_elim_pivot;
 
-        xstore[BASICLU_PIVOT_ERROR] = self.pivot_error;
+        xstore[BLU_PIVOT_ERROR] = self.pivot_error;
 
         // private
-        xstore[BASICLU_TASK] = self.task as f64;
-        xstore[BASICLU_PIVOT_ROW] = self.pivot_row as f64;
-        xstore[BASICLU_PIVOT_COL] = self.pivot_col as f64;
-        xstore[BASICLU_FTCOLUMN_IN] = self.ftran_for_update as f64;
-        xstore[BASICLU_FTCOLUMN_OUT] = self.btran_for_update as f64;
-        xstore[BASICLU_MARKER] = self.marker as f64;
-        xstore[BASICLU_PIVOTLEN] = self.pivotlen as f64;
-        xstore[BASICLU_RANKDEF] = self.rankdef as f64;
-        xstore[BASICLU_MIN_COLNZ] = self.min_colnz as f64;
-        xstore[BASICLU_MIN_ROWNZ] = self.min_rownz as f64;
+        xstore[BLU_TASK] = self.task as f64;
+        xstore[BLU_PIVOT_ROW] = self.pivot_row as f64;
+        xstore[BLU_PIVOT_COL] = self.pivot_col as f64;
+        xstore[BLU_FTCOLUMN_IN] = self.ftran_for_update as f64;
+        xstore[BLU_FTCOLUMN_OUT] = self.btran_for_update as f64;
+        xstore[BLU_MARKER] = self.marker as f64;
+        xstore[BLU_PIVOTLEN] = self.pivotlen as f64;
+        xstore[BLU_RANKDEF] = self.rankdef as f64;
+        xstore[BLU_MIN_COLNZ] = self.min_colnz as f64;
+        xstore[BLU_MIN_ROWNZ] = self.min_rownz as f64;
 
         (xstore, status)
     }

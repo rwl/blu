@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2019  ERGO-Code
 
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_internal::LU;
 use crate::lu_list::lu_list_move;
 use std::time::Instant;
@@ -211,5 +211,5 @@ fn done(
 
     lu.time_search_pivot += tic.elapsed().as_secs_f64();
 
-    return BASICLU_OK;
+    return BLU_OK;
 }

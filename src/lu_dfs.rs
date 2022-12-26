@@ -2,7 +2,7 @@
 //
 // Depth first search in a graph.
 
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 
 /// Compute `reach(i)` in a graph by depth first search.
 ///

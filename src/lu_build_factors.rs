@@ -2,7 +2,7 @@
 //
 // Build rowwise and columnwise form of L and U
 
-/// BASICLU maintains the factorization in the form
+/// BLU maintains the factorization in the form
 ///
 ///     B = L * R^1 * R^2 * ... * R^{nforrest} * U,
 ///
@@ -96,7 +96,7 @@
 ///     row_pivot[0..m-1]
 ///
 /// hold the pivot elements by column and by row index.
-use crate::basiclu::{LUInt, BASICLU_OK, BASICLU_REALLOCATE};
+use crate::blu::{LUInt, BLU_OK, BLU_REALLOCATE};
 use crate::lu_file::lu_file_empty;
 use crate::lu_internal::*;
 use crate::lu_list::lu_list_move;
@@ -105,8 +105,8 @@ use crate::lu_list::lu_list_move;
 ///
 /// Return:
 ///
-/// - `BASICLU_REALLOCATE`  require more memory in `L`, `U`, and/or `W`
-/// - `BASICLU_OK`
+/// - `BLU_REALLOCATE`  require more memory in `L`, `U`, and/or `W`
+/// - `BLU_OK`
 pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
     let m = lu.m;
     let rank = lu.rank;
@@ -143,7 +143,7 @@ pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;
     // double pivot, min_pivot, max_pivot;
-    let mut status = BASICLU_OK;
+    let mut status = BLU_OK;
 
     // So far L is stored columnwise in Lindex, Lvalue and U stored rowwise
     // in Uindex, Uvalue. The factorization has computed rank columns of L
@@ -161,19 +161,19 @@ pub(crate) fn lu_build_factors(lu: &mut LU) -> LUInt {
     let need = 2 * (l_nz + m);
     if l_mem < need {
         lu.addmem_l = need - l_mem;
-        status = BASICLU_REALLOCATE;
+        status = BLU_REALLOCATE;
     }
     let need = u_nz + m + 1;
     if u_mem < need {
         lu.addmem_u = need - u_mem;
-        status = BASICLU_REALLOCATE;
+        status = BLU_REALLOCATE;
     }
     let need = u_nz + stretch * u_nz + m * pad;
     if w_mem < need {
         lu.addmem_w = need - w_mem;
-        status = BASICLU_REALLOCATE;
+        status = BLU_REALLOCATE;
     }
-    if status != BASICLU_OK {
+    if status != BLU_OK {
         return status;
     }
 

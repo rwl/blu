@@ -25,7 +25,7 @@
 // search and that in Forrest's method updated elements are moved to the end
 // of the column (and likewise for rows).
 
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_def::*;
 use crate::lu_file::*;
 use crate::lu_internal::LU;
@@ -60,7 +60,7 @@ pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
     let nz_col = w_end[pivot_col as usize] - w_begin[pivot_col as usize];
     let nz_row = w_end[(m + pivot_row) as usize] - w_begin[(m + pivot_row) as usize];
 
-    let mut status = BASICLU_OK;
+    let mut status = BLU_OK;
     let tic = Instant::now();
 
     assert!(nz_row >= 1);
@@ -71,15 +71,15 @@ pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
     let need = nz_col; // # off-diagonals in pivot col + end marker (-1)
     if room < need {
         lu.addmem_l = need - room;
-        status = BASICLU_REALLOCATE;
+        status = BLU_REALLOCATE;
     }
     let room = u_mem - lu.u_begin[rank as usize];
     let need = nz_row - 1; // # off-diagonals in pivot row
     if room < need {
         lu.addmem_u = need - room;
-        status = BASICLU_REALLOCATE;
+        status = BLU_REALLOCATE;
     }
-    if status != BASICLU_OK {
+    if status != BLU_OK {
         return status;
     }
 
@@ -98,7 +98,7 @@ pub(crate) fn lu_pivot(lu: &mut LU) -> LUInt {
 
     // Remove all entries in columns whose maximum entry has dropped below
     // absolute pivot tolerance.
-    if status == BASICLU_OK {
+    if status == BLU_OK {
         for pos in lu.u_begin[rank as usize]..lu.u_begin[(rank + 1) as usize] {
             let j = lu.u_index[pos as usize];
             assert_ne!(j, pivot_col);
@@ -206,7 +206,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return BASICLU_REALLOCATE;
+        return BLU_REALLOCATE;
     }
 
     // get pointer to U
@@ -456,7 +456,7 @@ fn lu_pivot_any(lu: &mut LU) -> LUInt {
         );
     }
 
-    BASICLU_OK
+    BLU_OK
 }
 
 fn lu_pivot_small(lu: &mut LU) -> LUInt {
@@ -556,7 +556,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return BASICLU_REALLOCATE;
+        return BLU_REALLOCATE;
     }
 
     // get pointer to U
@@ -831,7 +831,7 @@ fn lu_pivot_small(lu: &mut LU) -> LUInt {
         );
     }
 
-    BASICLU_OK
+    BLU_OK
 }
 
 fn lu_pivot_singleton_row(lu: &mut LU) -> LUInt {
@@ -924,7 +924,7 @@ fn lu_pivot_singleton_row(lu: &mut LU) -> LUInt {
     lu_list_remove(colcount_flink, colcount_blink, pivot_col);
     lu_list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
-    BASICLU_OK
+    BLU_OK
 }
 
 fn lu_pivot_singleton_col(lu: &mut LU) -> LUInt {
@@ -1023,7 +1023,7 @@ fn lu_pivot_singleton_col(lu: &mut LU) -> LUInt {
     lu_list_remove(colcount_flink, colcount_blink, pivot_col);
     lu_list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
-    BASICLU_OK
+    BLU_OK
 }
 
 fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
@@ -1109,7 +1109,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return BASICLU_REALLOCATE;
+        return BLU_REALLOCATE;
     }
 
     // Column file update //
@@ -1346,7 +1346,7 @@ fn lu_pivot_doubleton_col(lu: &mut LU) -> LUInt {
         );
     }
 
-    BASICLU_OK
+    BLU_OK
 }
 
 fn lu_remove_col(lu: &mut LU, j: LUInt) {

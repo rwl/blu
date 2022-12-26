@@ -2,7 +2,7 @@
 //
 // LINPACK condition number estimate
 
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 
 /// Given `m`-by-`m` matrix `U` such that `U[perm,perm]` is upper triangular,
 /// return estimate for 1-norm condition number of `U`.

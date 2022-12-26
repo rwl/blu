@@ -1,6 +1,6 @@
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 
-pub(crate) const BASICLU_HASH: LUInt = 7743090; // hash in istore[0], xstore[0]
+pub(crate) const BLU_HASH: LUInt = 7743090; // hash in istore[0], xstore[0]
 
 pub(crate) const NO_TASK: LUInt = 0;
 pub(crate) const SINGLETONS: LUInt = 1;

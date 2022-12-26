@@ -1,4 +1,4 @@
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_internal::LU;
 use crate::lu_list::lu_list_remove;
 use crate::lu_markowitz::lu_markowitz;
@@ -7,7 +7,7 @@ use crate::lu_pivot::lu_pivot;
 /// Bump factorization driver routine.
 pub(crate) fn lu_factorize_bump(lu: &mut LU) -> LUInt {
     let m = lu.m;
-    let mut status = BASICLU_OK;
+    let mut status = BLU_OK;
 
     while lu.rank + lu.rankdef < m {
         // Find pivot element. Markowitz search need not be called if the
@@ -28,7 +28,7 @@ pub(crate) fn lu_factorize_bump(lu: &mut LU) -> LUInt {
             assert_eq!(lu.pinv[lu.pivot_row as usize], -1);
             assert_eq!(lu.qinv[lu.pivot_col as usize], -1);
             status = lu_pivot(lu);
-            if status != BASICLU_OK {
+            if status != BLU_OK {
                 break;
             }
             lu.pinv[lu.pivot_row as usize] = lu.rank;

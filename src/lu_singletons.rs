@@ -1,4 +1,4 @@
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_internal::*;
 use std::time::Instant;
 
@@ -69,11 +69,11 @@ use std::time::Instant;
 ///
 /// Return:
 ///
-/// - `BASICLU_REALLOCATE`              less than `nnz(B)` memory in `L`, `U` or `W`
-/// - `BASICLU_ERROR_INVALID_ARGUMENT`  matrix `B` is invalid (negative number of
+/// - `BLU_REALLOCATE`              less than `nnz(B)` memory in `L`, `U` or `W`
+/// - `BLU_ERROR_INVALID_ARGUMENT`  matrix `B` is invalid (negative number of
 ///                                     entries in column, index out of range,
 ///                                     duplicates)
-/// - `BASICLU_OK`
+/// - `BLU_OK`
 pub(crate) fn lu_singletons(
     lu: &mut LU,
     b_begin: &[LUInt],
@@ -124,7 +124,7 @@ pub(crate) fn lu_singletons(
         j += 1;
     }
     if ok == 0 {
-        return BASICLU_ERROR_INVALID_ARGUMENT;
+        return BLU_ERROR_INVALID_ARGUMENT;
     }
 
     // Check if sufficient memory in L, U, W.
@@ -142,7 +142,7 @@ pub(crate) fn lu_singletons(
         ok = 0;
     }
     if ok == 0 {
-        return BASICLU_REALLOCATE;
+        return BLU_REALLOCATE;
     }
 
     // Count nz per row, check indices.
@@ -164,7 +164,7 @@ pub(crate) fn lu_singletons(
         j += 1;
     }
     if ok == 0 {
-        return BASICLU_ERROR_INVALID_ARGUMENT;
+        return BLU_ERROR_INVALID_ARGUMENT;
     }
 
     // Pack matrix rowwise, check for duplicates.
@@ -192,7 +192,7 @@ pub(crate) fn lu_singletons(
         }
     }
     if ok == 0 {
-        return BASICLU_ERROR_INVALID_ARGUMENT;
+        return BLU_ERROR_INVALID_ARGUMENT;
     }
 
     // Pivot singletons //
@@ -254,7 +254,7 @@ pub(crate) fn lu_singletons(
     lu.matrix_nz = b_nz;
     lu.rank = rank;
     lu.time_singletons = tic.elapsed().as_secs_f64();
-    BASICLU_OK
+    BLU_OK
 }
 
 /// The method successively removes singleton cols from an active submatrix.

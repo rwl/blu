@@ -1,8 +1,8 @@
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_internal::LU;
 
 impl LU {
-    /// Make a BASICLU instance. Set parameters to defaults and initialize global counters.
+    /// Make a BLU instance. Set parameters to defaults and initialize global counters.
     /// Reset instance for a fresh factorization.
     pub(crate) fn new(m: LUInt) -> Self {
         let mut lu = LU {
@@ -64,7 +64,7 @@ impl LU {
         // lu.reset() and lu.save() initializes the remaining slots
         // lu.load(xstore);
         lu.reset();
-        // lu.save(xstore, BASICLU_OK);
+        // lu.save(xstore, BLU_OK);
 
         lu
     }

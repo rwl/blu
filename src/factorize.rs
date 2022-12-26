@@ -1,4 +1,4 @@
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_build_factors::lu_build_factors;
 use crate::lu_condest::lu_condest;
 use crate::lu_def::*;
@@ -15,18 +15,18 @@ use std::time::Instant;
 ///
 /// Return:
 ///
-///     BASICLU_ERROR_INVALID_STORE if istore, xstore do not hold a BASICLU
-///     instance. In this case xstore[BASICLU_STATUS] is not set.
+///     BLU_ERROR_INVALID_STORE if istore, xstore do not hold a BLU
+///     instance. In this case xstore[BLU_STATUS] is not set.
 ///
-///     Otherwise return the status code. See xstore[BASICLU_STATUS] below.
+///     Otherwise return the status code. See xstore[BLU_STATUS] below.
 ///
 /// Arguments:
 ///
 ///     lu_int istore[]
 ///     double xstore[]
 ///
-///         BASICLU instance. The instance determines the dimension of matrix B
-///         (stored in xstore[BASICLU_DIM]).
+///         BLU instance. The instance determines the dimension of matrix B
+///         (stored in xstore[BLU_DIM]).
 ///
 ///     lu_int l_i[]
 ///     double l_x[]
@@ -39,13 +39,13 @@ use std::time::Instant;
 ///         final factors. They must be allocated by the user and their length
 ///         must be provided as parameters:
 ///
-///             xstore[BASICLU_MEMORYL]: length of l_i and l_x
-///             xstore[BASICLU_MEMORYU]: length of u_i and u_x
-///             xstore[BASICLU_MEMORYW]: length of w_i and w_x
+///             xstore[BLU_MEMORYL]: length of l_i and l_x
+///             xstore[BLU_MEMORYU]: length of u_i and u_x
+///             xstore[BLU_MEMORYW]: length of w_i and w_x
 ///
 ///         When the allocated length is insufficient to complete the factorization,
-///         basiclu_factorize() returns to the caller for reallocation (see
-///         xstore[BASICLU_STATUS] below). A successful factorization requires at
+///         factorize() returns to the caller for reallocation (see
+///         xstore[BLU_STATUS] below). A successful factorization requires at
 ///         least nnz(B) length for each of the arrays.
 ///
 ///     const lu_int b_begin[]
@@ -66,7 +66,7 @@ use std::time::Instant;
 ///
 ///         zero to start a new factorization; nonzero to continue a factorization
 ///         after reallocation.
-pub fn basiclu_factorize(
+pub fn factorize(
     lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
@@ -77,12 +77,12 @@ pub fn basiclu_factorize(
     let tic = Instant::now();
 
     // let status = lu.load(xstore);
-    // if status != BASICLU_OK {
+    // if status != BLU_OK {
     //     return status;
     // }
 
     // if !(l_i && l_x && u_i && u_x && w_i && w_x && b_begin && b_end && b_i && b_x) {
-    //     let status = BASICLU_ERROR_ARGUMENT_MISSING;
+    //     let status = BLU_ERROR_ARGUMENT_MISSING;
     //     return lu_save(&lu, istore, xstore, status);
     // }
     if c0ntinue == 0 {
@@ -107,45 +107,45 @@ pub fn basiclu_factorize(
         SINGLETONS => {
             // lu.task = SINGLETONS;
             let status = lu_singletons(lu, b_begin, b_end, b_i, b_x);
-            if status != BASICLU_OK {
+            if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = SETUP_BUMP;
             let status = lu_setup_bump(lu, b_begin, b_end, b_i, b_x);
-            if status != BASICLU_OK {
+            if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = FACTORIZE_BUMP;
             let status = lu_factorize_bump(lu);
-            if status != BASICLU_OK {
+            if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         SETUP_BUMP => {
             // lu.task = SETUP_BUMP;
             let status = lu_setup_bump(lu, b_begin, b_end, b_i, b_x);
-            if status != BASICLU_OK {
+            if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
 
             lu.task = FACTORIZE_BUMP;
             let status = lu_factorize_bump(lu);
-            if status != BASICLU_OK {
+            if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         FACTORIZE_BUMP => {
             // lu.task = FACTORIZE_BUMP;
             let status = lu_factorize_bump(lu);
-            if status != BASICLU_OK {
+            if status != BLU_OK {
                 return return_to_caller(tic, lu, /*xstore,*/ status);
             }
         }
         BUILD_FACTORS => {}
         _ => {
-            let status = BASICLU_ERROR_INVALID_CALL;
+            let status = BLU_ERROR_INVALID_CALL;
             // return lu_save(&lu, xstore, status);
             return status;
         }
@@ -153,7 +153,7 @@ pub fn basiclu_factorize(
 
     lu.task = BUILD_FACTORS;
     let status = lu_build_factors(lu);
-    if status != BASICLU_OK {
+    if status != BLU_OK {
         return return_to_caller(tic, lu, /*xstore,*/ status);
     }
 
@@ -220,7 +220,7 @@ pub fn basiclu_factorize(
     }
 
     if lu.rank < lu.m {
-        let status = BASICLU_WARNING_SINGULAR_MATRIX;
+        let status = BLU_WARNING_SINGULAR_MATRIX;
         return_to_caller(tic, lu, /*xstore,*/ status);
     }
 

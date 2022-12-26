@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::*;
+use crate::blu::*;
 use crate::lu_internal::*;
 use crate::lu_solve_symbolic::lu_solve_symbolic;
 use crate::lu_solve_triangular::lu_solve_triangular;
@@ -97,7 +97,7 @@ pub(crate) fn lu_solve_for_update(
         let room = lu.l_mem - r_begin!(lu)[nforrest as usize];
         if room < nz_symb {
             lu.addmem_l = nz_symb - room;
-            return BASICLU_REALLOCATE;
+            return BLU_REALLOCATE;
         }
 
         for pos in jbegin..jend {
@@ -334,7 +334,7 @@ pub(crate) fn lu_solve_for_update(
                 work[pattern[n as usize] as usize] = 0.0;
             }
             lu.addmem_u = need - room;
-            return BASICLU_REALLOCATE;
+            return BLU_REALLOCATE;
         }
 
         // Compress spike into U.
@@ -443,5 +443,5 @@ fn done(tic: Instant, lu: &mut LU, l_flops: LUInt, u_flops: LUInt, r_flops: LUIn
     lu.u_flops += u_flops;
     lu.r_flops += r_flops;
     lu.update_cost_numer += r_flops as f64;
-    return BASICLU_OK;
+    return BLU_OK;
 }

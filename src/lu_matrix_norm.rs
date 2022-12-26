@@ -1,6 +1,6 @@
 // Copyright (C) 2016-2018  ERGO-Code
 
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 use crate::lu_internal::*;
 
 // Computes the 1-norm and infinity-norm of the matrix that was freshly

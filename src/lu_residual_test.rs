@@ -2,7 +2,7 @@
 //
 // Stability test of fresh LU factorization based on relative residual.
 
-use crate::basiclu::LUInt;
+use crate::blu::LUInt;
 use crate::lu_internal::*;
 use crate::lu_matrix_norm::lu_matrix_norm;
 
