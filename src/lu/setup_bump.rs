@@ -3,6 +3,18 @@ use crate::lu::file::{file_diff, file_empty};
 use crate::lu::list::{list_add, list_init, list_move};
 use crate::lu::LU;
 
+macro_rules! w_begin2 {
+    ($lu:ident) => {
+        $lu.w_begin[($lu.m as usize)..]
+    };
+}
+
+macro_rules! w_end2 {
+    ($lu:ident) => {
+        $lu.w_end[($lu.m as usize)..]
+    };
+}
+
 /// The bump is composed of rows `i` and columns `j` for which `pinv[i] < 0` and
 /// `qinv[j] < 0`. For the factorization, the bump is stored in `w_index`, `w_value`
 /// columnwise and additionally the nonzero pattern rowwise:
@@ -58,12 +70,12 @@ pub(crate) fn setup_bump(
     let rowcount_blink = &mut lu.rowcount_blink;
     let pinv = &lu.pinv;
     let qinv = &lu.qinv;
-    // let Wbegin = &mut lu.Wbegin;
-    // let Wend = &mut lu.Wend;
+    // let w_begin = &mut lu.w_begin;
+    // let w_end = &mut lu.w_end;
     // let Wbegin2 = Wbegin + m; /* alias for row file */
     // let Wend2 = Wend + m;
-    let (w_begin, w_begin2) = lu.w_begin.split_at_mut(m as usize);
-    let (w_end, w_end2) = lu.w_end.split_at_mut(m as usize);
+    // let (w_begin, w_begin2) = lu.w_begin.split_at_mut(m as usize);
+    // let (w_end, w_end2) = lu.w_end.split_at_mut(m as usize);
     let w_flink = &mut lu.w_flink;
     let w_blink = &mut lu.w_blink;
     let w_index = &mut lu.w_index;
@@ -95,7 +107,14 @@ pub(crate) fn setup_bump(
         return BLU_REALLOCATE;
     }
 
-    file_empty(2 * m, w_begin, w_end, w_flink, w_blink, w_mem);
+    file_empty(
+        2 * m,
+        &mut lu.w_begin,
+        &mut lu.w_end,
+        w_flink,
+        w_blink,
+        w_mem,
+    );
 
     // Build columnwise storage. Build row counts in iwork0.
     list_init(
@@ -143,7 +162,7 @@ pub(crate) fn setup_bump(
                 m,
                 Some(&mut min_colnz),
             );
-            w_begin[j as usize] = put;
+            lu.w_begin[j as usize] = put;
             for pos in b_begin[j as usize]..b_end[j as usize] {
                 let i = b_i[pos as usize];
                 if pinv[i as usize] >= 0 {
@@ -154,7 +173,7 @@ pub(crate) fn setup_bump(
                 put += 1;
                 iwork0[i as usize] += 1;
             }
-            w_end[j as usize] = put;
+            lu.w_end[j as usize] = put;
             put += (stretch as LUInt) * cnz + pad;
             // reappend line to list end
             list_move(j, 0, w_flink, w_blink, 2 * m, None);
@@ -184,8 +203,8 @@ pub(crate) fn setup_bump(
             m,
             Some(&mut min_rownz),
         );
-        w_begin2[i as usize] = put;
-        w_end2[i as usize] = put;
+        w_begin2![lu][i as usize] = put;
+        w_end2![lu][i as usize] = put;
         put += rnz;
         // reappend line to list end
         list_move(m + i, 0, w_flink, w_blink, 2 * m, None);
@@ -193,21 +212,37 @@ pub(crate) fn setup_bump(
     }
     for j in 0..m {
         // fill rows
-        for pos in w_begin[j as usize]..w_end[j as usize] {
+        for pos in lu.w_begin[j as usize]..lu.w_end[j as usize] {
             let i = w_index[pos as usize] as usize;
-            w_index[w_end2[i] as usize] = j;
-            w_end2[i] += 1;
+            w_index[w_end2![lu][i] as usize] = j;
+            w_end2![lu][i] += 1;
         }
     }
-    w_begin[(2 * m) as usize] = put; // set beginning of free space
-    assert!(w_begin[(2 * m) as usize] <= w_end[(2 * m) as usize]);
+    lu.w_begin[(2 * m) as usize] = put; // set beginning of free space
+    assert!(lu.w_begin[(2 * m) as usize] <= lu.w_end[(2 * m) as usize]);
 
     assert_eq!(
-        file_diff(m, w_begin, w_end, w_begin2, w_end2, w_index, None),
+        file_diff(
+            m,
+            &lu.w_begin,
+            &lu.w_end,
+            &w_begin2!(lu),
+            &w_end2!(lu),
+            w_index,
+            None
+        ),
         0
     );
     assert_eq!(
-        file_diff(m, w_begin2, w_end2, w_begin, w_end, w_index, None),
+        file_diff(
+            m,
+            &w_begin2!(lu),
+            &w_end2!(lu),
+            &lu.w_begin,
+            &lu.w_end,
+            w_index,
+            None
+        ),
         0
     );
 

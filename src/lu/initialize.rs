@@ -22,6 +22,8 @@ impl LU {
             sparse_thres: 0.05,
             search_rows: 0,
 
+            m,
+
             // initialize global counters
             nfactorize: 0,
             nupdate_total: 0,

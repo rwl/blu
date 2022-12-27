@@ -410,7 +410,7 @@ pub(crate) fn build_factors(lu: &mut LU) -> LUInt {
     }
 
     // memcpy(lu.p, pivotrow, m*sizeof(lu_int));
-    p!(lu).copy_from_slice(pivotrow); // TODO: check
+    p![lu][..m as usize].copy_from_slice(&pivotrow[..m as usize]);
 
     lu.min_pivot = min_pivot;
     lu.max_pivot = max_pivot;
