@@ -1,4 +1,5 @@
-// Copyright (C) 2016-2018  ERGO-Code
+// Copyright (C) 2016-2018 ERGO-Code
+// Copyright (C) 2022-2023 Richard Lincoln
 //
 // Implementation of doubly linked lists (see [1] section 5.5)
 //

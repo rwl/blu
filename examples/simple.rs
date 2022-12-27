@@ -1,3 +1,5 @@
+// Copyright (C) 2022-2023 Richard Lincoln
+
 use blu::{LUInt, BLU, BLU_OK};
 
 /// Factorizes a 10x10 matrix, given a column permutation

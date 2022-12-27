@@ -1,4 +1,5 @@
-// Copyright (C) 2016-2019  ERGO-Code
+// Copyright (C) 2016-2019 ERGO-Code
+// Copyright (C) 2022-2023 Richard Lincoln
 //
 // Pivot elimination from active submatrix
 //

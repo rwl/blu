@@ -1,3 +1,6 @@
+// Copyright (C) 2016-2018 ERGO-Code
+// Copyright (C) 2022-2023 Richard Lincoln
+
 /// BLU integer type
 ///
 /// All integers in BLU code are of type lu_int, which must be a signed

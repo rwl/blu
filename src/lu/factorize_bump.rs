@@ -1,3 +1,6 @@
+// Copyright (C) 2016-2019 ERGO-Code
+// Copyright (C) 2022-2023 Richard Lincoln
+
 use crate::blu::*;
 use crate::lu::list::list_remove;
 use crate::lu::markowitz::markowitz;

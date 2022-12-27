@@ -1,4 +1,5 @@
-// Copyright (C) 2016-2018  ERGO-Code
+// Copyright (C) 2016-2018 ERGO-Code
+// Copyright (C) 2022-2023 Richard Lincoln
 //
 // Build rowwise and columnwise form of L and U
 

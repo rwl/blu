@@ -1,3 +1,6 @@
+// Copyright (C) 2016-2018 ERGO-Code
+// Copyright (C) 2022-2023 Richard Lincoln
+
 use crate::blu::LUInt;
 
 pub(crate) const BLU_HASH: LUInt = 7743090; // hash in istore[0], xstore[0]
