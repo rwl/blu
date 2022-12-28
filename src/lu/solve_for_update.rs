@@ -1,10 +1,11 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::*;
 use crate::lu::lu::*;
 use crate::lu::solve_symbolic::solve_symbolic;
 use crate::lu::solve_triangular::solve_triangular;
+use crate::LUInt;
+use crate::Status;
 use std::mem::size_of;
 use std::time::Instant;
 
@@ -17,7 +18,7 @@ pub(crate) fn solve_for_update(
     ilhs: Option<&mut [LUInt]>,
     xlhs: Option<&mut [f64]>,
     trans: char,
-) -> LUInt {
+) -> Status {
     let m = lu.m;
     let nforrest = lu.nforrest;
     let pivotlen = lu.pivotlen;
@@ -98,7 +99,7 @@ pub(crate) fn solve_for_update(
         let room = lu.l_mem - r_begin!(lu)[nforrest as usize];
         if room < nz_symb {
             lu.addmem_l = nz_symb - room;
-            return BLU_REALLOCATE;
+            return Status::Reallocate;
         }
 
         for pos in jbegin..jend {
@@ -335,7 +336,7 @@ pub(crate) fn solve_for_update(
                 work[pattern[n as usize] as usize] = 0.0;
             }
             lu.addmem_u = need - room;
-            return BLU_REALLOCATE;
+            return Status::Reallocate;
         }
 
         // Compress spike into U.
@@ -350,7 +351,7 @@ pub(crate) fn solve_for_update(
             }
         }
         u_index[put as usize] = -1; // terminate column
-        put += 1;
+                                    // put += 1;
         lu.ftran_for_update = 0;
 
         if !want_solution {
@@ -436,7 +437,7 @@ pub(crate) fn solve_for_update(
     done(tic, lu, l_flops, u_flops, r_flops)
 }
 
-fn done(tic: Instant, lu: &mut LU, l_flops: LUInt, u_flops: LUInt, r_flops: LUInt) -> LUInt {
+fn done(tic: Instant, lu: &mut LU, l_flops: LUInt, u_flops: LUInt, r_flops: LUInt) -> Status {
     let elapsed = tic.elapsed().as_secs_f64();
     lu.time_solve += elapsed;
     lu.time_solve_total += elapsed;
@@ -444,5 +445,5 @@ fn done(tic: Instant, lu: &mut LU, l_flops: LUInt, u_flops: LUInt, r_flops: LUIn
     lu.u_flops += u_flops;
     lu.r_flops += r_flops;
     lu.update_cost_numer += r_flops as f64;
-    return BLU_OK;
+    Status::OK
 }

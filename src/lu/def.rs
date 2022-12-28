@@ -1,15 +1,21 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::LUInt;
+use crate::LUInt;
 
-pub(crate) const BLU_HASH: LUInt = 7743090; // hash in istore[0], xstore[0]
+pub(crate) enum Task {
+    NoTask,
+    Singletons,
+    SetupBump,
+    FactorizeBump,
+    BuildFactors,
+}
 
-pub(crate) const NO_TASK: LUInt = 0;
-pub(crate) const SINGLETONS: LUInt = 1;
-pub(crate) const SETUP_BUMP: LUInt = 2;
-pub(crate) const FACTORIZE_BUMP: LUInt = 3;
-pub(crate) const BUILD_FACTORS: LUInt = 4;
+impl Default for Task {
+    fn default() -> Self {
+        Self::Singletons
+    }
+}
 
 pub(crate) fn iswap(x: &mut [LUInt], i: LUInt, j: LUInt) {
     let t = x[i as usize];

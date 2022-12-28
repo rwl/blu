@@ -1,37 +1,37 @@
 // Copyright (C) 2016-2019 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::*;
 use crate::lu::list::list_move;
 use crate::lu::LU;
+use crate::{IntLeast64, LUInt, Status};
 use std::time::Instant;
 
-/// Search for pivot element with small Markowitz cost. An eligible pivot
-/// must be nonzero and satisfy
-///
-/// 1. `abs(piv) >= abstol`,
-/// 2. `abs(piv) >= reltol * max[pivot column]`.
-///
-/// From all eligible pivots search for one that minimizes
-///
-///     mc := (nnz[pivot row] - 1) * (nnz[pivot column] - 1).
-///
-/// The search is terminated when `maxsearch` rows or columns with eligible pivots
-/// have been searched (if not before). The row and column of the cheapest one
-/// found is stored in `pivot_row` and `pivot_col`.
-///
-/// When the active submatrix contains columns with column count = 0, then such a
-/// column is chosen immediately and `pivot_row` = -1 is returned. Otherwise, when
-/// the Markowitz search does not find a pivot that is nonzero and >= `abstol`,
-/// then `pivot_col` = `pivot_row` = -1 is returned. (The latter cannot happen in the
-/// current version of the code because [`lu_pivot()`] erases columns of the active
-/// submatrix whose maximum absolute value drops below `abstol`.)
-///
-/// The Markowitz search is implemented as described in [1].
-///
-/// [1] U. Suhl, L. Suhl, "Computing Sparse LU Factorizations for Large-Scale
-///     Linear Programming Bases", ORSA Journal on Computing (1990)
-pub(crate) fn markowitz(lu: &mut LU) -> LUInt {
+// Search for pivot element with small Markowitz cost. An eligible pivot
+// must be nonzero and satisfy
+//
+// 1. `abs(piv) >= abstol`,
+// 2. `abs(piv) >= reltol * max[pivot column]`.
+//
+// From all eligible pivots search for one that minimizes
+//
+//     mc := (nnz[pivot row] - 1) * (nnz[pivot column] - 1).
+//
+// The search is terminated when `maxsearch` rows or columns with eligible pivots
+// have been searched (if not before). The row and column of the cheapest one
+// found is stored in `pivot_row` and `pivot_col`.
+//
+// When the active submatrix contains columns with column count = 0, then such a
+// column is chosen immediately and `pivot_row` = -1 is returned. Otherwise, when
+// the Markowitz search does not find a pivot that is nonzero and >= `abstol`,
+// then `pivot_col` = `pivot_row` = -1 is returned. (The latter cannot happen in the
+// current version of the code because [`lu_pivot()`] erases columns of the active
+// submatrix whose maximum absolute value drops below `abstol`.)
+//
+// The Markowitz search is implemented as described in [1].
+//
+// [1] U. Suhl, L. Suhl, "Computing Sparse LU Factorizations for Large-Scale
+//     Linear Programming Bases", ORSA Journal on Computing (1990)
+pub(crate) fn markowitz(lu: &mut LU) -> Status {
     let m = lu.m;
     let w_begin = &lu.w_begin;
     let w_end = &lu.w_end;
@@ -197,7 +197,7 @@ fn done(
     min_colnz: LUInt,
     min_rownz: LUInt,
     tic: Instant,
-) -> LUInt {
+) -> Status {
     lu.pivot_row = pivot_row;
     lu.pivot_col = pivot_col;
 
@@ -212,5 +212,5 @@ fn done(
 
     lu.time_search_pivot += tic.elapsed().as_secs_f64();
 
-    return BLU_OK;
+    Status::OK
 }

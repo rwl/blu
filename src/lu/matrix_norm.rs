@@ -1,8 +1,8 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::LUInt;
 use crate::lu::lu::*;
+use crate::LUInt;
 
 // Computes the 1-norm and infinity-norm of the matrix that was freshly
 // factorized. Unit cols inserted by the factorization are handled implicitly.

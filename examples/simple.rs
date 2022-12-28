@@ -1,6 +1,6 @@
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use blu::{LUInt, BLU, BLU_OK};
+use blu::{LUInt, Status, BLU};
 
 /// Factorizes a 10x10 matrix, given a column permutation
 /// vector, and solves for a single right-hand-side.
@@ -31,18 +31,17 @@ fn main() {
     let b = vec![
         0.403, 0.28, 0.55, 1.504, 0.812, 1.32, 1.888, 1.168, 2.473, 3.695,
     ];
-    // let mut rhs: Vec<&mut [f64]> = vec![&mut b];
     let mut x = vec![0.0; n];
 
     let _col_perm = vec![6, 5, 2, 4, 1, 9, 7, 8, 0, 3];
 
-    let mut lu = BLU::new(n as LUInt);
+    let mut blu = BLU::new(n as LUInt, a.len() as LUInt);
 
-    let rv = lu.factorize(&acolst, &acolst[1..], &arow, &a);
-    assert_eq!(rv, BLU_OK);
+    let rv = blu.factorize(&acolst, &acolst[1..], &arow, &a);
+    assert_eq!(rv, Status::OK);
 
-    let rv = lu.solve_dense(&b, &mut x, 'n');
-    assert_eq!(rv, BLU_OK);
+    let rv = blu.solve_dense(&b, &mut x, 'N');
+    assert_eq!(rv, Status::OK);
 
     println!("{:?}", x);
 }

@@ -1,17 +1,17 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
+
+use crate::LUInt;
+
+// LINPACK condition number estimate //
+
+// Given `m`-by-`m` matrix `U` such that `U[perm,perm]` is upper triangular,
+// return estimate for 1-norm condition number of `U`.
+// If `norm` is not None, it holds the 1-norm of the matrix on return.
+// If `norminv` is not None, it holds the estimated 1-norm of the inverse on
+// return.
 //
-// LINPACK condition number estimate
-
-use crate::blu::LUInt;
-
-/// Given `m`-by-`m` matrix `U` such that `U[perm,perm]` is upper triangular,
-/// return estimate for 1-norm condition number of `U`.
-/// If `norm` is not None, it holds the 1-norm of the matrix on return.
-/// If `norminv` is not None, it holds the estimated 1-norm of the inverse on
-/// return.
-///  
-/// The other function arguments are the same as in [`normest()`].
+// The other function arguments are the same as in [`normest()`].
 pub(crate) fn condest(
     m: LUInt,
     u_begin: &[LUInt],

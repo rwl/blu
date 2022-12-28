@@ -1,7 +1,6 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::*;
 use crate::lu::build_factors;
 use crate::lu::condest;
 use crate::lu::def::*;
@@ -10,158 +9,103 @@ use crate::lu::lu::*;
 use crate::lu::residual_test;
 use crate::lu::setup_bump;
 use crate::lu::singletons;
+use crate::LUInt;
+use crate::Status;
 use std::time::Instant;
 
-/// Factorize the matrix B into its LU factors. Choose pivot elements by a
+/// Factorize the matrix `B` into its LU factors. Choose pivot elements by a
 /// Markowitz criterion subject to columnwise threshold pivoting (the pivot
 /// may not be smaller than a factor of the largest entry in its column).
 ///
-/// Return:
+/// Matrix `B` must be in packed column form. `b_i` and `b_x` are arrays of row
+/// indices and nonzero values. Column `j` of matrix `B` contains elements
 ///
-///     BLU_ERROR_INVALID_STORE if istore, xstore do not hold a BLU
-///     instance. In this case xstore[BLU_STATUS] is not set.
+///     b_i[b_begin[j] .. b_end[j]-1], b_x[b_begin[j] .. b_end[j]-1].
 ///
-///     Otherwise return the status code. See xstore[BLU_STATUS] below.
+/// The columns must not contain duplicate row indices. The arrays `b_begin`
+/// and `b_end` may overlap, so that it is valid to pass `b_p`, `b_p[1..]` for
+/// a matrix stored in compressed column form (`b_p`, `b_i`, `b_x`).
 ///
-/// Arguments:
-///
-///     lu_int istore[]
-///     double xstore[]
-///
-///         BLU instance. The instance determines the dimension of matrix B
-///         (stored in xstore[BLU_DIM]).
-///
-///     lu_int l_i[]
-///     double l_x[]
-///     lu_int u_i[]
-///     double u_x[]
-///     lu_int w_i[]
-///     double w_x[]
-///
-///         Arrays used for workspace during the factorization and to store the
-///         final factors. They must be allocated by the user and their length
-///         must be provided as parameters:
-///
-///             xstore[BLU_MEMORYL]: length of l_i and l_x
-///             xstore[BLU_MEMORYU]: length of u_i and u_x
-///             xstore[BLU_MEMORYW]: length of w_i and w_x
-///
-///         When the allocated length is insufficient to complete the factorization,
-///         factorize() returns to the caller for reallocation (see
-///         xstore[BLU_STATUS] below). A successful factorization requires at
-///         least nnz(B) length for each of the arrays.
-///
-///     const lu_int b_begin[]
-///     const lu_int b_end[]
-///     const lu_int b_i[]
-///     const double b_x[]
-///
-///         Matrix B in packed column form. b_i and b_x are arrays of row indices
-///         and nonzero values. Column j of matrix B contains elements
-///
-///             b_i[b_begin[j] .. b_end[j]-1], b_x[b_begin[j] .. b_end[j]-1].
-///
-///         The columns must not contain duplicate row indices. The arrays b_begin
-///         and b_end may overlap, so that it is valid to pass Bp, Bp+1 for a matrix
-///         stored in compressed column form (Bp, b_i, b_x).
-///
-///     lu_int c0ntinue
-///
-///         zero to start a new factorization; nonzero to continue a factorization
-///         after reallocation.
+/// `c0ntinue`: `false` to start a new factorization; `true` to continue a
+/// factorization after reallocation.
 pub fn factorize(
     lu: &mut LU,
     b_begin: &[LUInt],
     b_end: &[LUInt],
     b_i: &[LUInt],
     b_x: &[f64],
-    c0ntinue: LUInt,
-) -> LUInt {
+    c0ntinue: bool,
+) -> Status {
     let tic = Instant::now();
 
-    // let status = lu.load(xstore);
-    // if status != BLU_OK {
-    //     return status;
-    // }
-
-    // if !(l_i && l_x && u_i && u_x && w_i && w_x && b_begin && b_end && b_i && b_x) {
-    //     let status = BLU_ERROR_ARGUMENT_MISSING;
-    //     return lu_save(&lu, istore, xstore, status);
-    // }
-    if c0ntinue == 0 {
+    if !c0ntinue {
         lu.reset();
-        lu.task = SINGLETONS;
+        lu.task = Task::Singletons;
     }
 
-    fn return_to_caller(
-        tic: Instant,
-        lu: &mut LU,
-        /*xstore: &mut [f64],*/ status: LUInt,
-    ) -> LUInt {
+    fn return_to_caller(tic: Instant, lu: &mut LU, status: Status) -> Status {
         let elapsed = tic.elapsed().as_secs_f64();
         lu.time_factorize += elapsed;
         lu.time_factorize_total += elapsed;
-        // return lu_save(&lu, /*istore,*/ xstore, status);
         status
     }
 
     // continue factorization
     match lu.task {
-        SINGLETONS => {
+        Task::Singletons => {
             // lu.task = SINGLETONS;
             let status = singletons(lu, b_begin, b_end, b_i, b_x);
-            if status != BLU_OK {
-                return return_to_caller(tic, lu, /*xstore,*/ status);
+            if status != Status::OK {
+                return return_to_caller(tic, lu, status);
             }
 
-            lu.task = SETUP_BUMP;
+            lu.task = Task::SetupBump;
             let status = setup_bump(lu, b_begin, b_end, b_i, b_x);
-            if status != BLU_OK {
-                return return_to_caller(tic, lu, /*xstore,*/ status);
+            if status != Status::OK {
+                return return_to_caller(tic, lu, status);
             }
 
-            lu.task = FACTORIZE_BUMP;
+            lu.task = Task::FactorizeBump;
             let status = factorize_bump(lu);
-            if status != BLU_OK {
-                return return_to_caller(tic, lu, /*xstore,*/ status);
+            if status != Status::OK {
+                return return_to_caller(tic, lu, status);
             }
         }
-        SETUP_BUMP => {
+        Task::SetupBump => {
             // lu.task = SETUP_BUMP;
             let status = setup_bump(lu, b_begin, b_end, b_i, b_x);
-            if status != BLU_OK {
-                return return_to_caller(tic, lu, /*xstore,*/ status);
+            if status != Status::OK {
+                return return_to_caller(tic, lu, status);
             }
 
-            lu.task = FACTORIZE_BUMP;
+            lu.task = Task::FactorizeBump;
             let status = factorize_bump(lu);
-            if status != BLU_OK {
-                return return_to_caller(tic, lu, /*xstore,*/ status);
+            if status != Status::OK {
+                return return_to_caller(tic, lu, status);
             }
         }
-        FACTORIZE_BUMP => {
+        Task::FactorizeBump => {
             // lu.task = FACTORIZE_BUMP;
             let status = factorize_bump(lu);
-            if status != BLU_OK {
-                return return_to_caller(tic, lu, /*xstore,*/ status);
+            if status != Status::OK {
+                return return_to_caller(tic, lu, status);
             }
         }
-        BUILD_FACTORS => {}
+        Task::BuildFactors => {}
         _ => {
-            let status = BLU_ERROR_INVALID_CALL;
-            // return lu_save(&lu, xstore, status);
+            let status = Status::ErrorInvalidCall;
             return status;
         }
     };
 
-    lu.task = BUILD_FACTORS;
+    lu.task = Task::BuildFactors;
     let status = build_factors(lu);
-    if status != BLU_OK {
-        return return_to_caller(tic, lu, /*xstore,*/ status);
+    if status != Status::OK {
+        return return_to_caller(tic, lu, status);
     }
 
     // factorization successfully finished
-    lu.task = NO_TASK;
+    lu.task = Task::NoTask;
     lu.nupdate = 0; // make factorization valid
     lu.ftran_for_update = -1;
     lu.btran_for_update = -1;
@@ -223,9 +167,9 @@ pub fn factorize(
     }
 
     if lu.rank < lu.m {
-        let status = BLU_WARNING_SINGULAR_MATRIX;
-        return_to_caller(tic, lu, /*xstore,*/ status);
+        let status = Status::WarningSingularMatrix;
+        return_to_caller(tic, lu, status);
     }
 
-    return_to_caller(tic, lu, /*xstore,*/ status)
+    return_to_caller(tic, lu, status)
 }

@@ -3,25 +3,25 @@
 //
 // Depth first search in a graph.
 
-use crate::blu::LUInt;
+use crate::LUInt;
 
-/// Compute `reach(i)` in a graph by depth first search.
-///
-/// `begin`, `end`, `index` define the graph. When `end` is not None, then node `j`
-/// has neighbours `index[begin[j]..end[j]-1]`. When `end` is None, then the
-/// neighbour list is terminated by a negative index.
-///
-/// On return `xi[newtop..top-1]` hold `reach(i)` in topological order; `newtop` is
-/// the function return value. Nodes that were already marked are excluded from
-/// the reach.
-///
-/// `pstack` is size `m` workspace (`m` the number of nodes in the graph); the
-/// contents of `pstack` is undefined on entry/return.
-///
-/// `marked` is size m array. Node `j` is marked iff `marked[j] == m`.
-/// On return nodes `xi[newtop..top-1]` are marked.
-///
-/// If node `i` is marked on entry, the function does nothing.
+// Compute `reach(i)` in a graph by depth first search.
+//
+// `begin`, `end`, `index` define the graph. When `end` is not None, then node `j`
+// has neighbours `index[begin[j]..end[j]-1]`. When `end` is None, then the
+// neighbour list is terminated by a negative index.
+//
+// On return `xi[newtop..top-1]` hold `reach(i)` in topological order; `newtop` is
+// the function return value. Nodes that were already marked are excluded from
+// the reach.
+//
+// `pstack` is size `m` workspace (`m` the number of nodes in the graph); the
+// contents of `pstack` is undefined on entry/return.
+//
+// `marked` is size m array. Node `j` is marked iff `marked[j] == m`.
+// On return nodes `xi[newtop..top-1]` are marked.
+//
+// If node `i` is marked on entry, the function does nothing.
 pub(crate) fn dfs(
     i: LUInt,
     begin: &[LUInt],

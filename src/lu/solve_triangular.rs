@@ -1,7 +1,7 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::LUInt;
+use crate::LUInt;
 
 // Substitution with triangular matrix.
 //

@@ -1,8 +1,9 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::*;
 use crate::lu::lu::*;
+use crate::LUInt;
+use crate::Status;
 
 /// Extract the row and column permutation and the LU factors. This routine can
 /// be used only after [`factorize()`] has completed and before a call to
@@ -17,99 +18,50 @@ use crate::lu::lu::*;
 ///
 /// `get_factors()` is intended when the user needs direct access to the
 /// matrix factors. It is not required to solve linear systems with the factors
-/// (see [`blu_solve_dense()`] and [`blu_solve_sparse()`] instead).
+/// (see [`solve_dense()`] and [`solve_sparse()`] instead).
 ///
-/// Return:
+/// `rowperm[m]`: Returns the row permutation. If the row permutation is not required,
+/// then `None` can be passed.
 ///
-///     BLU_ERROR_INVALID_STORE if istore, xstore do not hold a BLU
-///     instance. In this case xstore[BLU_STATUS] is not set.
+/// `colperm[m]`: Returns the column permutation. If the column permutation is not
+/// required, then `None` can be passed.
 ///
-///     Otherwise return the status code. See xstore[BLU_STATUS] below.
+/// `l_colptr[m+1]`, `l_rowidx[m+l_nz]`, `l_value[m+l_nz]`: If all three arguments
+/// are not `None`, then they are filled with `L` in compressed column form. The
+/// indices in each column are sorted with the unit diagonal element at the front.
+/// If any of the three arguments is `None`, then `L` is not returned.
 ///
-/// Arguments:
+/// `u_colptr[m+1]`, `u_rowidx[m+u_nz]`, `u_value[m+u_nz]`: If all three arguments
+/// are not `None`, then they are filled with `U` in compressed column form. The
+/// indices in each column are sorted with the diagonal element at the end.
+/// If any of the three arguments is `None`, then `U` is not returned.
 ///
-///     LU lu
-///
-///         The BLU instance after factorize() has completed.
-///
-///     lu_int rowperm[m]
-///
-///         Returns the row permutation. If the row permutation is not required,
-///         then NULL can be passed (this is not an error).
-///
-///     lu_int colperm[m]
-///
-///         Returns the column permutation. If the column permutation is not
-///         required, then NULL can be passed (this is not an error).
-///
-///     lu_int l_colptr[m+1]
-///     lu_int l_rowidx[m+Lnz]
-///     double Lvalue[m+Lnz], where Lnz = xstore[BLU_LNZ]
-///
-///         If all three arguments are not NULL, then they are filled with L in
-///         compressed column form. The indices in each column are sorted with the
-///         unit diagonal element at the front.
-///
-///         If any of the three arguments is NULL, then L is not returned
-///         (this is not an error).
-///
-///     lu_int u_colptr[m+1]
-///     lu_int u_rowidx[m+Unz]
-///     double Uvalue[m+Unz], where Unz = xstore[BLU_UNZ]
-///
-///         If all three arguments are not NULL, then they are filled with U in
-///         compressed column form. The indices in each column are sorted with the
-///         diagonal element at the end.
-///
-///         If any of the three arguments is NULL, then U is not returned
-///         (this is not an error).
-///
-/// Info:
-///
-///     xstore[BLU_STATUS]: status code.
-///
-///         BLU_OK
-///
-///             The requested quantities have been returned successfully.
-///
-///         BLU_ERROR_ARGUMENT_MISSING
-///
-///             One or more of the mandatory pointer/array arguments are NULL.
-///
-///         BLU_ERROR_INVALID_CALL
-///
-///             The BLU instance does not hold a fresh factorization (either
-///             factorize() has not completed or update() has been
-///             called in the meanwhile).
+/// Returns [`BLU_ERROR_INVALID_CALL`] if the [`LU`] instance does not hold a fresh
+/// factorization (either [`factorize()`] has not completed or [`update()`] has been
+/// called in the meanwhile).
 pub fn get_factors(
     lu: &mut LU,
-    rowperm: Option<&[LUInt]>,
-    colperm: Option<&[LUInt]>,
+    rowperm: Option<&mut [LUInt]>,
+    colperm: Option<&mut [LUInt]>,
     l_colptr: Option<&mut [LUInt]>,
     l_rowidx: Option<&mut [LUInt]>,
     l_value_: Option<&mut [f64]>,
     u_colptr: Option<&mut [LUInt]>,
     u_rowidx: Option<&mut [LUInt]>,
     u_value_: Option<&mut [f64]>,
-) -> LUInt {
-    // let status = lu.load(xstore);
-    // if status != BLU_OK {
-    //     return status;
-    // }
-    assert_eq!(lu.nupdate, 0);
-    // if lu.nupdate != 0 {
-    //     let status = BLU_ERROR_INVALID_CALL;
-    //     return lu.save(xstore, status);
-    // }
+) -> Status {
+    if lu.nupdate != 0 {
+        return Status::ErrorInvalidCall;
+    }
     let m = lu.m;
 
     if let Some(rowperm) = rowperm {
         // memcpy(rowperm, lu.pivotrow, m * sizeof(lu_int));
-        pivotrow!(lu).copy_from_slice(rowperm);
+        rowperm.copy_from_slice(&pivotrow![lu][..m as usize]);
     }
     if let Some(colperm) = colperm {
         // memcpy(colperm, lu.pivotcol, m * sizeof(lu_int));
-        pivotcol!(lu).copy_from_slice(colperm);
+        colperm.copy_from_slice(&pivotcol![lu][..m as usize]);
     }
 
     if l_colptr.is_some() && l_rowidx.is_some() && l_value_.is_some() {
@@ -166,11 +118,9 @@ pub fn get_factors(
         let u_rowidx = u_rowidx.unwrap();
         let u_value_ = u_value_.unwrap();
 
-        // let Wbegin = &lu.Wbegin;
-        // let Wend = &lu.Wend;
         let w_index = &lu.w_index;
         let w_value = &lu.w_value;
-        // let col_pivot = &lu.xstore.col_pivot;
+        // let col_pivot = &lu.col_pivot;
         let pivotcol = &pivotcol!(lu);
         let colptr = &mut iwork1!(lu); // size m workspace
 
@@ -223,5 +173,5 @@ pub fn get_factors(
         }
     }
 
-    BLU_OK
+    Status::OK
 }

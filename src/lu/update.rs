@@ -3,12 +3,13 @@
 //
 // Forrest-Tomlin update with reordering.
 
-use crate::blu::*;
 use crate::lu::dfs::dfs;
 use crate::lu::file::{file_compress, file_reappend};
 use crate::lu::garbage_perm::garbage_perm;
 use crate::lu::list::list_swap;
 use crate::lu::lu::*;
+use crate::LUInt;
+use crate::Status;
 use std::time::Instant;
 
 const GAP: LUInt = -1;
@@ -381,10 +382,10 @@ fn check_consistency(lu: &LU, p_col: &mut LUInt, p_row: &mut LUInt) {
 //
 // Return:
 //
-//  BLU_OK                      update successfully completed
-//  BLU_REALLOCATE              require more memory in W
-//  BLU_ERROR_SINGULAR_UPDATE   new pivot element is zero or < abstol
-pub(crate) fn update(lu: &mut LU, xtbl: f64) -> LUInt {
+//  OK                      update successfully completed
+//  Reallocate              require more memory in W
+//  ErrorSingularUpdate   new pivot element is zero or < abstol
+pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     let m = lu.m;
     let nforrest = lu.nforrest;
     let mut u_nz = lu.u_nz;
@@ -417,10 +418,10 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> LUInt {
     let jpivot = lu.btran_for_update;
     let ipivot = pmap!(lu)[jpivot as usize];
     let oldpiv = lu.col_pivot[jpivot as usize];
-    let mut status = BLU_OK;
+    let mut status = Status::OK;
 
-    let mut ipivot_vec = vec![ipivot]; // FIXME
-    let mut jpivot_vec = vec![jpivot];
+    let ipivot_vec = vec![ipivot]; // FIXME
+    let jpivot_vec = vec![jpivot];
 
     // lu_int i, j, jnext, n, nz, t, put, pos, end, where_, room, grow, used,need,M;
     // lu_int have_diag, intersect, istriangular, nz_roweta, nz_spike;
@@ -506,7 +507,7 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> LUInt {
 
     // singularity test
     if newpiv == 0.0 || newpiv.abs() < lu.abstol {
-        status = BLU_ERROR_SINGULAR_UPDATE;
+        status = Status::ErrorSingularUpdate;
         return status;
     }
 
@@ -533,7 +534,7 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> LUInt {
     let room = lu.w_end[m as usize] - lu.w_begin[m as usize];
     if grow > room {
         lu.addmem_w = grow - room;
-        status = BLU_REALLOCATE;
+        status = Status::Reallocate;
         return status;
     }
 

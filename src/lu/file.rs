@@ -1,6 +1,9 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
-//
+
+use crate::lu::list::list_move;
+use crate::LUInt;
+
 // Data file implementation
 //
 // A data file stores lines of (index,value) pairs. Entries of each line are
@@ -25,10 +28,7 @@
 // `k` in memory. `next[nlines]` and `prev[nlines]` are the first respectively last
 // line in memory order.
 
-use crate::blu::LUInt;
-use crate::lu::list::list_move;
-
-/// Initialize empty file with `fmem` memory space.
+// Initialize empty file with `fmem` memory space.
 pub(crate) fn file_empty(
     nlines: LUInt,
     begin: &mut [LUInt],
@@ -51,8 +51,8 @@ pub(crate) fn file_empty(
     prev[0] = nlines;
 }
 
-/// Reappend line to file end and add `extra_space` elements room. The file must
-/// have at least length(line) + `extra_space` elements free space.
+// Reappend line to file end and add `extra_space` elements room. The file must
+// have at least length(line) + `extra_space` elements free space.
 pub(crate) fn file_reappend(
     line: LUInt,
     nlines: LUInt,
@@ -84,11 +84,11 @@ pub(crate) fn file_reappend(
     list_move(line, 0, next, prev, nlines, None);
 }
 
-/// Compress file to reuse memory gaps. The ordering of lines in the file is
-/// unchanged. To each line with `nz` entries add `stretch*nz+pad` elements extra
-/// space. Chop extra space if it would overlap the following line in memory.
-///
-/// Return: number of entries in file
+// Compress file to reuse memory gaps. The ordering of lines in the file is
+// unchanged. To each line with `nz` entries add `stretch*nz+pad` elements extra
+// space. Chop extra space if it would overlap the following line in memory.
+//
+// Return: number of entries in file
 pub(crate) fn file_compress(
     nlines: LUInt,
     begin: &mut [LUInt],

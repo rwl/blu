@@ -1,11 +1,9 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
-//
-// Stability test of fresh LU factorization based on relative residual.
 
-use crate::blu::LUInt;
 use crate::lu::lu::*;
 use crate::lu::matrix_norm::matrix_norm;
+use crate::LUInt;
 
 fn onenorm(m: LUInt, x: &[f64]) -> f64 {
     let mut d = 0.0;
@@ -15,6 +13,7 @@ fn onenorm(m: LUInt, x: &[f64]) -> f64 {
     d
 }
 
+// Stability test of fresh LU factorization based on relative residual.
 pub(crate) fn residual_test(
     lu: &mut LU,
     b_begin: &[LUInt],
@@ -37,9 +36,6 @@ pub(crate) fn residual_test(
     let u_value = &lu.u_value;
     let rhs = &mut lu.work0;
     let lhs = &mut lu.work1;
-
-    // lu_int i, k, ipivot, jpivot, pos;
-    // double norm_ftran, norm_ftran_res, norm_btran, norm_btran_res, d;
 
     assert_eq!(lu.nupdate, 0);
 

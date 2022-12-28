@@ -1,6 +1,8 @@
 // Copyright (C) 2016-2018 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
-//
+
+use crate::LUInt;
+
 // Implementation of doubly linked lists (see [1] section 5.5)
 //
 // Maintain nelem elements in `nlist` doubly linked lists. Each element can belong
@@ -28,9 +30,8 @@
 // `1..min_list-1` are empty. Notice that list 0 is not covered by `min_list`.
 //
 //    [1] Istvan Maros, Computational Techniques of the Simplex Method
-use crate::blu::LUInt;
 
-/// Initialize all lists to empty.
+// Initialize all lists to empty.
 pub(crate) fn list_init(
     flink: &mut [LUInt],
     blink: &mut [LUInt],
@@ -47,8 +48,8 @@ pub(crate) fn list_init(
     }
 }
 
-/// Add element `elem` to list `list`. `elem` must not be in any list already.
-/// If `list` > 0 and `min_list` != None, update `*min_list = min(*min_list, list)`.
+// Add element `elem` to list `list`. `elem` must not be in any list already.
+// If `list` > 0 and `min_list` != None, update `*min_list = min(*min_list, list)`.
 pub(crate) fn list_add(
     elem: LUInt,
     list: LUInt,
@@ -74,8 +75,8 @@ pub(crate) fn list_add(
     }
 }
 
-/// Remove element `elem` from its list. If `elem` was not in a list before,
-/// then do nothing.
+// Remove element `elem` from its list. If `elem` was not in a list before,
+// then do nothing.
 pub(crate) fn list_remove(flink: &mut [LUInt], blink: &mut [LUInt], elem: LUInt) {
     flink[blink[elem as usize] as usize] = flink[elem as usize];
     blink[flink[elem as usize] as usize] = blink[elem as usize];
@@ -83,7 +84,7 @@ pub(crate) fn list_remove(flink: &mut [LUInt], blink: &mut [LUInt], elem: LUInt)
     blink[elem as usize] = elem;
 }
 
-/// Remove element `elem` from its list (if in a list) and add it to list `list`.
+// Remove element `elem` from its list (if in a list) and add it to list `list`.
 pub(crate) fn list_move(
     elem: LUInt,
     list: LUInt,
@@ -96,9 +97,9 @@ pub(crate) fn list_move(
     list_add(elem, list, flink, blink, nelem, min_list);
 }
 
-/// Swap elements `e1` and `e2`, which both must be in a list. If `e1` and `e2`
-/// are in the same list, then their positions are swapped. If they are in
-/// different lists, then each is moved to the other's list.
+// Swap elements `e1` and `e2`, which both must be in a list. If `e1` and `e2`
+// are in the same list, then their positions are swapped. If they are in
+// different lists, then each is moved to the other's list.
 pub(crate) fn list_swap(flink: &mut [LUInt], blink: &mut [LUInt], e1: LUInt, e2: LUInt) {
     let e1next = flink[e1 as usize];
     let e2next = flink[e2 as usize];

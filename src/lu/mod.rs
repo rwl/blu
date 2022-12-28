@@ -1,14 +1,14 @@
-mod build_factors;
-mod condest;
 pub(crate) mod def;
-mod dfs;
-mod factorize_bump;
 pub(crate) mod file;
-mod garbage_perm;
-pub(crate) mod initialize;
 pub(crate) mod list;
 pub(crate) mod lu;
 pub(crate) mod markowitz;
+
+mod build_factors;
+mod condest;
+mod dfs;
+mod factorize_bump;
+mod garbage_perm;
 mod matrix_norm;
 mod pivot;
 mod residual_test;
@@ -21,21 +21,15 @@ mod solve_symbolic;
 mod solve_triangular;
 mod update;
 
+pub use lu::LU;
+
 pub(crate) use build_factors::build_factors;
-pub(crate) use condest::{condest, normest};
-pub(crate) use dfs::dfs;
+pub(crate) use condest::condest;
 pub(crate) use factorize_bump::factorize_bump;
-pub(crate) use garbage_perm::garbage_perm;
-pub(crate) use lu::LU;
-pub(crate) use markowitz::markowitz;
-pub(crate) use matrix_norm::matrix_norm;
-pub(crate) use pivot::pivot;
 pub(crate) use residual_test::residual_test;
 pub(crate) use setup_bump::setup_bump;
 pub(crate) use singletons::singletons;
 pub(crate) use solve_dense::solve_dense;
 pub(crate) use solve_for_update::solve_for_update;
 pub(crate) use solve_sparse::solve_sparse;
-pub(crate) use solve_symbolic::solve_symbolic;
-pub(crate) use solve_triangular::solve_triangular;
 pub(crate) use update::update;

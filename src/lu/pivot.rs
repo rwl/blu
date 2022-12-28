@@ -1,6 +1,26 @@
 // Copyright (C) 2016-2019 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
+
+use crate::lu::def::*;
+use crate::lu::file::*;
+use crate::lu::list::*;
+use crate::lu::LU;
+use crate::LUInt;
+use crate::Status;
+use std::time::Instant;
+
+// The maximum number of off-diagonal elements in the pivot column handled
+// by `pivot_small()`. `pivot_small()` uses `i64` integers
+// for bit masking. Since each row to be updated requires one bit, the routine
+// can handle pivot operations for up to 64 rows (excluding pivot row).
 //
+// Since int64_t is optional in the C99 standard, using it limits portability
+// of the code. However, using a fixed threshold to switch between
+// pivot_small() and pivot_any() guarantees identical pivot operations
+// on all architectures. If int64_t does not exist, then the user can adapt it
+// by hand and is aware of it.
+const MAXROW_SMALL: LUInt = 64;
+
 // Pivot elimination from active submatrix
 //
 // pivot() is the only routine callable from extern. It branches out the
@@ -25,27 +45,7 @@
 // sparser factors. I assume the reason is tie breaking in the Markowitz
 // search and that in Forrest's method updated elements are moved to the end
 // of the column (and likewise for rows).
-
-use crate::blu::*;
-use crate::lu::def::*;
-use crate::lu::file::*;
-use crate::lu::list::*;
-use crate::lu::LU;
-use std::time::Instant;
-
-// MAXROW_SMALL is the maximum number of off-diagonal elements in the pivot
-// column handled by pivot_small(). pivot_small() uses int64_t integers
-// for bit masking. Since each row to be updated requires one bit, the routine
-// can handle pivot operations for up to 64 rows (excluding pivot row).
-//
-// Since int64_t is optional in the C99 standard, using it limits portability
-// of the code. However, using a fixed threshold to switch between
-// pivot_small() and pivot_any() guarantees identical pivot operations
-// on all architectures. If int64_t does not exist, then the user can adapt it
-// by hand and is aware of it.
-const MAXROW_SMALL: LUInt = 64;
-
-pub(crate) fn pivot(lu: &mut LU) -> LUInt {
+pub(crate) fn pivot(lu: &mut LU) -> Status {
     let m = lu.m;
     let rank = lu.rank;
     let l_mem = lu.l_mem;
@@ -61,7 +61,7 @@ pub(crate) fn pivot(lu: &mut LU) -> LUInt {
     let nz_col = w_end[pivot_col as usize] - w_begin[pivot_col as usize];
     let nz_row = w_end[(m + pivot_row) as usize] - w_begin[(m + pivot_row) as usize];
 
-    let mut status = BLU_OK;
+    let mut status = Status::OK;
     let tic = Instant::now();
 
     assert!(nz_row >= 1);
@@ -72,15 +72,15 @@ pub(crate) fn pivot(lu: &mut LU) -> LUInt {
     let need = nz_col; // # off-diagonals in pivot col + end marker (-1)
     if room < need {
         lu.addmem_l = need - room;
-        status = BLU_REALLOCATE;
+        status = Status::Reallocate;
     }
     let room = u_mem - lu.u_begin[rank as usize];
     let need = nz_row - 1; // # off-diagonals in pivot row
     if room < need {
         lu.addmem_u = need - room;
-        status = BLU_REALLOCATE;
+        status = Status::Reallocate;
     }
-    if status != BLU_OK {
+    if status != Status::OK {
         return status;
     }
 
@@ -99,7 +99,7 @@ pub(crate) fn pivot(lu: &mut LU) -> LUInt {
 
     // Remove all entries in columns whose maximum entry has dropped below
     // absolute pivot tolerance.
-    if status == BLU_OK {
+    if status == Status::OK {
         for pos in lu.u_begin[rank as usize]..lu.u_begin[(rank + 1) as usize] {
             let j = lu.u_index[pos as usize];
             assert_ne!(j, pivot_col);
@@ -114,7 +114,7 @@ pub(crate) fn pivot(lu: &mut LU) -> LUInt {
     status
 }
 
-fn pivot_any(lu: &mut LU) -> LUInt {
+fn pivot_any(lu: &mut LU) -> Status {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -207,7 +207,7 @@ fn pivot_any(lu: &mut LU) -> LUInt {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return BLU_REALLOCATE;
+        return Status::Reallocate;
     }
 
     // get pointer to U
@@ -457,10 +457,10 @@ fn pivot_any(lu: &mut LU) -> LUInt {
         );
     }
 
-    BLU_OK
+    Status::OK
 }
 
-fn pivot_small(lu: &mut LU) -> LUInt {
+fn pivot_small(lu: &mut LU) -> Status {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -557,7 +557,7 @@ fn pivot_small(lu: &mut LU) -> LUInt {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return BLU_REALLOCATE;
+        return Status::Reallocate;
     }
 
     // get pointer to U
@@ -832,10 +832,10 @@ fn pivot_small(lu: &mut LU) -> LUInt {
         );
     }
 
-    BLU_OK
+    Status::OK
 }
 
-fn pivot_singleton_row(lu: &mut LU) -> LUInt {
+fn pivot_singleton_row(lu: &mut LU) -> Status {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -925,10 +925,10 @@ fn pivot_singleton_row(lu: &mut LU) -> LUInt {
     list_remove(colcount_flink, colcount_blink, pivot_col);
     list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
-    BLU_OK
+    Status::OK
 }
 
-fn pivot_singleton_col(lu: &mut LU) -> LUInt {
+fn pivot_singleton_col(lu: &mut LU) -> Status {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -1024,10 +1024,10 @@ fn pivot_singleton_col(lu: &mut LU) -> LUInt {
     list_remove(colcount_flink, colcount_blink, pivot_col);
     list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
-    BLU_OK
+    Status::OK
 }
 
-fn pivot_doubleton_col(lu: &mut LU) -> LUInt {
+fn pivot_doubleton_col(lu: &mut LU) -> Status {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -1055,7 +1055,7 @@ fn pivot_doubleton_col(lu: &mut LU) -> LUInt {
     let marked = &mut lu.iwork0;
 
     let mut cbeg = w_begin[pivot_col as usize]; // changed by file compression
-    let mut cend = w_end[pivot_col as usize];
+    let cend = w_end[pivot_col as usize];
     let mut rbeg = w_begin[(m + pivot_row) as usize];
     let mut rend = w_end[(m + pivot_row) as usize];
     let cnz1 = cend - cbeg - 1; // nz in pivot column except pivot
@@ -1102,7 +1102,7 @@ fn pivot_doubleton_col(lu: &mut LU) -> LUInt {
             pad,
         );
         cbeg = w_begin[pivot_col as usize];
-        cend = w_end[pivot_col as usize];
+        // cend = w_end[pivot_col as usize];
         rbeg = w_begin[(m + pivot_row) as usize];
         rend = w_end[(m + pivot_row) as usize];
         room = w_end[(2 * m) as usize] - w_begin[(2 * m) as usize];
@@ -1110,7 +1110,7 @@ fn pivot_doubleton_col(lu: &mut LU) -> LUInt {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return BLU_REALLOCATE;
+        return Status::Reallocate;
     }
 
     // Column file update //
@@ -1347,7 +1347,7 @@ fn pivot_doubleton_col(lu: &mut LU) -> LUInt {
         );
     }
 
-    BLU_OK
+    Status::OK
 }
 
 fn remove_col(lu: &mut LU, j: LUInt) {

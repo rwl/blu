@@ -1,16 +1,16 @@
 // Copyright (C) 2016-2019 ERGO-Code
 // Copyright (C) 2022-2023 Richard Lincoln
 
-use crate::blu::*;
 use crate::lu::list::list_remove;
 use crate::lu::markowitz::markowitz;
 use crate::lu::pivot::pivot;
 use crate::lu::LU;
+use crate::Status;
 
-/// Bump factorization driver routine.
-pub(crate) fn factorize_bump(lu: &mut LU) -> LUInt {
+// Bump factorization driver routine.
+pub(crate) fn factorize_bump(lu: &mut LU) -> Status {
     let m = lu.m;
-    let mut status = BLU_OK;
+    let mut status = Status::OK;
 
     while lu.rank + lu.rankdef < m {
         // Find pivot element. Markowitz search need not be called if the
@@ -31,7 +31,7 @@ pub(crate) fn factorize_bump(lu: &mut LU) -> LUInt {
             assert_eq!(lu.pinv[lu.pivot_row as usize], -1);
             assert_eq!(lu.qinv[lu.pivot_col as usize], -1);
             status = pivot(lu);
-            if status != BLU_OK {
+            if status != Status::OK {
                 break;
             }
             lu.pinv[lu.pivot_row as usize] = lu.rank;
