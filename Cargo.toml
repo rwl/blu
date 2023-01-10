@@ -1,6 +1,6 @@
 [package]
 name = "blu"
-version = "0.1.0"
+version = "0.2.0"
 description = "LU factorization with dynamic Markowitz search and columnwise threshold pivoting"
 edition = "2021"
 license = "MIT"
