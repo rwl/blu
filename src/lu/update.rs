@@ -23,17 +23,17 @@ macro_rules! flip {
 // Find position of index j in index[start..end-1].
 // If end < 0, then the search stops at the first nonnegative index.
 // Return end if not found.
-fn find(j: LUInt, index: &[LUInt], mut start: LUInt, end: LUInt) -> LUInt {
+fn find(j: usize, index: &[LUInt], mut start: LUInt, end: LUInt) -> LUInt {
     if end >= 0 {
-        while start < end && index[start as usize] != j {
+        while start < end && index[start as usize] != j as LUInt {
             start += 1;
         }
         start
     } else {
-        while index[start as usize] != j && index[start as usize] >= 0 {
+        while index[start as usize] != j as LUInt && index[start as usize] >= 0 {
             start += 1;
         }
-        if index[start as usize] == j {
+        if index[start as usize] == j as LUInt {
             start
         } else {
             end
@@ -49,22 +49,22 @@ fn find(j: LUInt, index: &[LUInt], mut start: LUInt, end: LUInt) -> LUInt {
 // marked[j] >= 0 for all nodes j. On return some elements of marked
 // are set to zero.
 fn bfs_path(
-    m: LUInt, // graph has m nodes
-    j0: LUInt,
+    m: usize, // graph has m nodes
+    j0: usize,
     begin: &[LUInt],
     end: &[LUInt],
     index: &[LUInt],
     jlist: &mut [LUInt],
     marked: &mut [LUInt],
     queue: &mut [LUInt], // size m workspace
-) -> LUInt {
+) -> usize {
     // lu_int j, k, pos, front, tail = 1, top = m, found = 0;
     let mut j: LUInt = -1;
     let mut tail: LUInt = 1;
-    let mut top: LUInt = m;
+    let mut top = m;
     let mut found: LUInt = 0;
 
-    queue[0] = j0;
+    queue[0] = j0 as LUInt;
     // for (front = 0; front < tail && !found; front++)
     for front in 0..tail {
         if found != 0 {
@@ -73,7 +73,7 @@ fn bfs_path(
         j = queue[front as usize];
         for pos in begin[j as usize]..end[j as usize] {
             let k = index[pos as usize];
-            if k == j0 {
+            if k == j0 as LUInt {
                 found = 1;
                 break;
             }
@@ -87,7 +87,7 @@ fn bfs_path(
     }
     if found != 0 {
         // build path (j0,..,j)
-        while j != j0 {
+        while j != j0 as LUInt {
             // jlist[--top] = j;
             top -= 1;
             jlist[top as usize] = j;
@@ -96,7 +96,7 @@ fn bfs_path(
         }
         // jlist[--top] = j0;
         top -= 1;
-        jlist[top as usize] = j0;
+        jlist[top as usize] = j0 as LUInt;
     }
     for pos in 0..tail {
         marked[queue[pos as usize] as usize] = 0; // reset
@@ -112,19 +112,19 @@ fn bfs_path(
 // must have index[slot] > GAP. index[0] must be unused. On return
 // index[1..begin[m]-1] contains the data of nonempty lines. All empty lines
 // begin at slot 0. Each two subsequent lines are separated by one gap.
-fn compress_packed(m: LUInt, begin: &mut [LUInt], index: &mut [LUInt], value: &mut [f64]) -> LUInt {
+fn compress_packed(m: usize, begin: &mut [LUInt], index: &mut [LUInt], value: &mut [f64]) -> usize {
     let mut nz = 0;
     let end = begin[m as usize];
 
     // Mark the beginning of each nonempty line.
     for i in 0..m {
-        let p = begin[i as usize];
+        let p = begin[i];
         if index[p as usize] == GAP {
-            begin[i as usize] = 0;
+            begin[i] = 0;
         } else {
             assert!(index[p as usize] > GAP);
-            begin[i as usize] = index[p as usize]; // temporarily store index here
-            index[p as usize] = GAP - i - 1; // mark beginning of line i
+            begin[i] = index[p as usize]; // temporarily store index here
+            index[p as usize] = GAP - i as LUInt - 1; // mark beginning of line i
         }
     }
 
@@ -173,7 +173,7 @@ fn compress_packed(m: LUInt, begin: &mut [LUInt], index: &mut [LUInt], value: &m
 //       inefficient (in particular the list swaps). However, usually nswap
 //       is a small number (2, 3, 4, ..), so we don't need to give too much
 //       attention to it.
-fn permute(lu: &mut LU, jlist: &[LUInt], nswap: LUInt) {
+fn permute(lu: &mut LU, jlist: &[LUInt], nswap: usize) {
     let pmap = &mut pmap!(lu);
     let qmap = &mut qmap!(lu);
     let u_begin = &mut lu.u_begin;
@@ -188,125 +188,125 @@ fn permute(lu: &mut LU, jlist: &[LUInt], nswap: LUInt) {
     let w_index = &mut lu.w_index;
     let w_value = &mut lu.w_value;
 
-    let j0 = jlist[0];
-    let jn = jlist[nswap as usize];
-    let i0 = pmap[j0 as usize];
-    let in_ = pmap[jn as usize];
+    let j0 = jlist[0] as usize;
+    let jn = jlist[nswap as usize] as usize;
+    let i0 = pmap[j0] as usize;
+    let in_ = pmap[jn as usize] as usize;
 
     // lu_int begin, end, i, inext, j, jprev, n, where_;
     // double piv;
 
     assert!(nswap >= 1);
-    assert_eq!(qmap[i0 as usize], j0);
-    assert_eq!(qmap[in_ as usize], jn);
-    assert_eq!(row_pivot[i0 as usize], 0.0);
-    assert_eq!(col_pivot[j0 as usize], 0.0);
+    assert_eq!(qmap[i0] as usize, j0);
+    assert_eq!(qmap[in_] as usize, jn);
+    assert_eq!(row_pivot[i0], 0.0);
+    assert_eq!(col_pivot[j0], 0.0);
 
     // Update row file //
 
-    let begin = w_begin[jn as usize]; // keep for later
-    let mut end = w_end[jn as usize];
-    let piv = col_pivot[jn as usize];
+    let begin = w_begin[jn]; // keep for later
+    let end = w_end[jn];
+    let piv = col_pivot[jn];
 
     // for (n = nswap; n > 0; n--)  TODO: check
     for n in (1..=nswap).rev() {
-        let j = jlist[n as usize];
-        let jprev = jlist[(n - 1) as usize];
+        let j = jlist[n] as usize;
+        let jprev = jlist[n - 1] as usize;
 
         // When row i was indexed by jprev in the row file before,
         // then it is indexed by j now.
-        w_begin[j as usize] = w_begin[jprev as usize];
-        w_end[j as usize] = w_end[jprev as usize];
+        w_begin[j] = w_begin[jprev];
+        w_end[j] = w_end[jprev];
         list_swap(w_flink, w_blink, j, jprev);
 
         // That row must have an entry in column j because (jprev,j) is an
         // edge in the augmenting path. This entry becomes a pivot element.
         // If jprev is not the first node in the path, then it has an entry
         // in the row (the old pivot) which becomes an off-diagonal entry now.
-        let where_ = find(j, w_index, w_begin[j as usize], w_end[j as usize]);
-        assert!(where_ < w_end[j as usize]);
+        let where_ = find(j, w_index, w_begin[j], w_end[j]);
+        assert!(where_ < w_end[j]);
         if n > 1 {
             assert_ne!(jprev, j0);
-            w_index[where_ as usize] = jprev;
-            col_pivot[j as usize] = w_value[where_ as usize];
-            assert_ne!(col_pivot[j as usize], 0.0);
+            w_index[where_ as usize] = jprev as LUInt;
+            col_pivot[j] = w_value[where_ as usize];
+            assert_ne!(col_pivot[j], 0.0);
             w_value[where_ as usize] = col_pivot[jprev as usize];
         } else {
             assert_eq!(jprev, j0);
-            col_pivot[j as usize] = w_value[where_ as usize];
-            assert_ne!(col_pivot[j as usize], 0.0);
-            w_end[j as usize] -= 1;
-            w_index[where_ as usize] = w_index[w_end[j as usize] as usize];
-            w_value[where_ as usize] = w_value[w_end[j as usize] as usize];
+            col_pivot[j] = w_value[where_ as usize];
+            assert_ne!(col_pivot[j], 0.0);
+            w_end[j] -= 1;
+            w_index[where_ as usize] = w_index[w_end[j] as usize];
+            w_value[where_ as usize] = w_value[w_end[j] as usize];
         }
-        lu.min_pivot = f64::min(lu.min_pivot, col_pivot[j as usize].abs());
-        lu.max_pivot = f64::max(lu.max_pivot, col_pivot[j as usize].abs());
+        lu.min_pivot = f64::min(lu.min_pivot, col_pivot[j].abs());
+        lu.max_pivot = f64::max(lu.max_pivot, col_pivot[j].abs());
     }
 
-    w_begin[j0 as usize] = begin;
-    w_end[j0 as usize] = end;
-    let where_ = find(j0, w_index, w_begin[j0 as usize], w_end[j0 as usize]);
-    assert!(where_ < w_end[j0 as usize]);
-    w_index[where_ as usize] = jn;
-    col_pivot[j0 as usize] = w_value[where_ as usize];
-    assert_ne!(col_pivot[j0 as usize], 0.0);
+    w_begin[j0] = begin;
+    w_end[j0] = end as LUInt;
+    let where_ = find(j0, w_index, w_begin[j0], w_end[j0]);
+    assert!(where_ < w_end[j0]);
+    w_index[where_ as usize] = jn as LUInt;
+    col_pivot[j0] = w_value[where_ as usize];
+    assert_ne!(col_pivot[j0], 0.0);
     w_value[where_ as usize] = piv;
-    lu.min_pivot = f64::min(lu.min_pivot, col_pivot[j0 as usize].abs());
-    lu.max_pivot = f64::max(lu.max_pivot, col_pivot[j0 as usize].abs());
+    lu.min_pivot = f64::min(lu.min_pivot, col_pivot[j0].abs());
+    lu.max_pivot = f64::max(lu.max_pivot, col_pivot[j0].abs());
 
     // Update column file //
 
-    let begin = u_begin[i0 as usize]; // keep for later
+    let begin = u_begin[i0]; // keep for later
 
     for n in 0..nswap {
-        let i = pmap[jlist[n as usize] as usize];
-        let inext = pmap[jlist[(n + 1) as usize] as usize];
+        let i = pmap[jlist[n] as usize] as usize;
+        let inext = pmap[jlist[n + 1] as usize];
 
         // When column j indexed by inext in the column file before,
         // then it is indexed by i now.
-        u_begin[i as usize] = u_begin[inext as usize];
+        u_begin[i] = u_begin[inext as usize];
 
         // That column must have an entry in row i because there is an
         // edge in the augmenting path. This entry becomes a pivot element.
         // There is also an entry in row inext (the old pivot), which now
         // becomes an off-diagonal entry.
-        let where_ = find(i, u_index, u_begin[i as usize], -1);
+        let where_ = find(i, u_index, u_begin[i], -1);
         assert!(where_ >= 0);
         u_index[where_ as usize] = inext;
-        row_pivot[i as usize] = u_value[where_ as usize];
-        assert_ne!(row_pivot[i as usize], 0.0);
+        row_pivot[i] = u_value[where_ as usize];
+        assert_ne!(row_pivot[i], 0.0);
         u_value[where_ as usize] = row_pivot[inext as usize];
     }
 
-    u_begin[in_ as usize] = begin;
-    let where_ = find(in_, u_index, u_begin[in_ as usize], -1);
+    u_begin[in_] = begin;
+    let where_ = find(in_, u_index, u_begin[in_], -1);
     assert!(where_ >= 0);
-    row_pivot[in_ as usize] = u_value[where_ as usize];
-    assert_ne!(row_pivot[in_ as usize], 0.0);
+    row_pivot[in_] = u_value[where_ as usize];
+    assert_ne!(row_pivot[in_], 0.0);
     // for (end = where_; Uindex[end] >= 0; end++) ;
-    end = where_;
-    while u_index[end as usize] >= 0 {
+    let mut end = where_ as usize;
+    while u_index[end] >= 0 {
         end += 1;
     }
-    u_index[where_ as usize] = u_index[(end - 1) as usize];
-    u_value[where_ as usize] = u_value[(end - 1) as usize];
-    u_index[(end - 1) as usize] = -1;
+    u_index[where_ as usize] = u_index[end - 1];
+    u_value[where_ as usize] = u_value[end - 1];
+    u_index[end - 1] = -1;
 
     // Update row-column mappings //
 
     // for (n = nswap; n > 0; n--)
     for n in (1..=nswap).rev() {
-        let j = jlist[n as usize];
-        let i = pmap[jlist[(n - 1) as usize] as usize];
+        let j = jlist[n];
+        let i = pmap[jlist[n - 1] as usize];
         pmap[j as usize] = i;
         qmap[i as usize] = j;
     }
-    pmap[j0 as usize] = in_;
-    qmap[in_ as usize] = j0;
+    pmap[j0] = in_ as LUInt;
+    qmap[in_] = j0 as LUInt;
 
     if cfg!(feature = "debug") {
         for n in 0..=nswap {
-            let j = jlist[n as usize];
+            let j = jlist[n];
             let i = pmap[j as usize];
             assert_eq!(row_pivot[i as usize], col_pivot[j as usize]);
         }
@@ -415,13 +415,13 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     // let (iwork1, iwork2) = lu.iwork1.split_at_mut(m as usize);
     // let work1 = &mut lu.work1;
 
-    let jpivot = lu.btran_for_update;
-    let ipivot = pmap!(lu)[jpivot as usize];
-    let oldpiv = lu.col_pivot[jpivot as usize];
+    let jpivot = lu.btran_for_update.unwrap();
+    let ipivot = pmap![lu][jpivot] as usize;
+    let oldpiv = lu.col_pivot[jpivot];
     let mut status = Status::OK;
 
-    let ipivot_vec = vec![ipivot]; // FIXME
-    let jpivot_vec = vec![jpivot];
+    let ipivot_vec = vec![0; ipivot]; // FIXME
+    let jpivot_vec = vec![0; jpivot];
 
     // lu_int i, j, jnext, n, nz, t, put, pos, end, where_, room, grow, used,need,M;
     // lu_int have_diag, intersect, istriangular, nz_roweta, nz_spike;
@@ -442,28 +442,28 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     // if present, move diagonal element to end of spike
     let mut spike_diag = 0.0;
     let mut have_diag = 0;
-    let mut put = lu.u_begin[m as usize];
+    let mut put = lu.u_begin[m] as usize;
     // for (pos = put; (i = Uindex[pos]) >= 0; pos++)
     let mut pos = put;
-    while lu.u_index[pos as usize] >= 0 {
-        let i = lu.u_index[pos as usize];
-        if i != ipivot {
-            lu.u_index[put as usize] = i;
-            lu.u_value[put as usize] = lu.u_value[pos as usize];
+    while lu.u_index[pos] >= 0 {
+        let i = lu.u_index[pos];
+        if i != ipivot as LUInt {
+            lu.u_index[put] = i;
+            lu.u_value[put] = lu.u_value[pos];
             put += 1;
         } else {
-            spike_diag = lu.u_value[pos as usize];
+            spike_diag = lu.u_value[pos];
             have_diag = 1;
         }
         pos += 1;
     }
     if have_diag != 0 {
-        lu.u_index[put as usize] = ipivot;
-        lu.u_value[put as usize] = spike_diag;
+        lu.u_index[put] = ipivot as LUInt;
+        lu.u_value[put] = spike_diag;
     }
-    let nz_spike = put - lu.u_begin[m as usize]; // nz excluding diagonal
+    let nz_spike = put - lu.u_begin[m] as usize; // nz excluding diagonal
 
-    let nz_roweta = r_begin!(lu)[(nforrest + 1) as usize] - r_begin!(lu)[nforrest as usize];
+    let nz_roweta = (r_begin![lu][nforrest + 1] - r_begin![lu][nforrest]) as usize;
 
     // Compute pivot //
 
@@ -487,20 +487,20 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     // M = ++lu.marker;
     lu.marker += 1;
     let marker = lu.marker;
-    for pos in r_begin!(lu)[nforrest as usize]..r_begin!(lu)[(nforrest + 1) as usize] {
-        let i = lu.l_index[pos as usize];
-        marked!(lu)[i as usize] = marker;
-        lu.work1[i as usize] = lu.l_value[pos as usize];
+    for pos in r_begin![lu][nforrest]..r_begin![lu][nforrest + 1] {
+        let i = lu.l_index[pos as usize] as usize;
+        marked![lu][i] = marker;
+        lu.work1[i] = lu.l_value[pos as usize];
     }
 
     // compute newpiv and count intersection
     let mut newpiv = spike_diag;
     let mut intersect = 0;
-    for pos in lu.u_begin[m as usize]..lu.u_begin[m as usize] + nz_spike {
-        let i = lu.u_index[pos as usize];
+    for pos in lu.u_begin[m] as usize..lu.u_begin[m] as usize + nz_spike {
+        let i = lu.u_index[pos] as usize;
         assert_ne!(i, ipivot);
-        if marked!(lu)[i as usize] == marker {
-            newpiv -= lu.u_value[pos as usize] * lu.work1[i as usize];
+        if marked![lu][i] == marker {
+            newpiv -= lu.u_value[pos] * lu.work1[i];
             intersect += 1;
         }
     }
@@ -518,20 +518,20 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
 
     // calculate bound on file growth
     let mut grow = 0;
-    for pos in lu.u_begin[m as usize]..(lu.u_begin[m as usize] + nz_spike) {
-        let i = lu.u_index[pos as usize];
+    for pos in lu.u_begin[m] as usize..lu.u_begin[m] as usize + nz_spike {
+        let i = lu.u_index[pos] as usize;
         assert_ne!(i, ipivot);
-        let j = qmap!(lu)[i as usize];
-        let jnext = lu.w_flink[j as usize];
-        if lu.w_end[j as usize] == lu.w_begin[jnext as usize] {
-            let nz = lu.w_end[j as usize] - lu.w_begin[j as usize];
+        let j = qmap![lu][i] as usize;
+        let jnext = lu.w_flink[j] as usize;
+        if lu.w_end[j] == lu.w_begin[jnext] {
+            let nz = (lu.w_end[j] - lu.w_begin[j]) as usize;
             grow += nz + 1; // row including spike entry
-            grow += (stretch as LUInt) * (nz + 1) + pad; // extra room
+            grow += (stretch * (nz + 1) as f64) as usize + pad; // extra room
         }
     }
 
     // reallocate if necessary
-    let room = lu.w_end[m as usize] - lu.w_begin[m as usize];
+    let room = (lu.w_end[m] - lu.w_begin[m]) as usize;
     if grow > room {
         lu.addmem_w = grow - room;
         status = Status::Reallocate;
@@ -541,17 +541,17 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     // remove column jpivot from row file
     let mut nz = 0;
     // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-    pos = lu.u_begin[ipivot as usize];
-    while lu.u_index[pos as usize] >= 0 {
-        let i = lu.u_index[pos as usize];
-        let j = qmap!(lu)[i as usize];
+    let mut pos = lu.u_begin[ipivot] as usize;
+    while lu.u_index[pos] >= 0 {
+        let i = lu.u_index[pos] as usize;
+        let j = qmap![lu][i] as usize;
         // end = Wend[j]--;
-        let end = lu.w_end[j as usize];
-        lu.w_end[j as usize] -= 1;
-        let where_ = find(jpivot, &lu.w_index, lu.w_begin[j as usize], end);
-        assert!(where_ < end);
-        lu.w_index[where_ as usize] = lu.w_index[(end - 1) as usize];
-        lu.w_value[where_ as usize] = lu.w_value[(end - 1) as usize];
+        let end = lu.w_end[j] as usize;
+        lu.w_end[j] -= 1;
+        let where_ = find(jpivot, &lu.w_index, lu.w_begin[j], end as LUInt);
+        assert!(where_ < end as LUInt);
+        lu.w_index[where_ as usize] = lu.w_index[end - 1];
+        lu.w_value[where_ as usize] = lu.w_value[end - 1];
         nz += 1;
         pos += 1;
     }
@@ -559,29 +559,29 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
 
     // erase column jpivot in column file
     // for (pos = Ubegin[ipivot]; Uindex[pos] >= 0; pos++)
-    pos = lu.u_begin[ipivot as usize];
-    while lu.u_index[pos as usize] >= 0 {
-        lu.u_index[pos as usize] = GAP;
+    let mut pos = lu.u_begin[ipivot] as usize;
+    while lu.u_index[pos] >= 0 {
+        lu.u_index[pos] = GAP;
         pos += 1;
     }
 
     // set column pointers to spike, chop off diagonal
-    lu.u_begin[ipivot as usize] = lu.u_begin[m as usize];
-    lu.u_begin[m as usize] += nz_spike;
+    lu.u_begin[ipivot] = lu.u_begin[m as usize];
+    lu.u_begin[m as usize] += nz_spike as LUInt;
     // Uindex[Ubegin[m]++] = GAP;
     lu.u_index[lu.u_begin[m as usize] as usize] = GAP;
     lu.u_begin[m as usize] += 1;
 
     // insert spike into row file
     // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-    pos = lu.u_begin[ipivot as usize];
-    while lu.u_index[pos as usize] >= 0 {
-        let i = lu.u_index[pos as usize];
-        let j = qmap!(lu)[i as usize];
-        let jnext = lu.w_flink[j as usize];
-        if lu.w_end[j as usize] == lu.w_begin[jnext as usize] {
-            nz = lu.w_end[j as usize] - lu.w_begin[j as usize];
-            let room = 1 + (stretch as LUInt) * (nz + 1) + pad;
+    let mut pos = lu.u_begin[ipivot as usize] as usize;
+    while lu.u_index[pos] >= 0 {
+        let i = lu.u_index[pos] as usize;
+        let j = qmap![lu][i] as usize;
+        let jnext = lu.w_flink[j] as usize;
+        if lu.w_end[j] == lu.w_begin[jnext] {
+            nz = (lu.w_end[j] - lu.w_begin[j]) as usize;
+            let room = 1 + (stretch * (nz + 1) as f64) as usize + pad;
             file_reappend(
                 j,
                 m,
@@ -595,16 +595,16 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
             );
         }
         // end = Wend[j]++;
-        let end = lu.w_end[j as usize];
-        lu.w_end[j as usize] += 1;
-        lu.w_index[end as usize] = jpivot;
-        lu.w_value[end as usize] = lu.u_value[pos as usize];
+        let end = lu.w_end[j] as usize;
+        lu.w_end[j] += 1;
+        lu.w_index[end] = jpivot as LUInt;
+        lu.w_value[end] = lu.u_value[pos];
         pos += 1;
     }
     u_nz += nz_spike;
 
     // insert diagonal
-    lu.col_pivot[jpivot as usize] = spike_diag;
+    lu.col_pivot[jpivot] = spike_diag;
     lu.row_pivot[ipivot as usize] = spike_diag;
 
     // Test triangularity //
@@ -634,16 +634,16 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
             // let (iwork1, iwork2) = lu.iwork1.split_at_mut(m as usize);
             // let row_reach = iwork1;
             // let col_reach = iwork2;
-            let mut row_reach = vec![0; nreach as usize - 1]; // FIXME: iwork1
-            let mut col_reach = vec![0; nreach as usize - 1];
-            row_reach[0] = ipivot;
-            col_reach[0] = jpivot;
-            pos = r_begin!(lu)[nforrest as usize];
+            let mut row_reach: Vec<LUInt> = vec![0; nreach as usize - 1]; // FIXME: iwork1
+            let mut col_reach: Vec<LUInt> = vec![0; nreach as usize - 1];
+            row_reach[0] = ipivot as LUInt;
+            col_reach[0] = jpivot as LUInt;
+            let mut pos = r_begin![lu][nforrest] as usize;
             for n in 1..nreach {
-                let i = lu.l_index[pos as usize];
+                let i = lu.l_index[pos];
                 pos += 1;
                 row_reach[n as usize] = i;
-                col_reach[n as usize] = qmap!(lu)[i as usize];
+                col_reach[n as usize] = qmap![lu][i as usize];
             }
             lu.nsymperm_total += 1;
 
@@ -688,7 +688,7 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
                 iwork2,
             );
             assert!(top < m - 1);
-            assert_eq!(path[top as usize], jpivot);
+            assert_eq!(path[top], jpivot as LUInt);
 
             // let reach = iwork2;
 
@@ -726,16 +726,11 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
                 if !istriangular {
                     break;
                 }
-                let j = path[t as usize];
-                let jnext = path[(t + 1) as usize];
-                let where_ = find(
-                    jnext,
-                    &lu.w_index,
-                    lu.w_begin[j as usize],
-                    lu.w_end[j as usize],
-                );
-                assert!(where_ < lu.w_end[j as usize]);
-                lu.w_index[where_ as usize] = j; // take out for a moment
+                let j = path[t] as usize;
+                let jnext = path[t + 1] as usize;
+                let where_ = find(jnext, &lu.w_index, lu.w_begin[j], lu.w_end[j]);
+                assert!(where_ < lu.w_end[j]);
+                lu.w_index[where_ as usize] = j as LUInt; // take out for a moment
                 rtop = dfs(
                     j,
                     &lu.w_begin,
@@ -747,10 +742,10 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
                     &mut marked!(lu),
                     marker,
                 );
-                assert_eq!(reach[rtop as usize], j);
-                reach[rtop as usize] = jnext;
-                lu.w_index[where_ as usize] = jnext; /* restore */
-                istriangular = marked!(lu)[jnext as usize] != marker;
+                assert_eq!(reach[rtop as usize] as usize, j);
+                reach[rtop as usize] = jnext as LUInt;
+                lu.w_index[where_ as usize] = jnext as LUInt; /* restore */
+                istriangular = marked![lu][jnext] != marker;
             }
             (istriangular, rtop)
         };
@@ -767,7 +762,7 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
             let reach = iwork2;
             let pstack = &mut lu.work1;
 
-            let j = path[(m - 1) as usize];
+            let j = path[m - 1] as usize;
             rtop = dfs(
                 j,
                 &lu.w_begin,
@@ -779,19 +774,20 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
                 &mut marked!(lu),
                 marker,
             );
-            assert_eq!(reach[rtop as usize], j);
-            reach[rtop as usize] = jpivot;
-            marked!(lu)[j as usize] -= 1; // unmark for a moment
-                                          // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
-            pos = lu.u_begin[ipivot as usize];
-            while lu.u_index[pos as usize] >= 0 {
-                let i = lu.u_index[pos as usize];
-                if marked!(lu)[qmap!(lu)[i as usize] as usize] == marker {
+            assert_eq!(reach[rtop as usize], j as LUInt);
+            reach[rtop as usize] = jpivot as LUInt;
+            marked![lu][j] -= 1; // unmark for a moment
+
+            // for (pos = Ubegin[ipivot]; (i = Uindex[pos]) >= 0; pos++)
+            let mut pos = lu.u_begin[ipivot] as usize;
+            while lu.u_index[pos] >= 0 {
+                let i = lu.u_index[pos] as usize;
+                if marked![lu][qmap![lu][i] as usize] == marker {
                     istriangular = false;
                 }
                 pos += 1;
             }
-            marked!(lu)[j as usize] += 1; /* restore */
+            marked![lu][j] += 1; /* restore */
         }
 
         // If U is permuted triangular, then permute to zero-free diagonal.
@@ -801,26 +797,22 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
         if istriangular {
             let nswap = m - top - 1;
             // permute(lu, &path[top as usize..], nswap);
-            permute(
-                lu,
-                &iwork1!(lu)[top as usize..(top + nswap) as usize].to_vec(),
-                nswap,
-            ); // usually nswap is a small number
+            permute(lu, &iwork1![lu][top..top + nswap].to_vec(), nswap); // usually nswap is a small number
             u_nz -= 1;
 
             let (iwork1, iwork2) = iwork1!(lu).split_at_mut(m as usize);
             // let path = iwork1;
             let reach = iwork2;
 
-            assert_eq!(reach[rtop as usize], jpivot);
+            assert_eq!(reach[rtop], jpivot as LUInt);
             // let col_reach = &mut reach[rtop as usize..]; /* stored in iwork2 */
             // let row_reach = &mut iwork1[rtop as usize..];
             let nreach = m - rtop;
-            let col_reach = reach[rtop as usize..(rtop + nreach) as usize].to_vec(); /* stored in iwork2 */
+            let col_reach = reach[rtop..rtop + nreach].to_vec(); /* stored in iwork2 */
             // FIXME: iwork1
-            let mut row_reach = iwork1[rtop as usize..(rtop + nreach) as usize].to_vec();
+            let mut row_reach = iwork1[rtop..rtop + nreach].to_vec();
             for n in 0..nreach {
-                row_reach[n as usize] = pmap!(lu)[col_reach[n as usize] as usize];
+                row_reach[n] = pmap![lu][col_reach[n] as usize];
             }
             (istriangular, Some(nreach), Some(row_reach), Some(col_reach))
         } else {
@@ -833,60 +825,60 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     let (nreach, row_reach, col_reach) = if !istriangular {
         // remove row ipivot from column file
         // for (pos = Wbegin[jpivot]; pos < Wend[jpivot]; pos++)
-        pos = lu.w_begin[jpivot as usize];
-        while pos < lu.w_end[jpivot as usize] {
-            let j = lu.w_index[pos as usize];
+        let mut pos = lu.w_begin[jpivot];
+        while pos < lu.w_end[jpivot] {
+            let j = lu.w_index[pos as usize] as usize;
             assert_ne!(j, jpivot);
-            let mut where_ = -1;
+            let mut where_ = None;
             // for (end = Ubegin[pmap[j]]; (i = Uindex[end]) >= 0; end++)
-            let mut end = lu.u_begin[pmap!(lu)[j as usize] as usize];
-            while lu.u_index[end as usize] >= 0 {
-                let i = lu.u_index[end as usize];
+            let mut end = lu.u_begin[pmap![lu][j] as usize] as usize;
+            while lu.u_index[end] >= 0 {
+                let i = lu.u_index[end] as usize;
                 if i == ipivot {
-                    where_ = end;
+                    where_ = Some(end);
                 }
                 end += 1;
             }
-            assert!(where_ >= 0);
-            lu.u_index[where_ as usize] = lu.u_index[(end - 1) as usize];
-            lu.u_value[where_ as usize] = lu.u_value[(end - 1) as usize];
-            lu.u_index[(end - 1) as usize] = -1;
+            assert!(where_.is_some());
+            lu.u_index[where_.unwrap()] = lu.u_index[end - 1];
+            lu.u_value[where_.unwrap()] = lu.u_value[end - 1];
+            lu.u_index[end - 1] = -1;
             u_nz -= 1;
             pos += 1;
         }
 
         // remove row ipivot from row file
-        lu.w_end[jpivot as usize] = lu.w_begin[jpivot as usize];
+        lu.w_end[jpivot] = lu.w_begin[jpivot];
 
         // replace pivot
-        lu.col_pivot[jpivot as usize] = newpiv;
-        lu.row_pivot[ipivot as usize] = newpiv;
+        lu.col_pivot[jpivot] = newpiv;
+        lu.row_pivot[ipivot] = newpiv;
         lu.min_pivot = f64::min(lu.min_pivot, newpiv.abs());
         lu.max_pivot = f64::max(lu.max_pivot, newpiv.abs());
 
         // drop zeros from row eta; update max entry of row etas
         nz = 0;
-        put = r_begin!(lu)[nforrest as usize];
+        put = r_begin![lu][nforrest] as usize;
         let mut max_eta = 0.0;
-        for pos in put..r_begin!(lu)[(nforrest + 1) as usize] {
-            if lu.l_value[pos as usize] != 0.0 {
-                max_eta = f64::max(max_eta, lu.l_value[pos as usize].abs());
-                lu.l_index[put as usize] = lu.l_index[pos as usize];
-                lu.l_value[put as usize] = lu.l_value[pos as usize];
+        for pos in put..r_begin![lu][nforrest + 1] as usize {
+            if lu.l_value[pos] != 0.0 {
+                max_eta = f64::max(max_eta, lu.l_value[pos].abs());
+                lu.l_index[put] = lu.l_index[pos];
+                lu.l_value[put] = lu.l_value[pos];
                 put += 1;
                 nz += 1;
             }
         }
-        r_begin!(lu)[(nforrest + 1) as usize] = put;
+        r_begin![lu][nforrest + 1] = put as LUInt;
         lu.r_nz += nz;
         lu.max_eta = f64::max(lu.max_eta, max_eta);
 
         // prepare permutation update
-        let nreach: LUInt = 1;
+        let nreach: usize = 1;
         // let row_reach = &mut ipivot_vec[..];
         // let col_reach = &mut jpivot_vec[..];
-        let row_reach = ipivot_vec.to_vec();
-        let col_reach = jpivot_vec.to_vec();
+        let row_reach: Vec<LUInt> = ipivot_vec.to_vec();
+        let col_reach: Vec<LUInt> = jpivot_vec.to_vec();
         lu.nforrest += 1;
         lu.nforrest_total += 1;
 
@@ -906,16 +898,16 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     }
 
     // append row indices row_reach[0..nreach-1] to end of pivot sequence
-    put = lu.pivotlen;
+    let mut put = lu.pivotlen;
     for n in 0..nreach {
-        pivotrow!(lu)[put as usize] = row_reach[n as usize];
+        pivotrow![lu][put] = row_reach[n];
         put += 1;
     }
 
     // append col indices col_reach[0..nreach-1] to end of pivot sequence
-    put = lu.pivotlen;
+    let mut put = lu.pivotlen;
     for n in 0..nreach {
-        pivotcol!(lu)[put as usize] = col_reach[n as usize];
+        pivotcol![lu][put] = col_reach[n];
         put += 1;
     }
 
@@ -924,16 +916,16 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     // Clean up //
 
     // compress U if used memory is shrinked sufficiently
-    let used = lu.u_begin[m as usize];
-    if used - u_nz - m > (lu.compress_thres as LUInt) * used {
+    let used = lu.u_begin[m] as usize;
+    if used - u_nz - m > (lu.compress_thres * used as f64) as usize {
         nz = compress_packed(m, &mut lu.u_begin, &mut lu.u_index, &mut lu.u_value);
         assert_eq!(nz, u_nz);
     }
 
     // compress W if used memory is shrinked suficiently
-    let used = lu.w_begin[m as usize];
-    let need = u_nz + (stretch as LUInt) * u_nz + m * pad;
-    if (used - need) > (lu.compress_thres as LUInt) * used {
+    let used = lu.w_begin[m as usize] as usize;
+    let need = u_nz + (stretch * u_nz as f64) as usize + m * pad;
+    if (used - need) > (lu.compress_thres * used as f64) as usize {
         nz = file_compress(
             m,
             &mut lu.w_begin,
@@ -952,10 +944,10 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     lu.time_update_total += elapsed;
     lu.pivot_error = piverr / (1.0 + newpiv.abs());
     lu.u_nz = u_nz;
-    lu.btran_for_update = -1;
-    lu.ftran_for_update = -1;
+    lu.btran_for_update = None;
+    lu.ftran_for_update = None;
     lu.update_cost_numer += nz_roweta as f64;
-    lu.nupdate += 1;
+    lu.nupdate = Some(lu.nupdate.unwrap() + 1);
     lu.nupdate_total += 1;
 
     #[cfg(feature = "debug_extra")]

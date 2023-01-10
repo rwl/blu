@@ -17,14 +17,14 @@ impl Default for Task {
     }
 }
 
-pub(crate) fn iswap(x: &mut [LUInt], i: LUInt, j: LUInt) {
-    let t = x[i as usize];
-    x[i as usize] = x[j as usize];
-    x[j as usize] = t;
+pub(crate) fn iswap(x: &mut [LUInt], i: usize, j: usize) {
+    let t = x[i];
+    x[i] = x[j];
+    x[j] = t;
 }
 
-pub(crate) fn fswap(x: &mut [f64], i: LUInt, j: LUInt) {
-    let t = x[i as usize];
-    x[i as usize] = x[j as usize];
-    x[j as usize] = t;
+pub(crate) fn fswap(x: &mut [f64], i: usize, j: usize) {
+    let t = x[i];
+    x[i] = x[j];
+    x[j] = t;
 }

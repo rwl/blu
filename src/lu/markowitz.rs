@@ -46,7 +46,7 @@ pub(crate) fn markowitz(lu: &mut LU) -> Status {
     let maxsearch = lu.maxsearch;
     let search_rows = lu.search_rows;
     let nz_start = if search_rows != 0 {
-        LUInt::min(lu.min_colnz, lu.min_rownz)
+        usize::min(lu.min_colnz, lu.min_rownz)
     } else {
         lu.min_colnz
     };
@@ -60,31 +60,31 @@ pub(crate) fn markowitz(lu: &mut LU) -> Status {
 
     // lu_tic(tic);
     let tic = Instant::now();
-    let mut pivot_row = -1; // row of best pivot so far
-    let mut pivot_col = -1; // col of best pivot so far
+    let mut pivot_row: Option<usize> = None; // row of best pivot so far
+    let mut pivot_col: Option<usize> = None; // col of best pivot so far
     let mut mc64: IntLeast64 = m64 * m64; // Markowitz cost of best pivot so far
     let mut nsearch = 0; // count rows/columns searched
-    let mut min_colnz = -1; // minimum col count in active submatrix
-    let mut min_rownz = -1; // minimum row count in active submatrix
+    let mut min_colnz: Option<usize> = None; // minimum col count in active submatrix
+    let mut min_rownz: Option<usize> = None; // minimum row count in active submatrix
     assert!(nz_start >= 1);
 
     // If the active submatrix contains empty columns, choose one and return
     // with pivot_row = -1.
-    if colcount_flink[m as usize] != m {
-        pivot_col = colcount_flink[m as usize];
-        assert!(pivot_col >= 0 && pivot_col < m);
-        assert_eq!(w_end[pivot_col as usize], w_begin[pivot_col as usize]);
+    if colcount_flink[m] != m as LUInt {
+        pivot_col = Some(colcount_flink[m] as usize);
+        assert!(pivot_col.is_some() && pivot_col.unwrap() < m);
+        assert_eq!(w_end[pivot_col.unwrap()], w_begin[pivot_col.unwrap()]);
         return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
     }
 
     for nz in nz_start..=m {
         // Search columns with nz nonzeros.
         let mut j = colcount_flink[(m + nz) as usize];
-        while j < m {
-            if min_colnz == -1 {
-                min_colnz = nz;
+        while j < m as LUInt {
+            if min_colnz.is_none() {
+                min_colnz = Some(nz);
             }
-            assert_eq!(w_end[j as usize] - w_begin[j as usize], nz);
+            assert_eq!(w_end[j as usize] - w_begin[j as usize], nz as LUInt);
             let cmx = colmax[j as usize];
             assert!(cmx >= 0.0);
             if cmx == 0.0 || cmx < abstol {
@@ -96,16 +96,16 @@ pub(crate) fn markowitz(lu: &mut LU) -> Status {
                 if x == 0.0 || x < tol {
                     continue;
                 }
-                let i = w_index[pos as usize];
-                assert!(i >= 0 && i < m);
-                let nz1: IntLeast64 = nz;
-                let nz2: IntLeast64 = w_end[(m + i) as usize] - w_begin[(m + i) as usize];
+                let i = w_index[pos as usize] as usize;
+                assert!(/*i >= 0 &&*/ i < m);
+                let nz1: IntLeast64 = nz as IntLeast64;
+                let nz2: IntLeast64 = w_end[m + i] - w_begin[m + i];
                 assert!(nz2 >= 1);
                 let mc: IntLeast64 = (nz1 - 1) * (nz2 - 1);
                 if mc < mc64 {
                     mc64 = mc;
-                    pivot_row = i;
-                    pivot_col = j;
+                    pivot_row = Some(i);
+                    pivot_col = Some(j as usize);
                     if search_rows != 0 && mc64 <= (nz1 - 1) * (nz1 - 1) {
                         return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
                     }
@@ -120,7 +120,7 @@ pub(crate) fn markowitz(lu: &mut LU) -> Status {
             }
             j = colcount_flink[j as usize];
         }
-        assert_eq!(j, m + nz);
+        assert_eq!(j, (m + nz) as LUInt);
 
         if search_rows == 0 {
             continue;
@@ -128,43 +128,46 @@ pub(crate) fn markowitz(lu: &mut LU) -> Status {
 
         // Search rows with nz nonzeros.
         let mut i = rowcount_flink[(m + nz) as usize];
-        while i < m {
-            if min_rownz == -1 {
-                min_rownz = nz;
+        while i < m as LUInt {
+            if min_rownz.is_none() {
+                min_rownz = Some(nz);
             }
             // rowcount_flink[i] might be changed below, so keep a copy
             let inext = rowcount_flink[i as usize];
-            assert_eq!(w_end[(m + i) as usize] - w_begin[(m + i) as usize], nz);
+            assert_eq!(
+                w_end[((m as LUInt) + i) as usize] - w_begin[((m as LUInt) + i) as usize],
+                nz as LUInt
+            );
             let mut cheap = 0; // row has entries with Markowitz cost < MC?
             let mut found = 0; // eligible pivot found?
-            for pos in w_begin[(m + i) as usize]..w_end[(m + i) as usize] {
-                j = w_index[pos as usize];
-                assert!(j >= 0 && j < m);
-                let nz1: IntLeast64 = nz;
-                let nz2: IntLeast64 = w_end[j as usize] - w_begin[j as usize];
+            for pos in w_begin[((m as LUInt) + i) as usize]..w_end[((m as LUInt) + i) as usize] {
+                let j = w_index[pos as usize] as usize;
+                assert!(/*j >= 0 &&*/ j < m);
+                let nz1: IntLeast64 = nz as IntLeast64;
+                let nz2: IntLeast64 = w_end[j] - w_begin[j];
                 assert!(nz2 >= 1);
                 let mc: IntLeast64 = (nz1 - 1) * (nz2 - 1);
                 if mc >= mc64 {
                     continue;
                 }
                 cheap = 1;
-                let cmx = colmax[j as usize];
+                let cmx = colmax[j];
                 assert!(cmx >= 0.0);
                 if cmx == 0.0 || cmx < abstol {
                     continue;
                 }
                 // find position of pivot in column file
-                let mut where_ = w_begin[j as usize];
+                let mut where_ = w_begin[j];
                 while w_index[where_ as usize] != i {
-                    assert!(where_ < w_end[j as usize] - 1);
+                    assert!(where_ < w_end[j] - 1);
                     where_ += 1;
                 }
                 let x = w_value[where_ as usize].abs();
                 if x >= abstol && x >= reltol * cmx {
                     found = 1;
                     mc64 = mc;
-                    pivot_row = i;
-                    pivot_col = j;
+                    pivot_row = Some(i as usize);
+                    pivot_col = Some(j);
                     if mc64 <= nz1 * (nz1 - 1) {
                         return done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic);
                     }
@@ -173,7 +176,7 @@ pub(crate) fn markowitz(lu: &mut LU) -> Status {
             // If row i has cheap entries but none of them is numerically
             // acceptable, then don't search the row again until updated.
             if cheap != 0 && found == 0 {
-                list_move(i, m + 1, rowcount_flink, rowcount_blink, m, None);
+                list_move(i as usize, m + 1, rowcount_flink, rowcount_blink, m, None);
             } else {
                 assert!(mc64 < m64 * m64);
                 // if (++nsearch >= maxsearch)
@@ -184,18 +187,18 @@ pub(crate) fn markowitz(lu: &mut LU) -> Status {
             }
             i = inext;
         }
-        assert_eq!(i, m + nz);
+        assert_eq!(i, (m + nz) as LUInt);
     }
     done(lu, pivot_row, pivot_col, nsearch, min_colnz, min_rownz, tic)
 }
 
 fn done(
     lu: &mut LU,
-    pivot_row: LUInt,
-    pivot_col: LUInt,
-    nsearch: LUInt,
-    min_colnz: LUInt,
-    min_rownz: LUInt,
+    pivot_row: Option<usize>,
+    pivot_col: Option<usize>,
+    nsearch: usize,
+    min_colnz: Option<usize>,
+    min_rownz: Option<usize>,
     tic: Instant,
 ) -> Status {
     lu.pivot_row = pivot_row;
@@ -203,10 +206,10 @@ fn done(
 
     lu.nsearch_pivot += nsearch;
 
-    if min_colnz >= 0 {
+    if let Some(min_colnz) = min_colnz {
         lu.min_colnz = min_colnz;
     }
-    if min_rownz >= 0 {
+    if let Some(min_rownz) = min_rownz {
         lu.min_rownz = min_rownz;
     }
 

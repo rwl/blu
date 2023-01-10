@@ -30,7 +30,7 @@ use crate::LUInt;
 
 // Initialize empty file with `fmem` memory space.
 pub(crate) fn file_empty(
-    nlines: LUInt,
+    nlines: usize,
     begin: &mut [LUInt],
     end: &mut [LUInt],
     next: &mut [LUInt],
@@ -44,43 +44,43 @@ pub(crate) fn file_empty(
         end[i as usize] = 0;
     }
     for i in 0..nlines {
-        next[i as usize] = i + 1;
-        prev[i as usize + 1] = i;
+        next[i as usize] = (i + 1) as LUInt;
+        prev[i as usize + 1] = i as LUInt;
     }
     next[nlines as usize] = 0;
-    prev[0] = nlines;
+    prev[0] = nlines as LUInt;
 }
 
 // Reappend line to file end and add `extra_space` elements room. The file must
 // have at least length(line) + `extra_space` elements free space.
 pub(crate) fn file_reappend(
-    line: LUInt,
-    nlines: LUInt,
+    line: usize,
+    nlines: usize,
     begin: &mut [LUInt],
     end: &mut [LUInt],
     next: &mut [LUInt],
     prev: &mut [LUInt],
     index: &mut [LUInt],
     value: &mut [f64],
-    extra_space: LUInt,
+    extra_space: usize,
 ) {
-    let fmem = end[nlines as usize];
-    let mut used = begin[nlines as usize];
+    let fmem = end[nlines];
+    let mut used = begin[nlines];
     let room = fmem - used;
-    let ibeg = begin[line as usize]; // old beginning of line
-    let iend = end[line as usize];
-    begin[line as usize] = used; // new beginning of line
+    let ibeg = begin[line]; // old beginning of line
+    let iend = end[line];
+    begin[line] = used; // new beginning of line
     assert!(iend - ibeg <= room);
     for pos in ibeg..iend {
         index[used as usize] = index[pos as usize];
         value[used as usize] = value[pos as usize];
         used += 1
     }
-    end[line as usize] = used;
+    end[line] = used;
     let room = fmem - used;
-    assert!(room >= extra_space);
-    used += extra_space;
-    begin[nlines as usize] = used; // beginning of unused space
+    assert!(room >= extra_space as LUInt);
+    used += extra_space as LUInt;
+    begin[nlines] = used; // beginning of unused space
     list_move(line, 0, next, prev, nlines, None);
 }
 
@@ -90,21 +90,21 @@ pub(crate) fn file_reappend(
 //
 // Return: number of entries in file
 pub(crate) fn file_compress(
-    nlines: LUInt,
+    nlines: usize,
     begin: &mut [LUInt],
     end: &mut [LUInt],
     next: &[LUInt],
     index: &mut [LUInt],
     value: &mut [f64],
     stretch: f64,
-    pad: LUInt,
-) -> LUInt {
+    pad: usize,
+) -> usize {
     let mut nz = 0;
 
     let mut used = 0;
     let mut extra_space = 0;
     let mut i = next[nlines as usize];
-    while i < nlines {
+    while i < nlines as LUInt {
         // move line i
         let ibeg = begin[i as usize];
         let iend = end[i as usize];
@@ -120,8 +120,8 @@ pub(crate) fn file_compress(
             used += 1;
         }
         end[i as usize] = used;
-        extra_space = (stretch as LUInt) * (iend - ibeg) + pad;
-        nz += iend - ibeg;
+        extra_space = (stretch * (iend - ibeg) as f64) as LUInt + pad as LUInt;
+        nz += (iend - ibeg) as usize;
 
         i = next[i as usize];
     }
@@ -149,7 +149,7 @@ pub(crate) fn file_compress(
 // consistency of rowwise and columnwise storage, the method must be called
 // twice with row pointers and column pointers swapped.
 pub(crate) fn file_diff(
-    nrow: LUInt,
+    nrow: usize,
     begin_row: &[LUInt],
     end_row: &[LUInt],
     begin_col: &[LUInt],
@@ -160,10 +160,10 @@ pub(crate) fn file_diff(
     let mut ndiff = 0;
 
     for i in 0..nrow {
-        for pos in begin_row[i as usize]..end_row[i as usize] {
+        for pos in begin_row[i]..end_row[i] {
             let j = index[pos as usize] as usize;
             let mut where_ = begin_col[j];
-            while where_ < end_col[j] && index[where_ as usize] != i {
+            while where_ < end_col[j] && index[where_ as usize] != i as LUInt {
                 where_ += 1;
             }
 

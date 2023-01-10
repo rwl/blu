@@ -10,10 +10,10 @@ use std::time::Instant;
 
 pub(crate) fn solve_sparse(
     lu: &mut LU,
-    nrhs: LUInt,
+    nrhs: usize,
     irhs: &[LUInt],
     xrhs: &[f64],
-    p_nlhs: &mut LUInt,
+    p_nlhs: &mut usize,
     ilhs: &mut [LUInt],
     xlhs: &mut [f64],
     trans: char,
@@ -21,7 +21,7 @@ pub(crate) fn solve_sparse(
     let m = lu.m;
     let nforrest = lu.nforrest;
     let pivotlen = lu.pivotlen;
-    let nz_sparse = (lu.sparse_thres as LUInt) * m;
+    let nz_sparse = (lu.sparse_thres * m as f64) as usize;
     let droptol = lu.droptol;
     let p = &p!(lu);
     let pmap = &pmap!(lu);
@@ -274,7 +274,7 @@ pub(crate) fn solve_sparse(
                 nz += 1;
             }
         }
-        r_flops += r_begin[nforrest as usize] - r_begin[0];
+        r_flops += (r_begin[nforrest as usize] - r_begin[0]) as usize;
 
         if nz <= nz_sparse {
             // Sparse triangular solve with U.

@@ -3,12 +3,11 @@
 
 use crate::lu::lu::*;
 use crate::lu::matrix_norm::matrix_norm;
-use crate::LUInt;
 
-fn onenorm(m: LUInt, x: &[f64]) -> f64 {
+fn onenorm(m: usize, x: &[f64]) -> f64 {
     let mut d = 0.0;
     for i in 0..m {
-        d += x[i as usize].abs();
+        d += x[i].abs();
     }
     d
 }
@@ -16,9 +15,9 @@ fn onenorm(m: LUInt, x: &[f64]) -> f64 {
 // Stability test of fresh LU factorization based on relative residual.
 pub(crate) fn residual_test(
     lu: &mut LU,
-    b_begin: &[LUInt],
-    b_end: &[LUInt],
-    b_i: &[LUInt],
+    b_begin: &[usize],
+    b_end: &[usize],
+    b_i: &[usize],
     b_x: &[f64],
 ) {
     let m = lu.m;
@@ -37,7 +36,7 @@ pub(crate) fn residual_test(
     let rhs = &mut lu.work0;
     let lhs = &mut lu.work1;
 
-    assert_eq!(lu.nupdate, 0);
+    assert_eq!(lu.nupdate.unwrap(), 0);
 
     // Residual Test with Forward System //
 

@@ -43,7 +43,7 @@ use crate::Status;
 /// [`ErrorSingularUpdate`] if the updated factorization would be (numerically) singular.
 /// No update has been computed and the old factorization is still valid.
 pub fn update(lu: &mut LU, xtbl: f64) -> Status {
-    if lu.nupdate < 0 || lu.ftran_for_update < 0 || lu.btran_for_update < 0 {
+    if lu.nupdate.is_none() || lu.ftran_for_update.is_none() || lu.btran_for_update.is_none() {
         Status::ErrorInvalidCall
     } else {
         lu::update(lu, xtbl)

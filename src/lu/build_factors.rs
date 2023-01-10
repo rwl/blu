@@ -117,7 +117,7 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     let u_mem = lu.u_mem;
     let w_mem = lu.w_mem;
     let pad = lu.pad;
-    let stretch = lu.stretch as LUInt;
+    let stretch = lu.stretch;
     // let pinv = &mut lu.pinv;
     // let qinv = &mut lu.qinv;
     // let pmap = &mut pmap!(lu); // shares memory with pinv
@@ -152,9 +152,9 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     // in Uindex, Uvalue. The factorization has computed rank columns of L
     // and rank rows of U. If rank < m, then the columns which have not been
     // pivotal will be removed from U.
-    let mut l_nz = lu.l_begin_p[rank as usize];
+    let mut l_nz = lu.l_begin_p[rank as usize] as usize;
     l_nz -= rank; // because each column is terminated by -1
-    let mut u_nz = lu.u_begin[rank as usize]; // might be decreased when rank < m
+    let mut u_nz = lu.u_begin[rank as usize] as usize; // might be decreased when rank < m
 
     // Calculate memory and reallocate. The rowwise and columnwise storage of
     // L both need space for Lnz nonzeros + m terminators. The same for the
@@ -171,7 +171,7 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
         lu.addmem_u = need - u_mem;
         status = Status::Reallocate;
     }
-    let need = u_nz + stretch * u_nz + m * pad;
+    let need = u_nz + (stretch * u_nz as f64) as usize + m * pad;
     if w_mem < need {
         lu.addmem_w = need - w_mem;
         status = Status::Reallocate;
@@ -185,27 +185,27 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     // Append columns/rows which have not been pivotal to the end of the
     // pivot sequence. Build pivotrow, pivotcol as inverse of pinv, qinv.
     if cfg!(feature = "debug") {
-        for k in 0..m as usize {
+        for k in 0..m {
             pivotrow[k] = -1;
         }
-        for k in 0..m as usize {
+        for k in 0..m {
             pivotcol[k] = -1;
         }
     }
 
     let mut lrank = rank;
-    for i in 0..m as usize {
+    for i in 0..m {
         if lu.pinv[i] < 0 {
-            lu.pinv[i] = lrank;
+            lu.pinv[i] = lrank as LUInt;
             lrank += 1;
         }
         pivotrow[lu.pinv[i] as usize] = i as LUInt;
     }
     assert_eq!(lrank, m);
     let mut lrank = rank;
-    for j in 0..m as usize {
+    for j in 0..m {
         if lu.qinv[j] < 0 {
-            lu.qinv[j] = lrank;
+            lu.qinv[j] = lrank as LUInt;
             lrank += 1;
         }
         pivotcol[lu.qinv[j] as usize] = j as LUInt;
@@ -213,17 +213,17 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     assert_eq!(lrank, m);
 
     if cfg!(feature = "debug") {
-        for k in 0..m as usize {
+        for k in 0..m {
             assert!(pivotrow[k] >= 0);
         }
-        for k in 0..m as usize {
+        for k in 0..m {
             assert!(pivotcol[k] >= 0);
         }
     }
 
     // Dependent columns get unit pivot elements.
     for k in rank..m {
-        lu.col_pivot[pivotcol[k as usize] as usize] = 1.0;
+        lu.col_pivot[pivotcol[k] as usize] = 1.0;
     }
 
     // Lower triangular factor //
@@ -234,10 +234,10 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     for k in rank..m {
         l_index[put as usize] = -1;
         put += 1;
-        lu.l_begin_p[k as usize + 1] = put;
+        lu.l_begin_p[k + 1] = put;
     }
-    assert_eq!(lu.l_begin_p[m as usize], l_nz + m);
-    for i in 0..m as usize {
+    assert_eq!(lu.l_begin_p[m as usize], (l_nz + m) as LUInt);
+    for i in 0..m {
         l_begin[i] = lu.l_begin_p[lu.pinv[i] as usize];
     }
 
@@ -245,13 +245,13 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     // memset(iwork1, 0, m*sizeof(lu_int)); /* row counts */
     iwork1.fill(0); // row counts
     for get in 0..l_nz + m {
-        let i = l_index[get as usize];
+        let i = l_index[get];
         if i >= 0 {
             iwork1[i as usize] += 1;
         }
     }
-    put = l_nz + m; // L rowwise starts here
-    for k in 0..m as usize {
+    let mut put = (l_nz + m) as LUInt; // L rowwise starts here
+    for k in 0..m {
         let i = pivotrow[k] as usize;
         lt_begin_p[k] = put;
         lt_begin[i] = put;
@@ -260,28 +260,29 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
         put += 1;
         iwork1[i] = lt_begin_p[k];
     }
-    assert_eq!(put, 2 * (l_nz + m));
-    for k in 0..m as usize {
+    assert_eq!(put as usize, 2 * (l_nz + m));
+    for k in 0..m {
         // fill rows
         let ipivot = pivotrow[k];
         // for (get = Lbegin_p[k]; (i = Lindex[get]) >= 0; get++)
         let mut get = lu.l_begin_p[k] as usize;
         while l_index[get] >= 0 {
             // put = iwork1[i]++;  /* put into row i */
-            put = iwork1[l_index[get] as usize]; // put into row i
+            let put = iwork1[l_index[get] as usize] as usize; // put into row i
             iwork1[l_index[get] as usize] += 1;
-            l_index[put as usize] = ipivot;
-            l_value[put as usize] = l_value[get];
+
+            l_index[put] = ipivot;
+            l_value[put] = l_value[get];
             get += 1;
         }
     }
 
     if cfg!(feature = "debug") {
-        for i in 0..m as usize {
+        for i in 0..m {
             assert_eq!(l_index[iwork1[i] as usize], -1);
         }
     }
-    r_begin[0] = 2 * (l_nz + m); // beginning of update etas
+    r_begin[0] = 2 * (l_nz + m) as LUInt; // beginning of update etas
 
     // Upper triangular factor //
 
@@ -292,18 +293,18 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
         &mut lu.w_end,
         &mut lu.w_flink,
         &mut lu.w_blink,
-        w_mem,
+        w_mem as LUInt,
     );
     // memset(iwork1, 0, m*sizeof(lu_int)); /* column counts */
     iwork1.fill(0); // column counts
-    put = 0;
+    let mut put = 0;
 
     // Use separate loops for full rank and rank deficient factorizations. In
     // the first case no elements are removed from U, so skip the test.
     if rank == m {
-        for k in 0..m as usize {
-            let jpivot = pivotcol[k];
-            lu.w_begin[jpivot as usize] = put;
+        for k in 0..m {
+            let jpivot = pivotcol[k] as usize;
+            lu.w_begin[jpivot] = put;
             let mut nz = 0;
             for pos in lu.u_begin[k]..lu.u_begin[k + 1] {
                 let j = u_index[pos as usize];
@@ -315,19 +316,19 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
                 iwork1[j as usize] += 1;
                 nz += 1;
             }
-            lu.w_end[jpivot as usize] = put;
-            put += stretch * nz + pad;
+            lu.w_end[jpivot] = put;
+            put += (stretch * nz as f64) as LUInt + pad as LUInt;
             list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
         }
     } else {
         u_nz = 0; // actual number of nonzeros
         for k in 0..rank as usize {
-            let jpivot = pivotcol[k];
-            lu.w_begin[jpivot as usize] = put;
+            let jpivot = pivotcol[k] as usize;
+            lu.w_begin[jpivot] = put;
             let mut nz = 0;
             for pos in lu.u_begin[k]..lu.u_begin[k + 1] {
                 let j = u_index[pos as usize];
-                if lu.qinv[j as usize] < rank {
+                if lu.qinv[j as usize] < rank as LUInt {
                     w_index[put as usize] = j;
                     // Wvalue[put++] = Uvalue[pos];
                     let put0 = put;
@@ -337,26 +338,26 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
                     nz += 1;
                 }
             }
-            lu.w_end[jpivot as usize] = put;
-            put += stretch * nz + pad;
+            lu.w_end[jpivot] = put;
+            put += (stretch * nz as f64) as LUInt + pad as LUInt;
             list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
             u_nz += nz;
         }
         for k in rank..m {
-            let jpivot = pivotcol[k as usize];
-            lu.w_begin[jpivot as usize] = put;
-            lu.w_end[jpivot as usize] = put;
-            put += pad;
+            let jpivot = pivotcol[k] as usize;
+            lu.w_begin[jpivot] = put;
+            lu.w_end[jpivot] = put;
+            put += pad as LUInt;
             list_move(jpivot, 0, &mut lu.w_flink, &mut lu.w_blink, m, None);
         }
     }
-    assert!(put <= lu.w_end[m as usize]);
-    lu.w_begin[m as usize] = put; // beginning of free space
+    assert!(put <= lu.w_end[m]);
+    lu.w_begin[m] = put; // beginning of free space
 
     // U columnwise.
     u_index[0] = -1;
-    put = 1;
-    for k in 0..m as usize {
+    let mut put = 1;
+    for k in 0..m {
         // set column pointers
         let j = pivotcol[k] as usize;
         let i = pivotrow[k] as usize;
@@ -371,23 +372,23 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
         }
         iwork1[j] = lu.u_begin[i];
     }
-    lu.u_begin[m as usize] = put;
-    for k in 0..m as usize {
+    lu.u_begin[m] = put;
+    for k in 0..m {
         // fill columns
         let jpivot = pivotcol[k] as usize;
         let i = pivotrow[k];
         for pos in lu.w_begin[jpivot]..lu.w_end[jpivot] {
             let j = w_index[pos as usize] as usize;
-            put = iwork1[j];
+            let put = iwork1[j] as usize;
             iwork1[j] += 1;
             assert!(put >= 1);
-            u_index[put as usize] = i;
-            u_value[put as usize] = w_value[pos as usize];
+            u_index[put] = i;
+            u_value[put] = w_value[pos as usize];
         }
     }
 
     if cfg!(feature = "debug") {
-        for j in 0..m as usize {
+        for j in 0..m {
             assert_eq!(u_index[iwork1[j] as usize], -1);
         }
     }
@@ -395,7 +396,7 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     // Build pivot sequence //
 
     // Build row-column mappings, overwriting pinv, qinv.
-    for k in 0..m as usize {
+    for k in 0..m {
         let i = pivotrow[k];
         let j = pivotcol[k];
         pmap!(lu)[j as usize] = i;
@@ -405,7 +406,7 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     // Build pivots by row index.
     let mut max_pivot = 0.0;
     let mut min_pivot = f64::INFINITY;
-    for i in 0..m as usize {
+    for i in 0..m {
         lu.row_pivot[i] = lu.col_pivot[qmap![lu][i] as usize];
         let pivot = lu.row_pivot[i].abs();
         max_pivot = f64::max(pivot, max_pivot);
@@ -413,7 +414,7 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     }
 
     // memcpy(lu.p, pivotrow, m*sizeof(lu_int));
-    p![lu][..m as usize].copy_from_slice(&pivotrow[..m as usize]);
+    p![lu][..m].copy_from_slice(&pivotrow[..m]);
 
     lu.min_pivot = min_pivot;
     lu.max_pivot = max_pivot;

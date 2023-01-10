@@ -12,7 +12,7 @@ pub struct BLU {
     /// Holds solution after `solve_sparse()` and `solve_for_update()`.
     pub lhs: Vec<f64>,
     pub ilhs: Vec<LUInt>,
-    pub nzlhs: LUInt,
+    pub nzlhs: usize,
 
     /// Arrays are reallocated for max(realloc_factor, 1.0) times the
     /// required size. Default: 1.5
@@ -58,13 +58,12 @@ impl BLU {
     ///     lu_int m
     ///
     ///         The dimension of matrices which can be processed, or 0.
-    pub fn new(m: LUInt, b_nz: LUInt) -> Self {
-        assert!(m >= 0);
-
+    pub fn new(m: usize, b_nz: usize) -> Self {
+        // assert!(m >= 0);
         Self {
             lu: LU::new(m, b_nz),
-            lhs: vec![0.0; m as usize],
-            ilhs: vec![0; m as usize],
+            lhs: vec![0.0; m],
+            ilhs: vec![0; m],
             nzlhs: 0,
             realloc_factor: 1.5,
         }
@@ -95,9 +94,9 @@ impl BLU {
     ///     The other arguments are passed through to factorize().
     pub fn factorize(
         &mut self,
-        b_begin: &[LUInt],
-        b_end: &[LUInt],
-        b_i: &[LUInt],
+        b_begin: &[usize],
+        b_end: &[usize],
+        b_i: &[usize],
         b_x: &[f64],
     ) -> Status {
         let mut status = factorize(&mut self.lu, b_begin, b_end, b_i, b_x, false);
@@ -203,7 +202,7 @@ impl BLU {
     pub fn solve_sparse(
         &mut self,
         nzrhs: LUInt,
-        irhs: &[LUInt],
+        irhs: &[usize],
         xrhs: &[f64],
         trans: char,
     ) -> Status {
@@ -252,8 +251,8 @@ impl BLU {
     ///     The other arguments are passed through to solve_for_update().
     pub fn solve_for_update(
         &mut self,
-        nzrhs: LUInt,
-        irhs: &[LUInt],
+        nzrhs: usize,
+        irhs: &[usize],
         xrhs: Option<&[f64]>,
         trans: char,
         want_solution: LUInt,
@@ -262,10 +261,11 @@ impl BLU {
 
         lu_clear_lhs(self);
         while status == Status::OK {
-            let mut nzlhs: LUInt = -1;
+            // let mut nzlhs: LUInt = -1;
+            let mut nzlhs: usize = 0;
             status = solve_for_update(
                 &mut self.lu,
-                nzrhs,
+                nzrhs as LUInt,
                 irhs,
                 xrhs,
                 Some(&mut nzlhs),
@@ -324,9 +324,9 @@ impl BLU {
 }
 
 // reallocate two arrays
-fn lu_reallocix(nz: LUInt, a_i: &mut Vec<LUInt>, a_x: &mut Vec<f64>) -> Status {
-    a_i.resize(nz as usize, 0);
-    a_x.resize(nz as usize, 0.0);
+fn lu_reallocix(nz: usize, a_i: &mut Vec<LUInt>, a_x: &mut Vec<f64>) -> Status {
+    a_i.resize(nz, 0);
+    a_x.resize(nz, 0.0);
     Status::OK
 }
 
@@ -339,25 +339,25 @@ fn lu_realloc_obj(obj: &mut BLU) -> Status {
     let mut status = Status::OK;
 
     if status == Status::OK && addmem_l > 0 {
-        let mut nelem = obj.lu.l_mem + addmem_l;
-        nelem = ((nelem as f64) * realloc_factor) as LUInt;
-        status = lu_reallocix(nelem as LUInt, &mut obj.lu.l_index, &mut obj.lu.l_value);
+        let nelem = obj.lu.l_mem + addmem_l;
+        let nelem = ((nelem as f64) * realloc_factor) as usize;
+        status = lu_reallocix(nelem, &mut obj.lu.l_index, &mut obj.lu.l_value);
         if status == Status::OK {
             obj.lu.l_mem = nelem;
         }
     }
     if status == Status::OK && addmem_u > 0 {
-        let mut nelem = obj.lu.u_mem + addmem_u;
-        nelem = ((nelem as f64) * realloc_factor) as LUInt;
-        status = lu_reallocix(nelem as LUInt, &mut obj.lu.u_index, &mut obj.lu.u_value);
+        let nelem = obj.lu.u_mem + addmem_u;
+        let nelem = ((nelem as f64) * realloc_factor) as usize;
+        status = lu_reallocix(nelem, &mut obj.lu.u_index, &mut obj.lu.u_value);
         if status == Status::OK {
             obj.lu.u_mem = nelem;
         }
     }
     if status == Status::OK && addmem_w > 0 {
-        let mut nelem = obj.lu.w_mem + addmem_w;
-        nelem = ((nelem as f64) * realloc_factor) as LUInt;
-        status = lu_reallocix(nelem as LUInt, &mut obj.lu.w_index, &mut obj.lu.w_value);
+        let nelem = obj.lu.w_mem + addmem_w;
+        let nelem = ((nelem as f64) * realloc_factor) as usize;
+        status = lu_reallocix(nelem, &mut obj.lu.w_index, &mut obj.lu.w_value);
         if status == Status::OK {
             obj.lu.w_mem = nelem;
         }
@@ -368,7 +368,7 @@ fn lu_realloc_obj(obj: &mut BLU) -> Status {
 // reset contents of lhs to zero
 fn lu_clear_lhs(obj: &mut BLU) {
     let m = obj.lu.m as f64;
-    let nzsparse = (obj.lu.sparse_thres * m) as LUInt;
+    let nzsparse = (obj.lu.sparse_thres * m as f64) as usize;
     let nz = obj.nzlhs;
 
     if nz != 0 {

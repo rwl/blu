@@ -25,7 +25,7 @@ use crate::LUInt;
 //
 // When `end` is `None`, then each column must be terminated by a negative index.
 pub(crate) fn solve_triangular(
-    nz_symb: LUInt,
+    nz_symb: usize,
     pattern_symb: &[LUInt],
     begin: &[LUInt],
     end: Option<&[LUInt]>,
@@ -35,9 +35,9 @@ pub(crate) fn solve_triangular(
     droptol: f64,
     lhs: &mut [f64], // solution overwrites RHS
     pattern: &mut [LUInt],
-    flops: &mut LUInt, // add flop count
-) -> LUInt {
-    let mut nz: LUInt = 0;
+    flops: &mut usize, // add flop count
+) -> usize {
+    let mut nz: usize = 0;
     let mut flop_count = 0;
 
     if pivot.is_some() && end.is_some() {
@@ -45,7 +45,7 @@ pub(crate) fn solve_triangular(
         let end = end.unwrap();
 
         for n in 0..nz_symb {
-            let ipivot = pattern_symb[n as usize];
+            let ipivot = pattern_symb[n];
             if lhs[ipivot as usize] != 0.0 {
                 // x = lhs[ipivot] /= pivot[ipivot];
                 lhs[ipivot as usize] /= pivot[ipivot as usize];
@@ -58,7 +58,7 @@ pub(crate) fn solve_triangular(
                     flop_count += 1;
                 }
                 if x.abs() > droptol {
-                    pattern[nz as usize] = ipivot;
+                    pattern[nz] = ipivot;
                     nz += 1;
                 } else {
                     lhs[ipivot as usize] = 0.0;
@@ -67,7 +67,7 @@ pub(crate) fn solve_triangular(
         }
     } else if let Some(pivot) = pivot {
         for n in 0..nz_symb {
-            let ipivot = pattern_symb[n as usize];
+            let ipivot = pattern_symb[n];
             if lhs[ipivot as usize] != 0.0 {
                 // let x = lhs[ipivot] /= pivot[ipivot]; TODO check
                 lhs[ipivot as usize] /= pivot[ipivot as usize];
@@ -82,7 +82,7 @@ pub(crate) fn solve_triangular(
                     pos += 1;
                 }
                 if x.abs() > droptol {
-                    pattern[nz as usize] = ipivot;
+                    pattern[nz] = ipivot;
                     nz += 1;
                 } else {
                     lhs[ipivot as usize] = 0.0;
@@ -91,7 +91,7 @@ pub(crate) fn solve_triangular(
         }
     } else if let Some(end) = end {
         for n in 0..nz_symb {
-            let ipivot = pattern_symb[n as usize];
+            let ipivot = pattern_symb[n];
             if lhs[ipivot as usize] != 0.0 {
                 let x = lhs[ipivot as usize];
                 // for (pos = begin[ipivot]; pos < end[ipivot]; pos++)
@@ -101,7 +101,7 @@ pub(crate) fn solve_triangular(
                     flop_count += 1;
                 }
                 if x.abs() > droptol {
-                    pattern[nz as usize] = ipivot;
+                    pattern[nz] = ipivot;
                     nz += 1;
                 } else {
                     lhs[ipivot as usize] = 0.0;
@@ -110,7 +110,7 @@ pub(crate) fn solve_triangular(
         }
     } else {
         for n in 0..nz_symb {
-            let ipivot = pattern_symb[n as usize];
+            let ipivot = pattern_symb[n];
             if lhs[ipivot as usize] != 0.0 {
                 let x = lhs[ipivot as usize];
                 // for (pos = begin[ipivot]; (i = index[pos]) >= 0; pos++)
@@ -122,7 +122,7 @@ pub(crate) fn solve_triangular(
                     pos += 1;
                 }
                 if x.abs() > droptol {
-                    pattern[nz as usize] = ipivot;
+                    pattern[nz] = ipivot;
                     nz += 1;
                 } else {
                     lhs[ipivot as usize] = 0.0;

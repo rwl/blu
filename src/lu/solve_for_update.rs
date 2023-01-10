@@ -11,10 +11,10 @@ use std::time::Instant;
 
 pub(crate) fn solve_for_update(
     lu: &mut LU,
-    nrhs: LUInt,
+    nrhs: usize,
     irhs: &[LUInt],
     xrhs: Option<&[f64]>,
-    p_nlhs: Option<&mut LUInt>,
+    p_nlhs: Option<&mut usize>,
     ilhs: Option<&mut [LUInt]>,
     xlhs: Option<&mut [f64]>,
     trans: char,
@@ -22,7 +22,7 @@ pub(crate) fn solve_for_update(
     let m = lu.m;
     let nforrest = lu.nforrest;
     let pivotlen = lu.pivotlen;
-    let nz_sparse = (lu.sparse_thres as LUInt) * m;
+    let nz_sparse = (lu.sparse_thres * m as f64) as usize;
     let droptol = lu.droptol;
     let p = &p!(lu);
     let pmap = &pmap!(lu);
@@ -67,10 +67,10 @@ pub(crate) fn solve_for_update(
         let pstack = &mut lu.work1;
         assert!(size_of::<LUInt>() <= size_of::<f64>());
 
-        let jpivot = irhs[0];
-        let ipivot = pmap[jpivot as usize];
-        let jbegin = w_begin[jpivot as usize];
-        let jend = w_end[jpivot as usize];
+        let jpivot = irhs[0] as usize;
+        let ipivot = pmap[jpivot];
+        let jbegin = w_begin[jpivot] as usize;
+        let jend = w_end[jpivot] as usize;
 
         // Compute row eta vector.
         // Symbolic pattern in pattern_symb[top..m-1], indices of (actual)
@@ -96,7 +96,7 @@ pub(crate) fn solve_for_update(
         let nz_symb = m - top;
 
         // reallocate if not enough memory in Li, Lx (where we store R)
-        let room = lu.l_mem - r_begin!(lu)[nforrest as usize];
+        let room = lu.l_mem - r_begin![lu][nforrest as usize] as usize;
         if room < nz_symb {
             lu.addmem_l = nz_symb - room;
             return Status::Reallocate;
@@ -132,7 +132,7 @@ pub(crate) fn solve_for_update(
         }
         r_begin!(lu)[nforrest as usize + 1] = put;
         eta_row!(lu)[nforrest as usize] = ipivot;
-        lu.btran_for_update = jpivot;
+        lu.btran_for_update = Some(jpivot);
 
         if !want_solution {
             return done(tic, lu, l_flops, u_flops, r_flops);
@@ -149,15 +149,15 @@ pub(crate) fn solve_for_update(
         let marker = lu.marker;
         pattern[0] = ipivot;
         marked[ipivot as usize] = marker;
-        let pivot = col_pivot[jpivot as usize];
+        let pivot = col_pivot[jpivot];
         xlhs[ipivot as usize] = 1.0 / pivot;
 
         let xdrop = droptol * pivot.abs();
-        let mut nz: LUInt = 1;
+        let mut nz: usize = 1;
         for pos in r_begin!(lu)[nforrest as usize]..r_begin!(lu)[(nforrest + 1) as usize] {
             if l_value[pos as usize].abs() > xdrop {
                 let i = l_index[pos as usize];
-                pattern[nz as usize] = i;
+                pattern[nz] = i;
                 nz += 1;
                 marked[i as usize] = marker;
                 xlhs[i as usize] = -l_value[pos as usize] / pivot;
@@ -220,7 +220,7 @@ pub(crate) fn solve_for_update(
         } else {
             // Sequential triangular solve with L'.
             // Solution scattered into xlhs, indices in ilhs[0..nz-1].
-            let mut nz: LUInt = 0;
+            let mut nz: usize = 0;
             // for (k = m-1; k >= 0; k--)
             for k in (0..m).rev() {
                 let ipivot = p[k as usize];
@@ -234,7 +234,7 @@ pub(crate) fn solve_for_update(
                         pos += 1;
                     }
                     if x.abs() > droptol {
-                        ilhs[nz as usize] = ipivot;
+                        ilhs[nz] = ipivot;
                         nz += 1;
                     } else {
                         xlhs[ipivot as usize] = 0.0;
@@ -326,14 +326,14 @@ pub(crate) fn solve_for_update(
                 nz += 1;
             }
         }
-        r_flops += r_begin!(lu)[nforrest as usize] - r_begin!(lu)[0];
+        r_flops += (r_begin!(lu)[nforrest as usize] - r_begin!(lu)[0]) as usize;
 
         // reallocate if not enough memory in U
-        let room = lu.u_mem - u_begin[m as usize];
+        let room = lu.u_mem - u_begin[m as usize] as usize;
         let need = nz + 1;
         if room < need {
             for n in 0..nz {
-                work[pattern[n as usize] as usize] = 0.0;
+                work[pattern[n] as usize] = 0.0;
             }
             lu.addmem_u = need - room;
             return Status::Reallocate;
@@ -342,7 +342,7 @@ pub(crate) fn solve_for_update(
         // Compress spike into U.
         let mut put = u_begin[m as usize];
         for n in 0..nz {
-            let i = pattern[n as usize];
+            let i = pattern[n];
             u_index[put as usize] = i;
             u_value[put as usize] = work[i as usize];
             put += 1;
@@ -352,7 +352,7 @@ pub(crate) fn solve_for_update(
         }
         u_index[put as usize] = -1; // terminate column
                                     // put += 1;
-        lu.ftran_for_update = 0;
+        lu.ftran_for_update = Some(0);
 
         if !want_solution {
             return done(tic, lu, l_flops, u_flops, r_flops);
@@ -437,7 +437,7 @@ pub(crate) fn solve_for_update(
     done(tic, lu, l_flops, u_flops, r_flops)
 }
 
-fn done(tic: Instant, lu: &mut LU, l_flops: LUInt, u_flops: LUInt, r_flops: LUInt) -> Status {
+fn done(tic: Instant, lu: &mut LU, l_flops: usize, u_flops: usize, r_flops: usize) -> Status {
     let elapsed = tic.elapsed().as_secs_f64();
     lu.time_solve += elapsed;
     lu.time_solve_total += elapsed;

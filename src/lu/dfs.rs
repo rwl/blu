@@ -23,18 +23,18 @@ use crate::LUInt;
 //
 // If node `i` is marked on entry, the function does nothing.
 pub(crate) fn dfs(
-    i: LUInt,
+    i: usize,
     begin: &[LUInt],
     end: Option<&[LUInt]>,
     index: &[LUInt],
-    top: LUInt,
+    top: usize,
     xi: &mut [LUInt],
     // pstack: &mut [lu_int],
     pstack: &mut [f64],
     marked: &mut [LUInt],
     m: LUInt,
-) -> LUInt {
-    if marked[i as usize] == m {
+) -> usize {
+    if marked[i as usize] == m as LUInt {
         return top;
     }
 
@@ -47,31 +47,31 @@ pub(crate) fn dfs(
 
 // adapted from T. Davis, CSPARSE
 fn dfs_end(
-    mut i: LUInt,
+    mut i: usize,
     begin: &[LUInt],
     end: &[LUInt],
     index: &[LUInt],
-    mut top: LUInt,
+    mut top: usize,
     xi: &mut [LUInt],
     // pstack: &mut [lu_int],
     pstack: &mut [f64],
     marked: &mut [LUInt],
     m: LUInt,
-) -> LUInt {
+) -> usize {
     let mut head: LUInt = 0;
-    assert_ne!(marked[i as usize], m);
+    assert_ne!(marked[i as usize], m as LUInt);
 
-    xi[0] = i;
+    xi[0] = i as LUInt;
     while head >= 0 {
-        i = xi[head as usize];
-        if marked[i as usize] != m {
+        i = xi[head as usize] as usize;
+        if marked[i] != m {
             // node i has not been visited
-            marked[i as usize] = m;
-            pstack[head as usize] = begin[i as usize] as f64;
+            marked[i] = m;
+            pstack[head as usize] = begin[i] as f64;
         }
         let mut done = 1;
         // continue dfs at node i
-        for p in (pstack[head as usize] as LUInt)..end[i as usize] {
+        for p in (pstack[head as usize] as LUInt)..end[i] {
             let inext = index[p as usize];
             if marked[inext as usize] == m {
                 continue; // skip visited node
@@ -88,7 +88,7 @@ fn dfs_end(
             head -= 1;
             // xi[--top] = i;
             top -= 1;
-            xi[top as usize] = i;
+            xi[top] = i as LUInt;
         }
     }
     top
@@ -96,26 +96,26 @@ fn dfs_end(
 
 // adapted from T. Davis, CSPARSE
 fn dfs_begin(
-    mut i: LUInt,
+    mut i: usize,
     begin: &[LUInt],
     index: &[LUInt],
-    mut top: LUInt,
+    mut top: usize,
     xi: &mut [LUInt],
     // pstack: &mut [lu_int],
     pstack: &mut [f64],
     marked: &mut [LUInt],
     m: LUInt,
-) -> LUInt {
+) -> usize {
     let mut head: LUInt = 0;
-    assert_ne!(marked[i as usize], m);
+    assert_ne!(marked[i as usize], m as LUInt);
 
-    xi[0] = i;
+    xi[0] = i as LUInt;
     while head >= 0 {
-        i = xi[head as usize];
-        if marked[i as usize] != m {
+        i = xi[head as usize] as usize;
+        if marked[i] != m {
             // node i has not been visited
-            marked[i as usize] = m;
-            pstack[head as usize] = begin[i as usize] as f64;
+            marked[i] = m;
+            pstack[head as usize] = begin[i] as f64;
         }
         let mut done = 1;
         // continue dfs at node i
@@ -138,9 +138,8 @@ fn dfs_begin(
             // node i has no unvisited neighbours
             head -= 1;
             top -= 1;
-            xi[top as usize] = i;
+            xi[top] = i as LUInt;
         }
     }
-
-    return top;
+    top
 }

@@ -9,7 +9,6 @@ use crate::lu::lu::*;
 use crate::lu::residual_test;
 use crate::lu::setup_bump;
 use crate::lu::singletons;
-use crate::LUInt;
 use crate::Status;
 use std::time::Instant;
 
@@ -30,9 +29,9 @@ use std::time::Instant;
 /// factorization after reallocation.
 pub fn factorize(
     lu: &mut LU,
-    b_begin: &[LUInt],
-    b_end: &[LUInt],
-    b_i: &[LUInt],
+    b_begin: &[usize],
+    b_end: &[usize],
+    b_i: &[usize],
     b_x: &[f64],
     c0ntinue: bool,
 ) -> Status {
@@ -106,9 +105,9 @@ pub fn factorize(
 
     // factorization successfully finished
     lu.task = Task::NoTask;
-    lu.nupdate = 0; // make factorization valid
-    lu.ftran_for_update = -1;
-    lu.btran_for_update = -1;
+    lu.nupdate = Some(0); // make factorization valid
+    lu.ftran_for_update = None;
+    lu.btran_for_update = None;
     lu.nfactorize += 1;
 
     lu.condest_l = condest(

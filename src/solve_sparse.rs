@@ -31,23 +31,23 @@ use crate::Status;
 pub fn solve_sparse(
     lu: &mut LU,
     nzrhs: LUInt,
-    irhs: &[LUInt],
+    irhs: &[usize],
     xrhs: &[f64],
-    p_nzlhs: &mut LUInt,
+    p_nzlhs: &mut usize,
     ilhs: &mut [LUInt],
     lhs: &mut [f64],
     trans: char,
 ) -> Status {
-    let status = if lu.nupdate < 0 {
+    let status = if lu.nupdate.is_none() {
         Status::ErrorInvalidCall
     } else {
         // check RHS indices
-        let mut ok = nzrhs >= 0 && nzrhs <= lu.m;
+        let mut ok = nzrhs >= 0 && nzrhs <= lu.m as LUInt;
         for n in 0..nzrhs as usize {
             if !ok {
                 break;
             }
-            ok = ok && irhs[n] >= 0 && irhs[n] < lu.m;
+            ok = ok && /*irhs[n] >= 0 &&*/ irhs[n] < lu.m;
         }
         if !ok {
             Status::ErrorInvalidArgument
@@ -57,7 +57,16 @@ pub fn solve_sparse(
     };
 
     if status == Status::OK {
-        lu::solve_sparse(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        lu::solve_sparse(
+            lu,
+            nzrhs as usize,
+            &irhs.iter().map(|&i| i as LUInt).collect::<Vec<LUInt>>(),
+            xrhs,
+            p_nzlhs,
+            ilhs,
+            lhs,
+            trans,
+        );
     }
 
     status

@@ -2,15 +2,14 @@
 // Copyright (C) 2022-2023 Richard Lincoln
 
 use crate::lu::lu::*;
-use crate::LUInt;
 
 // Computes the 1-norm and infinity-norm of the matrix that was freshly
 // factorized. Unit cols inserted by the factorization are handled implicitly.
 pub(crate) fn matrix_norm(
     lu: &mut LU,
-    b_begin: &[LUInt],
-    b_end: &[LUInt],
-    b_i: &[LUInt],
+    b_begin: &[usize],
+    b_end: &[usize],
+    b_i: &[usize],
     b_x: &[f64],
 ) {
     let m = lu.m;
@@ -19,7 +18,7 @@ pub(crate) fn matrix_norm(
     let pivotrow = &pivotrow!(lu);
     let rowsum = &mut lu.work1;
 
-    assert_eq!(lu.nupdate, 0);
+    assert_eq!(lu.nupdate.unwrap(), 0);
 
     for i in 0..m {
         rowsum[i as usize] = 0.0;

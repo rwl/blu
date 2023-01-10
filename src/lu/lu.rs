@@ -8,11 +8,11 @@ use crate::LU_INT_MAX;
 #[derive(Default)]
 pub struct LU {
     /// length of `l_i` and `l_x`
-    pub l_mem: LUInt,
+    pub l_mem: usize,
     /// length of `u_i` and `u_x`
-    pub u_mem: LUInt,
+    pub u_mem: usize,
     /// length of `w_i` and `w_x`
-    pub w_mem: LUInt,
+    pub w_mem: usize,
 
     /// Nonzeros which magnitude is less than or equal to the drop tolerance
     /// are removed. They are guaranteed removed at the end of the factorization.
@@ -29,19 +29,19 @@ pub struct LU {
 
     /// When this value is greater than or equal to zero, the pivot choice
     /// attempts to keep L sparse, putting entries into U when possible.
-    /// When this value is less than zero, the pivot choice attempts to keep U
+    /// When this value is `None`, the pivot choice attempts to keep U
     /// sparse, putting entries into L when possible. Default: 1
-    pub nzbias: LUInt,
+    pub nzbias: Option<usize>,
 
     /// The Markowitz search is terminated after searching `maxsearch` rows or
     /// columns if a numerically stable pivot element has been found. Default: 3
-    pub maxsearch: LUInt,
+    pub maxsearch: usize,
 
     /// When a row or column cannot be updated by the pivot operation in place,
     /// it is appended to the end of the workspace. For a row or column with nz
     /// elements, `pad` + nz * `stretch` elements extra space are added for later
     /// fill-in. Default: 4
-    pub pad: LUInt,
+    pub pad: usize,
     /// Default: 0.3
     pub stretch: f64,
 
@@ -66,21 +66,21 @@ pub struct LU {
     pub search_rows: LUInt,
 
     // user readable //
-    pub(crate) m: LUInt,
+    pub(crate) m: usize,
 
-    pub(crate) addmem_l: LUInt,
-    pub(crate) addmem_u: LUInt,
-    pub(crate) addmem_w: LUInt,
+    pub(crate) addmem_l: usize,
+    pub(crate) addmem_u: usize,
+    pub(crate) addmem_w: usize,
 
-    pub(crate) nupdate: LUInt,
-    pub(crate) nforrest: LUInt,
-    pub(crate) nfactorize: LUInt,
-    pub(crate) nupdate_total: LUInt,
-    pub(crate) nforrest_total: LUInt,
-    pub(crate) nsymperm_total: LUInt,
-    pub(crate) l_nz: LUInt, // nz in L excluding diagonal
-    pub(crate) u_nz: LUInt, // nz in U excluding diagonal
-    pub(crate) r_nz: LUInt, // nz in update etas excluding diagonal
+    pub(crate) nupdate: Option<usize>,
+    pub(crate) nforrest: usize,
+    pub(crate) nfactorize: usize,
+    pub(crate) nupdate_total: usize,
+    pub(crate) nforrest_total: usize,
+    pub(crate) nsymperm_total: usize,
+    pub(crate) l_nz: usize, // nz in L excluding diagonal
+    pub(crate) u_nz: usize, // nz in U excluding diagonal
+    pub(crate) r_nz: usize, // nz in update etas excluding diagonal
     pub(crate) min_pivot: f64,
     pub(crate) max_pivot: f64,
     pub(crate) max_eta: f64,
@@ -92,9 +92,9 @@ pub struct LU {
     pub(crate) time_factorize_total: f64,
     pub(crate) time_solve_total: f64,
     pub(crate) time_update_total: f64,
-    pub(crate) l_flops: LUInt,
-    pub(crate) u_flops: LUInt,
-    pub(crate) r_flops: LUInt,
+    pub(crate) l_flops: usize,
+    pub(crate) u_flops: usize,
+    pub(crate) r_flops: usize,
     pub(crate) condest_l: f64,
     pub(crate) condest_u: f64,
     pub(crate) norm_l: f64,
@@ -105,14 +105,14 @@ pub struct LU {
     pub(crate) infnorm: f64, // factorization with dependent cols replaced
     pub(crate) residual_test: f64, // computed by residual_test()
 
-    pub(crate) matrix_nz: LUInt, // nz in basis matrix when factorized
-    pub(crate) rank: LUInt,      // rank of basis matrix when factorized
-    pub(crate) bump_size: LUInt,
-    pub(crate) bump_nz: LUInt,
-    pub(crate) nsearch_pivot: LUInt, // # rows/cols searched for pivot
-    pub(crate) nexpand: LUInt,       // # rows/cols expanded in factorize
-    pub(crate) ngarbage: LUInt,      // # garbage collections in factorize
-    pub(crate) factor_flops: LUInt,  // # flops in factorize
+    pub(crate) matrix_nz: usize, // nz in basis matrix when factorized
+    pub(crate) rank: usize,      // rank of basis matrix when factorized
+    pub(crate) bump_size: usize,
+    pub(crate) bump_nz: usize,
+    pub(crate) nsearch_pivot: usize, // # rows/cols searched for pivot
+    pub(crate) nexpand: usize,       // # rows/cols expanded in factorize
+    pub(crate) ngarbage: usize,      // # garbage collections in factorize
+    pub(crate) factor_flops: usize,  // # flops in factorize
     pub(crate) time_singletons: f64,
     pub(crate) time_search_pivot: f64,
     pub(crate) time_elim_pivot: f64,
@@ -120,17 +120,17 @@ pub struct LU {
     pub(crate) pivot_error: f64, // error estimate for pivot in last update
 
     // private //
-    pub(crate) task: Task,              // the part of factorization in progress
-    pub(crate) pivot_row: LUInt,        // chosen pivot row
-    pub(crate) pivot_col: LUInt,        // chosen pivot column
-    pub(crate) ftran_for_update: LUInt, // >= 0 if FTRAN prepared for update
-    pub(crate) btran_for_update: LUInt, // >= 0 if BTRAN prepared for update
-    pub(crate) marker: LUInt,           // see @marked, below
-    pub(crate) pivotlen: LUInt,         // length of @pivotcol, @pivotrow; <= 2*m
-    pub(crate) rankdef: LUInt,          // # columns removed from active submatrix
+    pub(crate) task: Task, // the part of factorization in progress
+    pub(crate) pivot_row: Option<usize>, // chosen pivot row
+    pub(crate) pivot_col: Option<usize>, // chosen pivot column
+    pub(crate) ftran_for_update: Option<usize>, // >= 0 if FTRAN prepared for update
+    pub(crate) btran_for_update: Option<usize>, // >= 0 if BTRAN prepared for update
+    pub(crate) marker: LUInt, // see @marked, below
+    pub(crate) pivotlen: usize, // length of @pivotcol, @pivotrow; <= 2*m
+    pub(crate) rankdef: usize, // # columns removed from active submatrix
     // because maximum was 0 or < abstol
-    pub(crate) min_colnz: LUInt, // colcount lists 1..min_colnz-1 are empty
-    pub(crate) min_rownz: LUInt, // rowcount lists 1..min_rownz-1 are empty
+    pub(crate) min_colnz: usize, // colcount lists 1..min_colnz-1 are empty
+    pub(crate) min_rownz: usize, // rowcount lists 1..min_rownz-1 are empty
 
     // Arrays used for workspace during the factorization and to store the
     // final factors.
@@ -198,22 +198,22 @@ macro_rules! iwork1 {
 }
 macro_rules! l_begin {
     ($lu:ident) => {
-        $lu.w_begin[$lu.m as usize + 1..]
+        $lu.w_begin[$lu.m + 1..]
     };
 }
 macro_rules! lt_begin {
     ($lu:ident) => {
-        $lu.w_end[$lu.m as usize + 1..]
+        $lu.w_end[$lu.m + 1..]
     };
 }
 macro_rules! lt_begin_p {
     ($lu:ident) => {
-        $lu.w_flink[$lu.m as usize + 1..]
+        $lu.w_flink[$lu.m + 1..]
     };
 }
 macro_rules! p {
     ($lu:ident) => {
-        $lu.w_blink[$lu.m as usize + 1..]
+        $lu.w_blink[$lu.m + 1..]
     };
 }
 macro_rules! pmap {
@@ -240,7 +240,7 @@ pub(crate) use {
 impl LU {
     /// Make a BLU instance. Set parameters to defaults and initialize global counters.
     /// Reset instance for a fresh factorization.
-    pub fn new(m: LUInt, b_nz: LUInt) -> Self {
+    pub fn new(m: usize, b_nz: usize) -> Self {
         let mut lu = LU {
             l_mem: b_nz,
             u_mem: b_nz,
@@ -250,7 +250,7 @@ impl LU {
             droptol: 1e-20,
             abstol: 1e-14,
             reltol: 0.1,
-            nzbias: 1,
+            nzbias: Some(1),
             maxsearch: 3,
             pad: 4,
             stretch: 0.3,
@@ -269,32 +269,32 @@ impl LU {
             time_solve_total: 0.0,
             time_update_total: 0.0,
 
-            l_index: vec![0; b_nz as usize],
-            u_index: vec![0; b_nz as usize],
-            w_index: vec![0; b_nz as usize],
+            l_index: vec![0; b_nz],
+            u_index: vec![0; b_nz],
+            w_index: vec![0; b_nz],
 
-            l_value: vec![0.0; b_nz as usize],
-            u_value: vec![0.0; b_nz as usize],
-            w_value: vec![0.0; b_nz as usize],
+            l_value: vec![0.0; b_nz],
+            u_value: vec![0.0; b_nz],
+            w_value: vec![0.0; b_nz],
 
-            colcount_flink: vec![0; 2 * m as usize + 2],
-            colcount_blink: vec![0; 2 * m as usize + 2],
-            rowcount_flink: vec![0; 2 * m as usize + 2],
-            rowcount_blink: vec![0; 2 * m as usize + 2],
-            w_begin: vec![0; 2 * m as usize + 2],
-            w_end: vec![0; 2 * m as usize + 2],
-            w_flink: vec![0; 2 * m as usize + 2],
-            w_blink: vec![0; 2 * m as usize + 2],
-            pinv: vec![0; m as usize],
-            qinv: vec![0; m as usize],
-            l_begin_p: vec![0; m as usize + 1],
-            u_begin: vec![0; m as usize + 1],
-            iwork0: vec![0; m as usize],
+            colcount_flink: vec![0; 2 * m + 2],
+            colcount_blink: vec![0; 2 * m + 2],
+            rowcount_flink: vec![0; 2 * m + 2],
+            rowcount_blink: vec![0; 2 * m + 2],
+            w_begin: vec![0; 2 * m + 2],
+            w_end: vec![0; 2 * m + 2],
+            w_flink: vec![0; 2 * m + 2],
+            w_blink: vec![0; 2 * m + 2],
+            pinv: vec![0; m],
+            qinv: vec![0; m],
+            l_begin_p: vec![0; m + 1],
+            u_begin: vec![0; m + 1],
+            iwork0: vec![0; m],
 
-            work0: vec![0.0; m as usize],
-            work1: vec![0.0; m as usize],
-            col_pivot: vec![0.0; m as usize],
-            row_pivot: vec![0.0; m as usize],
+            work0: vec![0.0; m],
+            work1: vec![0.0; m],
+            col_pivot: vec![0.0; m],
+            row_pivot: vec![0.0; m],
 
             ..Default::default()
         };
@@ -307,10 +307,10 @@ impl LU {
 
         // One past the final position in @Wend must hold the file size.
         // The file has 2*m lines while factorizing and m lines otherwise.
-        if lu.nupdate >= 0 {
-            lu.w_end[m as usize] = lu.w_mem;
+        if lu.nupdate.is_some() {
+            lu.w_end[m] = lu.w_mem as LUInt;
         } else {
-            lu.w_end[2 * m as usize] = lu.w_mem;
+            lu.w_end[2 * m] = lu.w_mem as LUInt;
         }
 
         lu.reset();
@@ -328,7 +328,7 @@ impl LU {
     /// Reset for a new factorization. Invalidate current factorization.
     pub fn reset(&mut self) {
         // user readable
-        self.nupdate = -1; // invalidate factorization
+        self.nupdate = None; // invalidate factorization
         self.nforrest = 0;
         self.l_nz = 0;
         self.u_nz = 0;
@@ -370,10 +370,10 @@ impl LU {
 
         // private
         self.task = Task::NoTask;
-        self.pivot_row = -1;
-        self.pivot_col = -1;
-        self.ftran_for_update = -1;
-        self.btran_for_update = -1;
+        self.pivot_row = None;
+        self.pivot_col = None;
+        self.ftran_for_update = None;
+        self.btran_for_update = None;
         self.marker = 0;
         self.pivotlen = 0;
         self.rankdef = 0;
@@ -382,7 +382,7 @@ impl LU {
 
         // One past the final position in @Wend must hold the file size.
         // The file has 2*m lines during factorization.
-        self.w_end[2 * self.m as usize] = self.w_mem;
+        self.w_end[2 * self.m] = self.w_mem as LUInt;
 
         // The integer workspace iwork0 must be zeroed for a new factorization.
         // The double workspace work0 actually needs only be zeroed once in the
@@ -396,7 +396,7 @@ impl LU {
     }
 
     /// Matrix dimension (constant).
-    pub fn m(&self) -> LUInt {
+    pub fn m(&self) -> usize {
         self.m
     }
 
@@ -410,71 +410,71 @@ impl LU {
     ///
     /// [`blu_factorize()`] can be called again with `c0ntinue` not equal to
     /// zero to continue the factorization.
-    pub fn addmem_l(&self) -> LUInt {
+    pub fn addmem_l(&self) -> usize {
         self.addmem_l
     }
 
     /// Factorization requires more memory in `u_i`,`u_x`. The number of additional
     /// elements in each of the array pairs required for the next pivot operation.
-    pub fn addmem_u(&self) -> LUInt {
+    pub fn addmem_u(&self) -> usize {
         self.addmem_u
     }
 
     /// Factorization requires more memory in `w_i`,`w_x`. The number of additional
     /// elements in each of the array pairs required for the next pivot operation.
-    pub fn addmem_w(&self) -> LUInt {
+    pub fn addmem_w(&self) -> usize {
         self.addmem_w
     }
 
     /// Number of updates since last factorization. This is
     /// the sum of Forrest-Tomlin updates and permutation
     /// updates.
-    pub fn nupdate(&self) -> LUInt {
+    pub fn nupdate(&self) -> Option<usize> {
         self.nupdate
     }
 
     /// Number of Forrest-Tomlin updates since last factorization.
     /// The upper limit on Forrest-Tomlin updates before refactorization is `m`,
     /// but that is far too much for performance reasons and numerical stability.
-    pub fn nforrest(&self) -> LUInt {
+    pub fn nforrest(&self) -> usize {
         self.nforrest
     }
 
     /// Number of factorizations since initialization.
-    pub fn nfactorize(&self) -> LUInt {
+    pub fn nfactorize(&self) -> usize {
         self.nfactorize
     }
 
     /// Number of updates since initialization.
-    pub fn nupdate_total(&self) -> LUInt {
+    pub fn nupdate_total(&self) -> usize {
         self.nupdate_total
     }
 
     /// Number of Forrest-Tomlin updates since initialization.
-    pub fn nforrest_total(&self) -> LUInt {
+    pub fn nforrest_total(&self) -> usize {
         self.nforrest_total
     }
 
     /// Number of symmetric permutation updates since initialization.
     /// A permutation update is "symmetric" if the row and column
     /// permutation can be updated symmetrically.
-    pub fn nsymperm_total(&self) -> LUInt {
+    pub fn nsymperm_total(&self) -> usize {
         self.nsymperm_total
     }
 
     /// Number of nonzeros in `L` excluding diagonal elements (not changed by updates).
-    pub fn l_nz(&self) -> LUInt {
+    pub fn l_nz(&self) -> usize {
         self.l_nz
     }
 
     /// Number of nonzeros in `U` excluding diagonal elements (changed by updates).
-    pub fn u_nz(&self) -> LUInt {
+    pub fn u_nz(&self) -> usize {
         self.u_nz
     }
 
     /// Number of nonzeros in update ETA vectors excluding diagonal elements (zero after
     /// factorization, increased by Forrest-Tomlin updates).
-    pub fn r_nz(&self) -> LUInt {
+    pub fn r_nz(&self) -> usize {
         self.r_nz
     }
 
@@ -530,19 +530,19 @@ impl LU {
 
     /// Number of flops for operations with `L` vectors in calls to
     /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
-    pub fn l_flops(&self) -> LUInt {
+    pub fn l_flops(&self) -> usize {
         self.l_flops
     }
 
     /// Number of flops for operations with `U` vectors in calls to
     /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
-    pub fn u_flops(&self) -> LUInt {
+    pub fn u_flops(&self) -> usize {
         self.u_flops
     }
 
     /// Number of flops for operations with update ETA vectors in calls to
     /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
-    pub fn r_flops(&self) -> LUInt {
+    pub fn r_flops(&self) -> usize {
         self.r_flops
     }
 
@@ -609,45 +609,45 @@ impl LU {
     }
 
     /// Number of nonzeros in basis matrix (`B`) when factorized.
-    pub fn matrix_nz(&self) -> LUInt {
+    pub fn matrix_nz(&self) -> usize {
         self.matrix_nz
     }
 
     /// number of pivot steps performed
-    pub fn rank(&self) -> LUInt {
+    pub fn rank(&self) -> usize {
         // rank of basis matrix when factorized
         self.rank
     }
 
     /// Dimension of matrix after removing singletons.
-    pub fn bump_size(&self) -> LUInt {
+    pub fn bump_size(&self) -> usize {
         self.bump_size
     }
 
     /// Number of nonzeros in matrix after removing singletons.
-    pub fn bump_nz(&self) -> LUInt {
+    pub fn bump_nz(&self) -> usize {
         self.bump_nz
     }
 
     /// Total number of columns/rows searched for pivots.
-    pub fn nsearch_pivot(&self) -> LUInt {
+    pub fn nsearch_pivot(&self) -> usize {
         self.nsearch_pivot
     }
 
     /// Number of columns/rows which had to be appended to the end
     /// of the workspace for the rank-1 update.
-    pub fn nexpand(&self) -> LUInt {
+    pub fn nexpand(&self) -> usize {
         self.nexpand
     }
 
     /// Number of garbage collections in factorize.
-    pub fn ngarbage(&self) -> LUInt {
+    pub fn ngarbage(&self) -> usize {
         self.ngarbage
     }
 
     /// Number of floating point operations performed in factorize,
     /// counting multiply-add as one flop.
-    pub fn factor_flops(&self) -> LUInt {
+    pub fn factor_flops(&self) -> usize {
         self.factor_flops
     }
 

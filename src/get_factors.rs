@@ -50,18 +50,18 @@ pub fn get_factors(
     u_rowidx: Option<&mut [LUInt]>,
     u_value_: Option<&mut [f64]>,
 ) -> Status {
-    if lu.nupdate != 0 {
+    if lu.nupdate.unwrap() != 0 {
         return Status::ErrorInvalidCall;
     }
     let m = lu.m;
 
     if let Some(rowperm) = rowperm {
         // memcpy(rowperm, lu.pivotrow, m * sizeof(lu_int));
-        rowperm.copy_from_slice(&pivotrow![lu][..m as usize]);
+        rowperm.copy_from_slice(&pivotrow![lu][..m]);
     }
     if let Some(colperm) = colperm {
         // memcpy(colperm, lu.pivotcol, m * sizeof(lu_int));
-        colperm.copy_from_slice(&pivotcol![lu][..m as usize]);
+        colperm.copy_from_slice(&pivotcol![lu][..m]);
     }
 
     if l_colptr.is_some() && l_rowidx.is_some() && l_value_.is_some() {
@@ -82,25 +82,25 @@ pub fn get_factors(
         // columnwise L so that the row indices become sorted.
         let mut put = 0;
         for k in 0..m {
-            l_colptr[k as usize] = put;
-            l_rowidx[put as usize] = k;
+            l_colptr[k] = put;
+            l_rowidx[put as usize] = k as LUInt;
             l_value_[put as usize] = 1.0;
             put += 1;
-            colptr[p[k as usize] as usize] = put; // next free position in column
-            put += lu.l_begin_p[(k + 1) as usize] - lu.l_begin_p[k as usize] - 1;
+            colptr[p[k] as usize] = put; // next free position in column
+            put += lu.l_begin_p[k + 1] - lu.l_begin_p[k] - 1;
             // subtract 1 because internal storage uses (-1) terminators
         }
-        l_colptr[m as usize] = put;
-        assert_eq!(put, lu.l_nz + m);
+        l_colptr[m] = put;
+        assert_eq!(put as usize, lu.l_nz + m);
 
         for k in 0..m {
-            let mut pos = lt_begin_p[k as usize];
+            let mut pos = lt_begin_p[k];
             while l_index[pos as usize] >= 0 {
                 let i = l_index[pos as usize];
                 // put = colptr[i]++; TODO: check
                 put = colptr[i as usize];
                 colptr[i as usize] += 1;
-                l_rowidx[put as usize] = k;
+                l_rowidx[put as usize] = k as LUInt;
                 l_value_[put as usize] = l_value[pos as usize];
                 pos += 1;
             }
@@ -108,7 +108,7 @@ pub fn get_factors(
 
         if cfg!(feature = "debug") {
             for k in 0..m {
-                assert_eq!(colptr[p[k as usize] as usize], l_colptr[(k + 1) as usize]);
+                assert_eq!(colptr[p[k] as usize], l_colptr[k + 1]);
             }
         }
     }
@@ -131,44 +131,41 @@ pub fn get_factors(
         // memset(colptr, 0, m*sizeof(lu_int)); /* column counts */
         colptr.fill(0); // column counts
         for j in 0..m {
-            for pos in lu.w_begin[j as usize]..lu.w_end[j as usize] {
+            for pos in lu.w_begin[j]..lu.w_end[j] {
                 colptr[w_index[pos as usize] as usize] += 1;
             }
         }
         let mut put = 0;
         for k in 0..m {
             // set column pointers
-            let j = pivotcol[k as usize];
-            u_colptr[k as usize] = put;
+            let j = pivotcol[k];
+            u_colptr[k] = put;
             put += colptr[j as usize];
-            colptr[j as usize] = u_colptr[k as usize]; // next free position in column
-            u_rowidx[put as usize] = k;
+            colptr[j as usize] = u_colptr[k]; // next free position in column
+            u_rowidx[put as usize] = k as LUInt;
             u_value_[put as usize] = lu.col_pivot[j as usize];
             put += 1;
         }
-        u_colptr[m as usize] = put;
-        assert_eq!(put, lu.u_nz + m);
+        u_colptr[m] = put;
+        assert_eq!(put as usize, lu.u_nz + m);
         for k in 0..m {
             // scatter row k
-            let j = pivotcol[k as usize];
+            let j = pivotcol[k];
             for pos in lu.w_begin[j as usize]..lu.w_end[j as usize] {
                 // put = colptr[Windex[pos]]++;  TODO: check
                 put = colptr[w_index[pos as usize] as usize];
                 colptr[w_index[pos as usize] as usize] += 1;
-                u_rowidx[put as usize] = k;
+                u_rowidx[put as usize] = k as LUInt;
                 u_value_[put as usize] = w_value[pos as usize];
             }
         }
 
         if cfg!(feature = "debug") {
             for k in 0..m {
-                assert_eq!(
-                    colptr[pivotcol[k as usize] as usize],
-                    u_colptr[(k + 1) as usize] - 1
-                );
+                assert_eq!(colptr[pivotcol[k] as usize], u_colptr[k + 1] - 1);
             }
             for k in 0..m {
-                assert_eq!(u_rowidx[u_colptr[(k + 1) as usize] as usize - 1], k);
+                assert_eq!(u_rowidx[u_colptr[k + 1] as usize - 1] as usize, k);
             }
         }
     }

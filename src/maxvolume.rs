@@ -61,9 +61,9 @@ use crate::Status;
 /// caused by the call to `maxvolume()`.
 pub fn maxvolume(
     obj: &mut BLU,
-    ncol: LUInt,
-    a_p: &[LUInt],
-    a_i: &[LUInt],
+    ncol: usize,
+    a_p: &[usize],
+    a_i: &[usize],
     a_x: &[f64],
     basis: &mut [LUInt],
     isbasic: &mut [LUInt],
@@ -120,9 +120,9 @@ pub fn maxvolume(
         let mut xtbl = 0.0;
         let mut imax = 0;
         for k in 0..obj.nzlhs {
-            let i = obj.ilhs[k as usize];
-            if obj.lhs[i as usize].abs() > xmax {
-                xtbl = obj.lhs[i as usize];
+            let i = obj.ilhs[k as usize] as usize;
+            if obj.lhs[i].abs() > xmax {
+                xtbl = obj.lhs[i];
                 xmax = xtbl.abs();
                 imax = i;
             }
@@ -136,7 +136,7 @@ pub fn maxvolume(
         // Update basis.
         isbasic[basis[imax as usize] as usize] = 0;
         isbasic[j as usize] = 1;
-        basis[imax as usize] = j;
+        basis[imax as usize] = j as LUInt;
         nupdate += 1;
 
         // Prepare to update factorization.
@@ -175,7 +175,7 @@ pub fn maxvolume(
 }
 
 // factorize A[:,basis]
-fn factorize(obj: &mut BLU, a_p: &[LUInt], a_i: &[LUInt], a_x: &[f64], basis: &[LUInt]) -> Status {
+fn factorize(obj: &mut BLU, a_p: &[usize], a_i: &[usize], a_x: &[f64], basis: &[LUInt]) -> Status {
     let m = obj.lu.m as usize;
 
     let mut begin = vec![0; m];
@@ -200,8 +200,8 @@ fn factorize(obj: &mut BLU, a_p: &[LUInt], a_i: &[LUInt], a_x: &[f64], basis: &[
 // Note: refactorize_if_needed() will not do an initial factorization.
 fn refactorize_if_needed(
     obj: &mut BLU,
-    a_p: &[LUInt],
-    a_i: &[LUInt],
+    a_p: &[usize],
+    a_i: &[usize],
     a_x: &[f64],
     basis: &[LUInt],
 ) -> Status {

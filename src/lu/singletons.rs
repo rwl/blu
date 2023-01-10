@@ -33,7 +33,7 @@ use std::time::Instant;
 //
 // `singletons()` does `rank >= 0` steps of factorization until no singletons are
 // left. We can either eliminate singleton columns before singleton rows or vice
-// versa. When `nzbias >= 0`, then eliminate singleton columns first to keep `L`
+// versa. When `nzbias` is not `None`, then eliminate singleton columns first to keep `L`
 // sparse. Otherwise eliminate singleton rows first. The resulting permutations
 // `P`, `Q` (stored in inverse form) make `PBQ'` of the form
 //
@@ -80,9 +80,9 @@ use std::time::Instant;
 // - `OK`
 pub(crate) fn singletons(
     lu: &mut LU,
-    b_begin: &[LUInt],
-    b_end: &[LUInt],
-    b_i: &[LUInt],
+    b_begin: &[usize],
+    b_end: &[usize],
+    b_i: &[usize],
     b_x: &[f64],
 ) -> Status {
     let m = lu.m;
@@ -116,14 +116,14 @@ pub(crate) fn singletons(
     // Check matrix and build transpose //
 
     // Check pointers and count nnz(B).
-    let mut b_nz = 0;
+    let mut b_nz: usize = 0;
     let mut ok = 1;
     let mut j = 0;
     while j < m && ok != 0 {
-        if b_end[j as usize] < b_begin[j as usize] {
+        if b_end[j] < b_begin[j] {
             ok = 0;
         } else {
-            b_nz += b_end[j as usize] - b_begin[j as usize];
+            b_nz += (b_end[j] - b_begin[j]) as usize;
         }
         j += 1;
     }
@@ -155,13 +155,14 @@ pub(crate) fn singletons(
     let mut ok = 1;
     let mut j = 0;
     while j < m && ok != 0 {
-        let mut pos = b_begin[j as usize];
-        while pos < b_end[j as usize] && ok != 0 {
+        let mut pos = b_begin[j];
+        while pos < b_end[j] && ok != 0 {
             let i = b_i[pos as usize];
-            if i < 0 || i >= m {
+            // if i < 0 || i as usize >= m {
+            if i >= m {
                 ok = 0;
             } else {
-                iwork1[i as usize] += 1;
+                iwork1[i] += 1;
             }
             pos += 1;
         }
@@ -172,25 +173,25 @@ pub(crate) fn singletons(
     }
 
     // Pack matrix rowwise, check for duplicates.
-    let mut put = 0;
+    let mut put: usize = 0;
     for i in 0..m as usize {
         // set row pointers
-        b_tp[i] = put;
-        put += iwork1[i];
+        b_tp[i] = put as LUInt;
+        put += iwork1[i] as usize;
         iwork1[i] = b_tp[i];
     }
-    b_tp[m as usize] = put;
+    b_tp[m as usize] = put as LUInt;
     assert_eq!(put, b_nz);
     let mut ok = 1;
     for j in 0..m {
         // fill rows
-        for pos in b_begin[j as usize]..b_end[j as usize] {
-            let i = b_i[pos as usize] as usize;
-            put = iwork1[i];
+        for pos in b_begin[j] as usize..b_end[j] as usize {
+            let i = b_i[pos] as usize;
+            put = iwork1[i] as usize;
             iwork1[i] += 1;
-            b_ti[put as usize] = j;
-            b_tx[put as usize] = b_x[pos as usize];
-            if put > b_tp[i] && b_ti[(put - 1) as usize] == j {
+            b_ti[put] = j as LUInt;
+            b_tx[put] = b_x[pos];
+            if put > b_tp[i] as usize && b_ti[put - 1] as usize == j {
                 ok = 0;
             }
         }
@@ -209,7 +210,7 @@ pub(crate) fn singletons(
         qinv[j as usize] = -1;
     }
 
-    let rank = if nzbias >= 0 {
+    let rank = if nzbias.is_some() {
         // put more in U
         l_begin_p[0] = 0;
         u_begin[0] = 0;
@@ -283,10 +284,10 @@ pub(crate) fn singletons(
 //
 // [1] T. Davis, "Direct methods for sparse linear systems"
 pub(crate) fn singleton_cols(
-    m: LUInt,
-    b_begin: &[LUInt], // B columnwise
-    b_end: &[LUInt],
-    b_i: &[LUInt],
+    m: usize,
+    b_begin: &[usize], // B columnwise
+    b_end: &[usize],
+    b_i: &[usize],
     _b_x: &[f64],
     b_tp: &[LUInt], /* B rowwise */
     b_ti: &[LUInt],
@@ -302,9 +303,9 @@ pub(crate) fn singleton_cols(
     qinv: &mut [LUInt],
     iset: &mut [LUInt],  // size m workspace
     queue: &mut [LUInt], // size m workspace
-    mut rank: LUInt,
+    mut rank: usize,
     abstol: f64,
-) -> LUInt {
+) -> usize {
     // lu_int i, j, j2, nz, pos, put, end, front, tail;
     // double piv;
     let mut rk = rank;
@@ -312,31 +313,31 @@ pub(crate) fn singleton_cols(
     // Build index sets and initialize queue.
     let mut tail = 0;
     for j in 0..m {
-        if qinv[j as usize] < 0 {
-            let nz = b_end[j as usize] - b_begin[j as usize];
+        if qinv[j] < 0 {
+            let nz = b_end[j] - b_begin[j];
             let mut i = 0;
-            for pos in b_begin[j as usize]..b_end[j as usize] {
+            for pos in b_begin[j]..b_end[j] {
                 i ^= b_i[pos as usize]; // put row into set j
             }
-            iset[j as usize] = i;
-            qinv[j as usize] = -nz - 1; // use as nonzero counter
+            iset[j] = i as LUInt;
+            qinv[j] = -(nz as LUInt) - 1; // use as nonzero counter
             if nz == 1 {
-                queue[tail] = j;
+                queue[tail] = j as LUInt;
                 tail += 1;
             }
         }
     }
 
     // Eliminate singleton columns.
-    let mut put = u_p[rank as usize];
+    let mut put = u_p[rank];
     for front in 0..tail {
         let j = queue[front];
         assert!(qinv[j as usize] == -2 || qinv[j as usize] == -1);
         if qinv[j as usize] == -1 {
             continue; // empty column in active submatrix
         }
-        let i = iset[j as usize];
-        assert!(i >= 0 && i < m);
+        let i = iset[j as usize] as usize;
+        assert!(/*i >= 0 &&*/ i < m);
         assert!(pinv[i as usize] < 0);
         let end = b_tp[(i + 1) as usize];
 
@@ -353,8 +354,8 @@ pub(crate) fn singleton_cols(
         }
 
         // Eliminate pivot.
-        qinv[j as usize] = rank;
-        pinv[i as usize] = rank;
+        qinv[j as usize] = rank as LUInt;
+        pinv[i as usize] = rank as LUInt;
         for pos in b_tp[i as usize]..end {
             let j2 = b_ti[pos as usize];
             if qinv[j2 as usize] < 0 {
@@ -364,7 +365,7 @@ pub(crate) fn singleton_cols(
                 u_i[put as usize] = j2;
                 u_x[put as usize] = b_tx[pos as usize];
                 put += 1;
-                iset[j2 as usize] ^= i; // remove i from set j2
+                iset[j2 as usize] ^= i as LUInt; // remove i from set j2
 
                 // if (++qinv[j2] == -2) {
                 qinv[j2 as usize] += 1;
@@ -374,7 +375,7 @@ pub(crate) fn singleton_cols(
                 }
             }
         }
-        u_p[(rank + 1) as usize] = put;
+        u_p[rank + 1] = put;
         col_pivot[j as usize] = piv;
         rank += 1;
     }
@@ -394,10 +395,10 @@ pub(crate) fn singleton_cols(
 // associated column is stored in `L` and divided by the pivot element. The
 // pivot element is stored in `col_pivot`.
 fn singleton_rows(
-    m: LUInt,
-    b_begin: &[LUInt], // B columnwise
-    b_end: &[LUInt],
-    b_i: &[LUInt],
+    m: usize,
+    b_begin: &[usize], // B columnwise
+    b_end: &[usize],
+    b_i: &[usize],
     b_x: &[f64],
     b_tp: &[LUInt], // B rowwise
     b_ti: &[LUInt],
@@ -413,9 +414,9 @@ fn singleton_rows(
     qinv: &mut [LUInt],
     iset: &mut [LUInt],  // size m workspace
     queue: &mut [LUInt], // size m workspace
-    mut rank: LUInt,
+    mut rank: usize,
     abstol: f64,
-) -> LUInt {
+) -> usize {
     // lu_int i, j, i2, nz, pos, put, end, front, tail, rk = rank;
     // double piv;
     let mut rk = rank;
@@ -423,70 +424,70 @@ fn singleton_rows(
     // Build index sets and initialize queue.
     let mut tail = 0;
     for i in 0..m {
-        if pinv[i as usize] < 0 {
-            let nz = b_tp[(i + 1) as usize] - b_tp[i as usize];
+        if pinv[i] < 0 {
+            let nz = b_tp[i + 1] - b_tp[i];
             let mut j = 0;
-            for pos in b_tp[i as usize]..b_tp[(i + 1) as usize] {
+            for pos in b_tp[i]..b_tp[i + 1] {
                 j ^= b_ti[pos as usize]; // put column into set i
             }
-            iset[i as usize] = j;
-            pinv[i as usize] = -nz - 1; /* use as nonzero counter */
+            iset[i] = j;
+            pinv[i] = -nz - 1; /* use as nonzero counter */
             if nz == 1 {
-                queue[tail as usize] = i;
+                queue[tail] = i as LUInt;
                 tail += 1;
             }
         }
     }
 
     // Eliminate singleton rows.
-    let mut put = l_p[rank as usize];
+    let mut put = l_p[rank] as usize;
     for front in 0..tail {
-        let i = queue[front];
-        assert!(pinv[i as usize] == -2 || pinv[i as usize] == -1);
-        if pinv[i as usize] == -1 {
+        let i = queue[front] as usize;
+        assert!(pinv[i] == -2 || pinv[i] == -1);
+        if pinv[i] == -1 {
             continue; // empty column in active submatrix
         }
-        let j = iset[i as usize];
-        assert!(j >= 0 && j < m);
-        assert!(qinv[j as usize] < 0);
-        let end = b_end[j as usize];
+        let j = iset[i] as usize;
+        assert!(/*j >= 0 &&*/ j < m);
+        assert!(qinv[j] < 0);
+        let end = b_end[j] as usize;
 
-        let mut pos = b_begin[j as usize];
-        while b_i[pos as usize] != i {
+        let mut pos = b_begin[j] as usize;
+        while b_i[pos] != i {
             // find pivot
             assert!(pos < end - 1);
             pos += 1;
         }
-        let piv = b_x[pos as usize];
+        let piv = b_x[pos];
         if piv == 0.0 || piv.abs() < abstol {
             continue; // skip singularity
         }
 
         // Eliminate pivot.
-        qinv[j as usize] = rank;
-        pinv[i as usize] = rank;
-        for pos in b_begin[j as usize]..end {
-            let i2 = b_i[pos as usize];
-            if pinv[i2 as usize] < 0 {
+        qinv[j] = rank as LUInt;
+        pinv[i] = rank as LUInt;
+        for pos in b_begin[j] as usize..end {
+            let i2 = b_i[pos] as usize;
+            if pinv[i2] < 0 {
                 // test is mandatory because the initial active submatrix may
                 // not be the entire matrix (columns eliminated before)
-                l_i[put as usize] = i2;
-                l_x[put as usize] = b_x[pos as usize] / piv;
+                l_i[put] = i2 as LUInt;
+                l_x[put] = b_x[pos] / piv;
                 put += 1;
-                iset[i2 as usize] ^= j; // remove j from set i2
+                iset[i2] ^= j as LUInt; // remove j from set i2
 
                 //if (++pinv[i2] == -2)
-                pinv[i2 as usize] += 1;
-                if pinv[i2 as usize] == -2 {
-                    queue[tail] = i2; // new singleton
+                pinv[i2] += 1;
+                if pinv[i2] == -2 {
+                    queue[tail] = i2 as LUInt; // new singleton
                     tail += 1;
                 }
             }
         }
-        l_i[put as usize] = -1; // terminate column
+        l_i[put] = -1; // terminate column
         put += 1;
-        l_p[(rank + 1) as usize] = put;
-        col_pivot[j as usize] = piv;
+        l_p[rank + 1] = put as LUInt;
+        col_pivot[j] = piv;
         rank += 1;
     }
 

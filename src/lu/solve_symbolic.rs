@@ -17,22 +17,22 @@ use crate::LUInt;
 // The method is due to J. Gilbert and T. Peierls, "Sparse partial pivoting
 // in time proportional to arithmetic operations", (1988).
 pub(crate) fn solve_symbolic(
-    m: LUInt,
+    m: usize,
     begin: &[LUInt],
     end: Option<&[LUInt]>,
     index: &[LUInt],
-    nrhs: LUInt,
+    nrhs: usize,
     irhs: &[LUInt],
     ilhs: &mut [LUInt],
     // pstack: &[lu_int], // size m workspace
     pstack: &mut [f64],   // size m workspace
     marked: &mut [LUInt], // marked[i] != M on entry
     marker: LUInt,
-) -> LUInt {
+) -> usize {
     let mut top = m;
     for n in 0..nrhs {
-        if marked[irhs[n as usize] as usize] != marker {
-            let i = irhs[n as usize];
+        if marked[irhs[n] as usize] != marker {
+            let i = irhs[n] as usize;
             top = dfs(i, begin, end, index, top, ilhs, pstack, marked, marker);
         }
     }

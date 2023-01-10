@@ -13,7 +13,7 @@ use crate::LUInt;
 //
 // The other function arguments are the same as in [`normest()`].
 pub(crate) fn condest(
-    m: LUInt,
+    m: usize,
     u_begin: &[LUInt],
     u_i: &[LUInt],
     u_x: &[f64],
@@ -26,7 +26,7 @@ pub(crate) fn condest(
 ) -> f64 {
     // compute 1-norm of U
     let mut u_norm = 0.0;
-    for j in 0..m as usize {
+    for j in 0..m {
         let mut colsum: f64 = if let Some(pivot) = pivot {
             pivot[j].abs()
         } else {
@@ -72,7 +72,7 @@ pub(crate) fn condest(
 //
 // [1] I. Duff, A. Erisman, J. Reid, "Direct Methods for Sparse Matrices"
 pub(crate) fn normest(
-    m: LUInt,
+    m: usize,
     u_begin: &[LUInt],
     u_i: &[LUInt],
     u_x: &[f64],
@@ -85,11 +85,11 @@ pub(crate) fn normest(
     let mut xinfnorm = 0.0;
     let (kbeg, kend, kinc): (LUInt, LUInt, LUInt) = if upper != 0 {
         let kbeg = 0;
-        let kend = m;
+        let kend = m as LUInt;
         let kinc = 1;
         (kbeg, kend, kinc)
     } else {
-        let kbeg = m - 1;
+        let kbeg = (m as LUInt) - 1;
         let kend = -1;
         let kinc = -1;
         (kbeg, kend, kinc)
@@ -120,13 +120,13 @@ pub(crate) fn normest(
 
     let mut y1norm = 0.0;
     let (kbeg, kend, kinc): (LUInt, LUInt, LUInt) = if upper != 0 {
-        let kbeg = m - 1;
+        let kbeg = (m as LUInt) - 1;
         let kend = -1;
         let kinc = -1;
         (kbeg, kend, kinc)
     } else {
         let kbeg = 0;
-        let kend = m;
+        let kend = m as LUInt;
         let kinc = 1;
         (kbeg, kend, kinc)
     };

@@ -67,30 +67,31 @@ use crate::Status;
 pub fn solve_for_update(
     lu: &mut LU,
     nzrhs: LUInt,
-    irhs: &[LUInt],
+    irhs: &[usize],
     xrhs: Option<&[f64]>,
-    p_nzlhs: Option<&mut LUInt>,
+    p_nzlhs: Option<&mut usize>,
     ilhs: Option<&mut [LUInt]>,
     lhs: Option<&mut [f64]>,
     trans: char,
 ) -> Status {
     let mut status = if trans != 't' && trans != 'T' && xrhs.is_none() {
         Status::ErrorArgumentMissing
-    } else if lu.nupdate < 0 {
+    } else if lu.nupdate.is_none() {
         Status::ErrorInvalidCall
     } else if lu.nforrest == lu.m {
         Status::ErrorMaximumUpdates
     } else {
         // check RHS indices
         let ok = if trans == 't' || trans == 'T' {
-            irhs[0] >= 0 && irhs[0] < lu.m
+            /*irhs[0] >= 0 &&*/
+            irhs[0] < lu.m
         } else {
-            let mut ok = nzrhs >= 0 && nzrhs <= lu.m;
+            let mut ok = nzrhs >= 0 && nzrhs <= lu.m as LUInt;
             for n in 0..nzrhs as usize {
                 if !ok {
                     break;
                 }
-                ok = ok && irhs[n] >= 0 && irhs[n] < lu.m;
+                ok = ok && /*irhs[n] >= 0 &&*/ irhs[n] < lu.m;
             }
             ok
         };
@@ -103,7 +104,16 @@ pub fn solve_for_update(
 
     if status == Status::OK {
         // may request reallocation
-        status = lu::solve_for_update(lu, nzrhs, irhs, xrhs, p_nzlhs, ilhs, lhs, trans);
+        status = lu::solve_for_update(
+            lu,
+            nzrhs as usize,
+            &irhs.iter().map(|&i| i as LUInt).collect::<Vec<LUInt>>(),
+            xrhs,
+            p_nzlhs,
+            ilhs,
+            lhs,
+            trans,
+        );
     }
 
     status
