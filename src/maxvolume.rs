@@ -71,7 +71,7 @@ pub fn maxvolume(
     isbasic: &mut [LUInt],
     volumetol: f64,
     p_nupdate: Option<&mut LUInt>,
-) -> Status {
+) -> Result<(), Status> {
     // one pass over columns of A doing basis updates
     //
     // For each column a_j not in B, compute lhs = B^{-1}*a_j and find the maximum
@@ -87,12 +87,12 @@ pub fn maxvolume(
         if let Some(p_nupdate) = p_nupdate {
             *p_nupdate = nupdate;
         }
-        return status;
+        return Err(status);
     }
 
     // Compute initial factorization.
     let mut status = factorize(obj, a_p, a_i, a_x, basis);
-    if status != Status::OK {
+    if status.is_err() {
         // goto_cleanup;
         if let Some(p_nupdate) = p_nupdate {
             *p_nupdate = nupdate;
@@ -109,7 +109,7 @@ pub fn maxvolume(
         let nzrhs = a_p[(j + 1) as usize] - a_p[j as usize];
         let begin = a_p[j as usize] as usize;
         status = obj.solve_for_update(nzrhs, &a_i[begin..], Some(&a_x[begin..]), 'N', 1);
-        if status != Status::OK {
+        if status.is_err() {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
                 *p_nupdate = nupdate;
@@ -143,7 +143,7 @@ pub fn maxvolume(
 
         // Prepare to update factorization.
         status = obj.solve_for_update(0, &imax_vec, None, 'T', 0);
-        if status != Status::OK {
+        if status.is_err() {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
                 *p_nupdate = nupdate;
@@ -152,7 +152,7 @@ pub fn maxvolume(
         }
 
         status = obj.update(xtbl);
-        if status != Status::OK {
+        if status.is_err() {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
                 *p_nupdate = nupdate;
@@ -161,7 +161,7 @@ pub fn maxvolume(
         }
 
         status = refactorize_if_needed(obj, a_p, a_i, a_x, basis);
-        if status != Status::OK {
+        if status.is_err() {
             // goto_cleanup;
             if let Some(p_nupdate) = p_nupdate {
                 *p_nupdate = nupdate;
@@ -173,11 +173,17 @@ pub fn maxvolume(
     if let Some(p_nupdate) = p_nupdate {
         *p_nupdate = nupdate;
     }
-    status
+    Ok(())
 }
 
 // factorize A[:,basis]
-fn factorize(obj: &mut BLU, a_p: &[usize], a_i: &[usize], a_x: &[f64], basis: &[LUInt]) -> Status {
+fn factorize(
+    obj: &mut BLU,
+    a_p: &[usize],
+    a_i: &[usize],
+    a_x: &[f64],
+    basis: &[LUInt],
+) -> Result<(), Status> {
     let m = obj.lu.m as usize;
 
     let mut begin = vec![0; m];
@@ -206,13 +212,13 @@ fn refactorize_if_needed(
     a_i: &[usize],
     a_x: &[f64],
     basis: &[LUInt],
-) -> Status {
-    let mut status = Status::OK;
+) -> Result<(), Status> {
     let piverr_tol = 1e-8;
 
     if obj.lu.nforrest == obj.lu.m || obj.lu.pivot_error > piverr_tol || obj.lu.update_cost() > 1.0
     {
-        status = factorize(obj, a_p, a_i, a_x, basis);
+        factorize(obj, a_p, a_i, a_x, basis)
+    } else {
+        Ok(())
     }
-    status
 }

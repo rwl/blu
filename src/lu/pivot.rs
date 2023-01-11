@@ -45,7 +45,7 @@ const MAXROW_SMALL: usize = 64;
 // sparser factors. I assume the reason is tie breaking in the Markowitz
 // search and that in Forrest's method updated elements are moved to the end
 // of the column (and likewise for rows).
-pub(crate) fn pivot(lu: &mut LU) -> Status {
+pub(crate) fn pivot(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let l_mem = lu.l_mem;
@@ -61,7 +61,6 @@ pub(crate) fn pivot(lu: &mut LU) -> Status {
     let nz_col = (w_end[pivot_col] - w_begin[pivot_col]) as usize;
     let nz_row = (w_end[m + pivot_row] - w_begin[m + pivot_row]) as usize;
 
-    let mut status = Status::OK;
     let tic = Instant::now();
 
     assert!(nz_row >= 1);
@@ -72,34 +71,31 @@ pub(crate) fn pivot(lu: &mut LU) -> Status {
     let need = nz_col; // # off-diagonals in pivot col + end marker (-1)
     if room < need {
         lu.addmem_l = need - room;
-        status = Status::Reallocate;
+        return Err(Status::Reallocate);
     }
     let room = u_mem - lu.u_begin[rank] as usize;
     let need = nz_row - 1; // # off-diagonals in pivot row
     if room < need {
         lu.addmem_u = need - room;
-        status = Status::Reallocate;
-    }
-    if status != Status::OK {
-        return status;
+        return Err(Status::Reallocate);
     }
 
     // Branch out implementation of pivot operation.
-    if nz_row == 1 {
-        status = pivot_singleton_row(lu);
+    let status = if nz_row == 1 {
+        pivot_singleton_row(lu)
     } else if nz_col == 1 {
-        status = pivot_singleton_col(lu);
+        pivot_singleton_col(lu)
     } else if nz_col == 2 {
-        status = pivot_doubleton_col(lu);
+        pivot_doubleton_col(lu)
     } else if nz_col - 1 <= MAXROW_SMALL {
-        status = pivot_small(lu);
+        pivot_small(lu)
     } else {
-        status = pivot_any(lu);
-    }
+        pivot_any(lu)
+    };
 
     // Remove all entries in columns whose maximum entry has dropped below
     // absolute pivot tolerance.
-    if status == Status::OK {
+    if status.is_ok() {
         for pos in lu.u_begin[rank]..lu.u_begin[rank + 1] {
             let j = lu.u_index[pos as usize] as usize;
             assert_ne!(j, pivot_col);
@@ -111,10 +107,11 @@ pub(crate) fn pivot(lu: &mut LU) -> Status {
 
     lu.factor_flops += (nz_col - 1) * (nz_row - 1);
     lu.time_elim_pivot += tic.elapsed().as_secs_f64();
+
     status
 }
 
-fn pivot_any(lu: &mut LU) -> Status {
+fn pivot_any(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -207,7 +204,7 @@ fn pivot_any(lu: &mut LU) -> Status {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return Status::Reallocate;
+        return Err(Status::Reallocate);
     }
 
     // get pointer to U
@@ -457,10 +454,10 @@ fn pivot_any(lu: &mut LU) -> Status {
         );
     }
 
-    Status::OK
+    Ok(())
 }
 
-fn pivot_small(lu: &mut LU) -> Status {
+fn pivot_small(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -557,7 +554,7 @@ fn pivot_small(lu: &mut LU) -> Status {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return Status::Reallocate;
+        return Err(Status::Reallocate);
     }
 
     // get pointer to U
@@ -832,10 +829,10 @@ fn pivot_small(lu: &mut LU) -> Status {
         );
     }
 
-    Status::OK
+    Ok(())
 }
 
-fn pivot_singleton_row(lu: &mut LU) -> Status {
+fn pivot_singleton_row(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -925,10 +922,10 @@ fn pivot_singleton_row(lu: &mut LU) -> Status {
     list_remove(colcount_flink, colcount_blink, pivot_col);
     list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
-    Status::OK
+    Ok(())
 }
 
-fn pivot_singleton_col(lu: &mut LU) -> Status {
+fn pivot_singleton_col(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -1024,10 +1021,10 @@ fn pivot_singleton_col(lu: &mut LU) -> Status {
     list_remove(colcount_flink, colcount_blink, pivot_col);
     list_remove(rowcount_flink, rowcount_blink, pivot_row);
 
-    Status::OK
+    Ok(())
 }
 
-fn pivot_doubleton_col(lu: &mut LU) -> Status {
+fn pivot_doubleton_col(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let droptol = lu.droptol;
@@ -1110,7 +1107,7 @@ fn pivot_doubleton_col(lu: &mut LU) -> Status {
     }
     if grow > room {
         lu.addmem_w = grow - room;
-        return Status::Reallocate;
+        return Err(Status::Reallocate);
     }
 
     // Column file update //
@@ -1330,7 +1327,7 @@ fn pivot_doubleton_col(lu: &mut LU) -> Status {
         );
     }
 
-    Status::OK
+    Ok(())
 }
 
 fn remove_col(lu: &mut LU, j: usize) {

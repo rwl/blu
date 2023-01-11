@@ -38,7 +38,7 @@ pub fn factorize(
     b_i: &[usize],
     b_x: &[f64],
     c0ntinue: bool,
-) -> Status {
+) -> Result<(), Status> {
     let tic = Instant::now();
 
     if !c0ntinue {
@@ -46,7 +46,11 @@ pub fn factorize(
         lu.task = Task::Singletons;
     }
 
-    fn return_to_caller(tic: Instant, lu: &mut LU, status: Status) -> Status {
+    fn return_to_caller(
+        tic: Instant,
+        lu: &mut LU,
+        status: Result<(), Status>,
+    ) -> Result<(), Status> {
         let elapsed = tic.elapsed().as_secs_f64();
         lu.time_factorize += elapsed;
         lu.time_factorize_total += elapsed;
@@ -58,52 +62,52 @@ pub fn factorize(
         Task::Singletons => {
             // lu.task = SINGLETONS;
             let status = singletons(lu, b_begin, b_end, b_i, b_x);
-            if status != Status::OK {
+            if status.is_err() {
                 return return_to_caller(tic, lu, status);
             }
 
             lu.task = Task::SetupBump;
             let status = setup_bump(lu, b_begin, b_end, b_i, b_x);
-            if status != Status::OK {
+            if status.is_err() {
                 return return_to_caller(tic, lu, status);
             }
 
             lu.task = Task::FactorizeBump;
             let status = factorize_bump(lu);
-            if status != Status::OK {
+            if status.is_err() {
                 return return_to_caller(tic, lu, status);
             }
         }
         Task::SetupBump => {
             // lu.task = SETUP_BUMP;
             let status = setup_bump(lu, b_begin, b_end, b_i, b_x);
-            if status != Status::OK {
+            if status.is_err() {
                 return return_to_caller(tic, lu, status);
             }
 
             lu.task = Task::FactorizeBump;
             let status = factorize_bump(lu);
-            if status != Status::OK {
+            if status.is_err() {
                 return return_to_caller(tic, lu, status);
             }
         }
         Task::FactorizeBump => {
             // lu.task = FACTORIZE_BUMP;
             let status = factorize_bump(lu);
-            if status != Status::OK {
+            if status.is_err() {
                 return return_to_caller(tic, lu, status);
             }
         }
         Task::BuildFactors => {}
         _ => {
             let status = Status::ErrorInvalidCall;
-            return status;
+            return Err(status);
         }
     };
 
     lu.task = Task::BuildFactors;
     let status = build_factors(lu);
-    if status != Status::OK {
+    if status.is_err() {
         return return_to_caller(tic, lu, status);
     }
 
@@ -170,9 +174,9 @@ pub fn factorize(
     }
 
     if lu.rank < lu.m {
-        let status = Status::WarningSingularMatrix;
-        return_to_caller(tic, lu, status);
+        let status = Err(Status::WarningSingularMatrix);
+        return_to_caller(tic, lu, status)
+    } else {
+        return_to_caller(tic, lu, Ok(()))
     }
-
-    return_to_caller(tic, lu, status)
 }

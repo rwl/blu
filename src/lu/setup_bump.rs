@@ -58,7 +58,7 @@ pub(crate) fn setup_bump(
     b_end: &[usize],
     b_i: &[usize],
     b_x: &[f64],
-) -> Status {
+) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let w_mem = lu.w_mem;
@@ -108,7 +108,7 @@ pub(crate) fn setup_bump(
     let need = 2 * need; // rowwise + columnwise
     if need > w_mem {
         lu.addmem_w = need - w_mem;
-        return Status::Reallocate;
+        return Err(Status::Reallocate);
     }
 
     file_empty(
@@ -260,5 +260,5 @@ pub(crate) fn setup_bump(
     lu.min_colnz = min_colnz;
     lu.min_rownz = min_rownz;
 
-    Status::OK
+    Ok(())
 }

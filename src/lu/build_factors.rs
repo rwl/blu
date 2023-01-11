@@ -110,7 +110,7 @@ use crate::Status;
 //
 // - `Reallocate`  require more memory in `L`, `U`, and/or `W`
 // - `OK`
-pub(crate) fn build_factors(lu: &mut LU) -> Status {
+pub(crate) fn build_factors(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let rank = lu.rank;
     let l_mem = lu.l_mem;
@@ -146,7 +146,6 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
 
     // lu_int i, j, ipivot, jpivot, k, lrank, nz, Lnz, Unz, need, get, put, pos;
     // double pivot, min_pivot, max_pivot;
-    let mut status = Status::OK;
 
     // So far L is stored columnwise in Lindex, Lvalue and U stored rowwise
     // in Uindex, Uvalue. The factorization has computed rank columns of L
@@ -164,20 +163,17 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     let need = 2 * (l_nz + m);
     if l_mem < need {
         lu.addmem_l = need - l_mem;
-        status = Status::Reallocate;
+        return Err(Status::Reallocate);
     }
     let need = u_nz + m + 1;
     if u_mem < need {
         lu.addmem_u = need - u_mem;
-        status = Status::Reallocate;
+        return Err(Status::Reallocate);
     }
     let need = u_nz + (stretch * u_nz as f64) as usize + m * pad;
     if w_mem < need {
         lu.addmem_w = need - w_mem;
-        status = Status::Reallocate;
-    }
-    if status != Status::OK {
-        return status;
+        return Err(Status::Reallocate);
     }
 
     // Build permutations //
@@ -423,5 +419,5 @@ pub(crate) fn build_factors(lu: &mut LU) -> Status {
     lu.u_nz = u_nz;
     lu.r_nz = 0;
 
-    status
+    Ok(())
 }

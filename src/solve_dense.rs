@@ -21,12 +21,12 @@ use crate::Status;
 /// ## Returns
 ///
 /// [`Status::ErrorInvalidCall`] if the factorization is invalid.
-pub fn solve_dense(lu: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) -> Status {
+pub fn solve_dense(lu: &mut LU, rhs: &[f64], lhs: &mut [f64], trans: char) -> Result<(), Status> {
     if lu.nupdate.is_none() {
-        return Status::ErrorInvalidCall;
+        return Err(Status::ErrorInvalidCall);
     }
 
     lu::solve_dense(lu, rhs, lhs, trans);
 
-    Status::OK
+    Ok(())
 }

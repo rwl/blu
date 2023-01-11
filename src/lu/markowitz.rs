@@ -31,7 +31,7 @@ use std::time::Instant;
 //
 // [1] U. Suhl, L. Suhl, "Computing Sparse LU Factorizations for Large-Scale
 //     Linear Programming Bases", ORSA Journal on Computing (1990)
-pub(crate) fn markowitz(lu: &mut LU) -> Status {
+pub(crate) fn markowitz(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
     let w_begin = &lu.w_begin;
     let w_end = &lu.w_end;
@@ -200,7 +200,7 @@ fn done(
     min_colnz: Option<usize>,
     min_rownz: Option<usize>,
     tic: Instant,
-) -> Status {
+) -> Result<(), Status> {
     lu.pivot_row = pivot_row;
     lu.pivot_col = pivot_col;
 
@@ -215,5 +215,5 @@ fn done(
 
     lu.time_search_pivot += tic.elapsed().as_secs_f64();
 
-    Status::OK
+    Ok(())
 }

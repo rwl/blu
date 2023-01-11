@@ -98,18 +98,23 @@ impl BLU {
         b_end: &[usize],
         b_i: &[usize],
         b_x: &[f64],
-    ) -> Status {
-        let mut status = factorize(&mut self.lu, b_begin, b_end, b_i, b_x, false);
+    ) -> Result<(), Status> {
+        let mut result;
+        let mut c0ntinue = false;
 
-        while status == Status::Reallocate {
-            status = lu_realloc_obj(self);
-            if status != Status::OK {
-                break;
+        loop {
+            result = factorize(&mut self.lu, b_begin, b_end, b_i, b_x, c0ntinue);
+            if let Err(&status) = result.as_ref() {
+                if status == Status::Reallocate {
+                    lu_realloc_obj(self)?;
+                    c0ntinue = true;
+                    continue;
+                }
             }
-            status = factorize(&mut self.lu, b_begin, b_end, b_i, b_x, true);
+            break;
         }
 
-        status
+        result
     }
 
     /// Purpose:
@@ -141,7 +146,7 @@ impl BLU {
         u_colptr: Option<&mut [LUInt]>,
         u_rowidx: Option<&mut [LUInt]>,
         u_value: Option<&mut [f64]>,
-    ) -> Status {
+    ) -> Result<(), Status> {
         get_factors(
             &mut self.lu,
             rowperm,
@@ -174,7 +179,7 @@ impl BLU {
     ///         Pointer to an initialized BLU object.
     ///
     ///     The other arguments are passed through to solve_dense().
-    pub fn solve_dense(&mut self, rhs: &[f64], lhs: &mut [f64], trans: char) -> Status {
+    pub fn solve_dense(&mut self, rhs: &[f64], lhs: &mut [f64], trans: char) -> Result<(), Status> {
         solve_dense(&mut self.lu, rhs, lhs, trans)
     }
 
@@ -205,7 +210,7 @@ impl BLU {
         irhs: &[usize],
         xrhs: &[f64],
         trans: char,
-    ) -> Status {
+    ) -> Result<(), Status> {
         lu_clear_lhs(self);
         solve_sparse(
             &mut self.lu,
@@ -256,14 +261,14 @@ impl BLU {
         xrhs: Option<&[f64]>,
         trans: char,
         want_solution: LUInt,
-    ) -> Status {
-        let mut status = Status::OK;
+    ) -> Result<(), Status> {
+        let mut result = Ok(());
 
         lu_clear_lhs(self);
-        while status == Status::OK {
+        while result.is_ok() {
             // let mut nzlhs: LUInt = -1;
             let mut nzlhs: usize = 0;
-            status = solve_for_update(
+            result = solve_for_update(
                 &mut self.lu,
                 nzrhs as LUInt,
                 irhs,
@@ -276,13 +281,16 @@ impl BLU {
             if want_solution != 0 {
                 self.nzlhs = nzlhs;
             }
-            if status != Status::Reallocate {
-                break;
+            if let Err(&status) = result.as_ref() {
+                if status == Status::Reallocate {
+                    lu_realloc_obj(self)?;
+                    continue;
+                }
             }
-            status = lu_realloc_obj(self);
+            break;
         }
 
-        status
+        result
     }
 
     /// Purpose:
@@ -308,57 +316,60 @@ impl BLU {
     ///         Pointer to an initialized BLU object.
     ///
     ///     The other arguments are passed through to update().
-    pub fn update(&mut self, xtbl: f64) -> Status {
-        let mut status = Status::OK;
+    pub fn update(&mut self, xtbl: f64) -> Result<(), Status> {
+        let mut result;
 
-        while status == Status::OK {
-            status = update(&mut self.lu, xtbl);
-            if status != Status::Reallocate {
-                break;
+        loop {
+            result = update(&mut self.lu, xtbl);
+            if let Err(&status) = result.as_ref() {
+                if status == Status::Reallocate {
+                    lu_realloc_obj(self)?;
+                    continue;
+                }
             }
-            status = lu_realloc_obj(self);
+            break;
         }
 
-        status
+        result
     }
 }
 
 // reallocate two arrays
-fn lu_reallocix(nz: usize, a_i: &mut Vec<LUInt>, a_x: &mut Vec<f64>) -> Status {
+fn lu_reallocix(nz: usize, a_i: &mut Vec<LUInt>, a_x: &mut Vec<f64>) -> Result<(), Status> {
     a_i.resize(nz, 0);
     a_x.resize(nz, 0.0);
-    Status::OK
+    Ok(())
 }
 
 // Reallocate l_i,l_x and/or u_i,u_x and/or w_i,w_x as requested in LU.
-fn lu_realloc_obj(obj: &mut BLU) -> Status {
+fn lu_realloc_obj(obj: &mut BLU) -> Result<(), Status> {
     let addmem_l = obj.lu.addmem_l;
     let addmem_u = obj.lu.addmem_u;
     let addmem_w = obj.lu.addmem_w;
     let realloc_factor = f64::max(1.0, obj.realloc_factor);
-    let mut status = Status::OK;
+    let mut status = Ok(());
 
-    if status == Status::OK && addmem_l > 0 {
+    if status.is_ok() && addmem_l > 0 {
         let nelem = obj.lu.l_mem + addmem_l;
         let nelem = ((nelem as f64) * realloc_factor) as usize;
         status = lu_reallocix(nelem, &mut obj.lu.l_index, &mut obj.lu.l_value);
-        if status == Status::OK {
+        if status.is_ok() {
             obj.lu.l_mem = nelem;
         }
     }
-    if status == Status::OK && addmem_u > 0 {
+    if status.is_ok() && addmem_u > 0 {
         let nelem = obj.lu.u_mem + addmem_u;
         let nelem = ((nelem as f64) * realloc_factor) as usize;
         status = lu_reallocix(nelem, &mut obj.lu.u_index, &mut obj.lu.u_value);
-        if status == Status::OK {
+        if status.is_ok() {
             obj.lu.u_mem = nelem;
         }
     }
-    if status == Status::OK && addmem_w > 0 {
+    if status.is_ok() && addmem_w > 0 {
         let nelem = obj.lu.w_mem + addmem_w;
         let nelem = ((nelem as f64) * realloc_factor) as usize;
         status = lu_reallocix(nelem, &mut obj.lu.w_index, &mut obj.lu.w_value);
-        if status == Status::OK {
+        if status.is_ok() {
             obj.lu.w_mem = nelem;
         }
     }

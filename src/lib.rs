@@ -35,10 +35,8 @@ pub const LU_INT_MAX: i64 = i64::MAX;
 
 pub type IntLeast64 = i64;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum Status {
-    OK,
-
     /// Insufficient memory in `w_i`, `w_x`. The number of additional elements
     /// required is given by [`LU::addmem_w`].
     ///

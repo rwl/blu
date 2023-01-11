@@ -41,9 +41,9 @@ pub fn solve_sparse(
     ilhs: &mut [LUInt],
     lhs: &mut [f64],
     trans: char,
-) -> Status {
-    let status = if lu.nupdate.is_none() {
-        Status::ErrorInvalidCall
+) -> Result<(), Status> {
+    if lu.nupdate.is_none() {
+        return Err(Status::ErrorInvalidCall);
     } else {
         // check RHS indices
         let mut ok = nzrhs >= 0 && nzrhs <= lu.m as LUInt;
@@ -54,24 +54,20 @@ pub fn solve_sparse(
             ok = ok && /*irhs[n] >= 0 &&*/ irhs[n] < lu.m;
         }
         if !ok {
-            Status::ErrorInvalidArgument
-        } else {
-            Status::OK
+            return Err(Status::ErrorInvalidArgument);
         }
-    };
-
-    if status == Status::OK {
-        lu::solve_sparse(
-            lu,
-            nzrhs as usize,
-            &irhs.iter().map(|&i| i as LUInt).collect::<Vec<LUInt>>(),
-            xrhs,
-            p_nzlhs,
-            ilhs,
-            lhs,
-            trans,
-        );
     }
 
-    status
+    lu::solve_sparse(
+        lu,
+        nzrhs as usize,
+        &irhs.iter().map(|&i| i as LUInt).collect::<Vec<LUInt>>(),
+        xrhs,
+        p_nzlhs,
+        ilhs,
+        lhs,
+        trans,
+    );
+
+    Ok(())
 }

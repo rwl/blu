@@ -9,16 +9,15 @@ use crate::LUInt;
 use crate::Status;
 
 // Bump factorization driver routine.
-pub(crate) fn factorize_bump(lu: &mut LU) -> Status {
+pub(crate) fn factorize_bump(lu: &mut LU) -> Result<(), Status> {
     let m = lu.m;
-    let mut status = Status::OK;
 
     while lu.rank + lu.rankdef < m {
         // Find pivot element. Markowitz search need not be called if the
         // previous call to pivot() returned for reallocation. In this case
         // this.pivot_col is valid.
         if lu.pivot_col.is_none() {
-            markowitz(lu);
+            markowitz(lu)?;
         }
         assert!(lu.pivot_col.is_some());
 
@@ -35,10 +34,9 @@ pub(crate) fn factorize_bump(lu: &mut LU) -> Status {
             // Eliminate pivot. This may require reallocation.
             assert_eq!(lu.pinv[lu.pivot_row.unwrap()], -1);
             assert_eq!(lu.qinv[lu.pivot_col.unwrap()], -1);
-            status = pivot(lu);
-            if status != Status::OK {
-                break;
-            }
+
+            pivot(lu)?;
+
             lu.pinv[lu.pivot_row.unwrap()] = lu.rank as LUInt;
             lu.qinv[lu.pivot_col.unwrap()] = lu.rank as LUInt;
             lu.pivot_col = None;
@@ -46,5 +44,6 @@ pub(crate) fn factorize_bump(lu: &mut LU) -> Status {
             lu.rank += 1;
         }
     }
-    status
+
+    Ok(())
 }

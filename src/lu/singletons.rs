@@ -84,7 +84,7 @@ pub(crate) fn singletons(
     b_end: &[usize],
     b_i: &[usize],
     b_x: &[f64],
-) -> Status {
+) -> Result<(), Status> {
     let m = lu.m;
     let l_mem = lu.l_mem;
     let u_mem = lu.u_mem;
@@ -128,7 +128,7 @@ pub(crate) fn singletons(
         j += 1;
     }
     if ok == 0 {
-        return Status::ErrorInvalidArgument;
+        return Err(Status::ErrorInvalidArgument);
     }
 
     // Check if sufficient memory in L, U, W.
@@ -146,7 +146,7 @@ pub(crate) fn singletons(
         ok = 0;
     }
     if ok == 0 {
-        return Status::Reallocate;
+        return Err(Status::Reallocate);
     }
 
     // Count nz per row, check indices.
@@ -169,7 +169,7 @@ pub(crate) fn singletons(
         j += 1;
     }
     if ok == 0 {
-        return Status::ErrorInvalidArgument;
+        return Err(Status::ErrorInvalidArgument);
     }
 
     // Pack matrix rowwise, check for duplicates.
@@ -197,7 +197,7 @@ pub(crate) fn singletons(
         }
     }
     if ok == 0 {
-        return Status::ErrorInvalidArgument;
+        return Err(Status::ErrorInvalidArgument);
     }
 
     // Pivot singletons //
@@ -259,7 +259,8 @@ pub(crate) fn singletons(
     lu.matrix_nz = b_nz;
     lu.rank = rank;
     lu.time_singletons = tic.elapsed().as_secs_f64();
-    Status::OK
+
+    Ok(())
 }
 
 // The method successively removes singleton cols from an active submatrix.

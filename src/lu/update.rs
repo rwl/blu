@@ -385,7 +385,7 @@ fn check_consistency(lu: &LU, p_col: &mut LUInt, p_row: &mut LUInt) {
 //  OK                      update successfully completed
 //  Reallocate              require more memory in W
 //  ErrorSingularUpdate   new pivot element is zero or < abstol
-pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
+pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Result<(), Status> {
     let m = lu.m;
     let nforrest = lu.nforrest;
     let mut u_nz = lu.u_nz;
@@ -418,7 +418,6 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     let jpivot = lu.btran_for_update.unwrap();
     let ipivot = pmap![lu][jpivot] as usize;
     let oldpiv = lu.col_pivot[jpivot];
-    let mut status = Status::OK;
 
     let ipivot_vec = vec![0; ipivot]; // FIXME
     let jpivot_vec = vec![0; jpivot];
@@ -507,8 +506,7 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
 
     // singularity test
     if newpiv == 0.0 || newpiv.abs() < lu.abstol {
-        status = Status::ErrorSingularUpdate;
-        return status;
+        return Err(Status::ErrorSingularUpdate);
     }
 
     // stability measure
@@ -534,8 +532,7 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
     let room = (lu.w_end[m] - lu.w_begin[m]) as usize;
     if grow > room {
         lu.addmem_w = grow - room;
-        status = Status::Reallocate;
-        return status;
+        return Err(Status::Reallocate);
     }
 
     // remove column jpivot from row file
@@ -958,5 +955,5 @@ pub(crate) fn update(lu: &mut LU, xtbl: f64) -> Status {
         assert!(col < 0 && row < 0);
     }
 
-    status
+    Ok(())
 }

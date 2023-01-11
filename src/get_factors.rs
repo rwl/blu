@@ -55,9 +55,9 @@ pub fn get_factors(
     u_colptr: Option<&mut [LUInt]>,
     u_rowidx: Option<&mut [LUInt]>,
     u_value_: Option<&mut [f64]>,
-) -> Status {
+) -> Result<(), Status> {
     if lu.nupdate.unwrap() != 0 {
-        return Status::ErrorInvalidCall;
+        return Err(Status::ErrorInvalidCall);
     }
     let m = lu.m;
 
@@ -176,5 +176,5 @@ pub fn get_factors(
         }
     }
 
-    Status::OK
+    Ok(())
 }

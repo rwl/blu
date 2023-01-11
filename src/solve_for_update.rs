@@ -78,13 +78,13 @@ pub fn solve_for_update(
     ilhs: Option<&mut [LUInt]>,
     lhs: Option<&mut [f64]>,
     trans: char,
-) -> Status {
-    let mut status = if trans != 't' && trans != 'T' && xrhs.is_none() {
-        Status::ErrorArgumentMissing
+) -> Result<(), Status> {
+    if trans != 't' && trans != 'T' && xrhs.is_none() {
+        return Err(Status::ErrorArgumentMissing);
     } else if lu.nupdate.is_none() {
-        Status::ErrorInvalidCall
+        return Err(Status::ErrorInvalidCall);
     } else if lu.nforrest == lu.m {
-        Status::ErrorMaximumUpdates
+        return Err(Status::ErrorMaximumUpdates);
     } else {
         // check RHS indices
         let ok = if trans == 't' || trans == 'T' {
@@ -101,25 +101,19 @@ pub fn solve_for_update(
             ok
         };
         if !ok {
-            Status::ErrorInvalidArgument
-        } else {
-            Status::OK
+            return Err(Status::ErrorInvalidArgument);
         }
-    };
-
-    if status == Status::OK {
-        // may request reallocation
-        status = lu::solve_for_update(
-            lu,
-            nzrhs as usize,
-            &irhs.iter().map(|&i| i as LUInt).collect::<Vec<LUInt>>(),
-            xrhs,
-            p_nzlhs,
-            ilhs,
-            lhs,
-            trans,
-        );
     }
 
-    status
+    // may request reallocation
+    lu::solve_for_update(
+        lu,
+        nzrhs as usize,
+        &irhs.iter().map(|&i| i as LUInt).collect::<Vec<LUInt>>(),
+        xrhs,
+        p_nzlhs,
+        ilhs,
+        lhs,
+        trans,
+    )
 }

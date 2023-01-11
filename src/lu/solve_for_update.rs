@@ -18,7 +18,7 @@ pub(crate) fn solve_for_update(
     ilhs: Option<&mut [LUInt]>,
     xlhs: Option<&mut [f64]>,
     trans: char,
-) -> Status {
+) -> Result<(), Status> {
     let m = lu.m;
     let nforrest = lu.nforrest;
     let pivotlen = lu.pivotlen;
@@ -99,7 +99,7 @@ pub(crate) fn solve_for_update(
         let room = lu.l_mem - r_begin![lu][nforrest as usize] as usize;
         if room < nz_symb {
             lu.addmem_l = nz_symb - room;
-            return Status::Reallocate;
+            return Err(Status::Reallocate);
         }
 
         for pos in jbegin..jend {
@@ -336,7 +336,7 @@ pub(crate) fn solve_for_update(
                 work[pattern[n] as usize] = 0.0;
             }
             lu.addmem_u = need - room;
-            return Status::Reallocate;
+            return Err(Status::Reallocate);
         }
 
         // Compress spike into U.
@@ -437,7 +437,13 @@ pub(crate) fn solve_for_update(
     done(tic, lu, l_flops, u_flops, r_flops)
 }
 
-fn done(tic: Instant, lu: &mut LU, l_flops: usize, u_flops: usize, r_flops: usize) -> Status {
+fn done(
+    tic: Instant,
+    lu: &mut LU,
+    l_flops: usize,
+    u_flops: usize,
+    r_flops: usize,
+) -> Result<(), Status> {
     let elapsed = tic.elapsed().as_secs_f64();
     lu.time_solve += elapsed;
     lu.time_solve_total += elapsed;
@@ -445,5 +451,5 @@ fn done(tic: Instant, lu: &mut LU, l_flops: usize, u_flops: usize, r_flops: usiz
     lu.u_flops += u_flops;
     lu.r_flops += r_flops;
     lu.update_cost_numer += r_flops as f64;
-    Status::OK
+    Ok(())
 }
