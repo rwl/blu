@@ -5,10 +5,10 @@ use crate::blu::BLU;
 use crate::LUInt;
 use crate::Status;
 
-/// Make one pass over the columns of a rectangular (ncol >= nrow) matrix and
+/// Make one pass over the columns of a rectangular (`ncol` >= `nrow`) matrix and
 /// pivot each nonbasic column into the basis when it increases the volume (i.e.
 /// the absolute value of the determinant) of the basis matrix. This is one main
-/// loop of the "maximum volume" algorithm described in [1,2].
+/// loop of the "maximum volume" algorithm described in `[1,2]`.
 ///
 /// 1. C. T. Pan, "On the existence and computation of rank-revealing LU
 ///    factorizations". Linear Algebra Appl., 316(1-3), pp. 199-222, 2000
@@ -17,18 +17,14 @@ use crate::Status;
 ///    theory, algorithms and applications", pp. 247-256. World Sci. Publ.,
 ///    Hackensack, NJ, 2010.
 ///
-/// # Return:
-///
-/// [`ErrorInvalidArgument`] when `volumetol` is less than 1.0.
-/// The return code from a [`LU`] method called when not OK.
-/// (Note that [`WarningSingularMatrix`] means that the algorithm failed.)
-///
-/// # Arguments:
+/// # Arguments
 ///
 /// Matrix A must be provided in compressed sparse column format. Column j contains
 /// elements
 ///
+/// ```txt
 ///     a_i[a_p[j] .. a_p[j+1]-1], a_x[a_p[j] .. a_p[j+1]-1].
+/// ```
 ///
 /// The columns must not contain duplicate row indices. The row indices per column
 /// need not be sorted.
@@ -36,7 +32,7 @@ use crate::Status;
 /// On entry `basis[nrow]` holds the column indices of `A` that form the initial basis.
 /// On return holds the updated basis. A basis defines a square nonsingular
 /// submatrix of A. If the initial basis is (numerically) singular, then the
-/// initial LU factorization will fail and [`WarningSingularMatrix`] is returned.
+/// initial LU factorization will fail and [`Status::WarningSingularMatrix`] is returned.
 ///
 /// The `isbasic[ncol]` array must be consistent with `basis[]` on entry, and is consistent
 /// on return. `isbasic[j]` must be nonzero iff column `j` appears in the basis.
@@ -46,19 +42,25 @@ use crate::Status;
 /// This parameter must be >= 1.0. In pratcice typical values are 2.0, 10.0
 /// or even 100.0. The closer the tolerances to 1.0, the more basis changes
 /// will usually be necessary to find a maximum volume basis for this
-/// tolerance (using repeated calls to `maxvolume()`, see below).
+/// tolerance (using repeated calls to [`maxvolume()`], see below).
 ///
-/// On return [`p_nupdate`] holds the number of basis updates performed. When
+/// On return `p_nupdate` holds the number of basis updates performed. When
 /// this is zero and OK is returned, then the volume of the initial
 /// basis is locally (within one basis change) maximum up to a factor
-/// `volumetol`. To find such a basis, `maxvolume()` must be called
+/// `volumetol`. To find such a basis, [`maxvolume()`] must be called
 /// repeatedly starting from an arbitrary basis until `p_nupdate` is zero.
 /// This will happen eventually because each basis update strictly increases
 /// the volume of the basis matrix. Hence a basis cannot repeat.
 ///
 /// `p_nupdate` can be `None`, in which case it is not accessed. The number of
 /// updates performed can be obtained as the increment to `obj.lu.nupdate_total`
-/// caused by the call to `maxvolume()`.
+/// caused by the call to [`maxvolume()`].
+///
+/// # Returns
+///
+/// [`Status::ErrorInvalidArgument`] when `volumetol` is less than 1.0.
+/// The return code from a [`LU`](crate::LU) method called when not OK.
+/// (Note that [`Status::WarningSingularMatrix`] means that the algorithm failed.)
 pub fn maxvolume(
     obj: &mut BLU,
     ncol: usize,

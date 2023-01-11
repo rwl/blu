@@ -6,9 +6,11 @@ use crate::lu::LU;
 use crate::LUInt;
 use crate::Status;
 
-/// Given the factorization computed by `factorize()` or `update()`
-/// and the sparse right-hand side, [`rhs`], solve a linear system for the
-/// solution [`lhs`].
+/// Given the factorization computed by [`factorize()`](crate::factorize()) or
+/// [`update()`](crate::update()) and the sparse right-hand side, `rhs`, solve
+/// a linear system for the solution `lhs`.
+///
+/// ## Arguments
 ///
 /// The right-hand side vector is provided in compressed format. `irhs[0..nzrhs-1]`
 /// are the indices of nonzeros and `xrhs[0..nzrhs-1]` the corresponding values.
@@ -20,14 +22,16 @@ use crate::Status;
 /// The contents `lhs` must be initialized to zero on entry. On return the solution
 /// is scattered into `lhs`.
 ///
-/// `trans` defines which system to solve. 't' or 'T' for the transposed system,
+/// `trans` defines which system to solve. `'t'` or `'T'` for the transposed system,
 /// any other character for the forward system.
 ///
-/// See parameters [`LU.sparse_thres`] and [`LU.droptol`].
+/// See parameters [`LU::sparse_thres`] and [`LU::droptol`].
 ///
-/// Returns [`ErrorInvalidCall`] if the factorization is invalid, [`ErrorInvalidArgument`]
-/// if the right-hand side is invalid (`nzrhs` < 0 or `nzrhs` > `m` or one or
-/// more indices out of range).
+/// ## Returns
+///
+/// [`Status::ErrorInvalidCall`] if the factorization is invalid,
+/// [`Status::ErrorInvalidArgument`] if the right-hand side is invalid
+/// (`nzrhs` < 0 or `nzrhs` > [`LU::m`] or one or more indices out of range).
 pub fn solve_sparse(
     lu: &mut LU,
     nzrhs: LUInt,

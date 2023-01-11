@@ -408,8 +408,8 @@ impl LU {
     /// of additional elements plus some extra space (e.g. 0.5 times the
     /// current array length). The new array lengths must be provided in `l_mem`.
     ///
-    /// [`blu_factorize()`] can be called again with `c0ntinue` not equal to
-    /// zero to continue the factorization.
+    /// [`factorize()`](crate::factorize()) can be called again with `c0ntinue` not
+    /// equal to zero to continue the factorization.
     pub fn addmem_l(&self) -> usize {
         self.addmem_l
     }
@@ -502,13 +502,13 @@ impl LU {
         self.time_factorize
     }
 
-    /// Wall clock time for all calls to [`blu_solve_sparse()`] and
-    /// [`blu_solve_for_update`] since last factorization.
+    /// Wall clock time for all calls to [`solve_sparse()`](crate::solve_sparse()) and
+    /// [`solve_for_update`](crate::solve_for_update()) since last factorization.
     pub fn time_solve(&self) -> f64 {
         self.time_solve
     }
 
-    /// Wall clock time for all calls to [`blu_update`] since last factorization.
+    /// Wall clock time for all calls to [`update`](crate::update()) since last factorization.
     pub fn time_update(&self) -> f64 {
         self.time_update
     }
@@ -529,19 +529,22 @@ impl LU {
     }
 
     /// Number of flops for operations with `L` vectors in calls to
-    /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
+    /// [`solve_sparse`](crate::solve_sparse()) and [`solve_for_update`](crate::solve_for_update())
+    /// since last factorization.
     pub fn l_flops(&self) -> usize {
         self.l_flops
     }
 
     /// Number of flops for operations with `U` vectors in calls to
-    /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
+    /// [`solve_sparse`](crate::solve_sparse()) and [`solve_for_update`](crate::solve_for_update())
+    /// since last factorization.
     pub fn u_flops(&self) -> usize {
         self.u_flops
     }
 
     /// Number of flops for operations with update ETA vectors in calls to
-    /// [`blu_solve_sparse`] and [`blu_solve_for_update`] since last factorization.
+    /// [`solve_sparse`](crate::solve_sparse()) and [`solve_for_update`](crate::solve_for_update())
+    /// since last factorization.
     pub fn r_flops(&self) -> usize {
         self.r_flops
     }
@@ -589,11 +592,15 @@ impl LU {
     /// An estimate for numerical stability of the factorization.
     /// `residual_test` is the maximum of the scaled residuals
     ///
+    /// ```txt
     ///     ||b-b_x|| / (||b|| + ||B||*||x||)
+    /// ```
     ///
     /// and
     ///
+    /// ```txt
     ///     ||c-B'y|| / (||c|| + ||B'||*||y||),
+    /// ```
     ///
     /// where `x=B\b` and `y=B'\c` are computed from the LU factors, `b` and `c`
     /// have components +/-1 that are chosen to make `x` respectively `y` large,

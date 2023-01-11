@@ -11,6 +11,7 @@ mod update;
 pub use blu::BLU;
 pub use factorize::factorize;
 pub use get_factors::get_factors;
+pub use lu::LU;
 pub use maxvolume::maxvolume;
 pub use solve_dense::solve_dense;
 pub use solve_for_update::solve_for_update;
@@ -39,18 +40,18 @@ pub enum Status {
     OK,
 
     /// Insufficient memory in `w_i`, `w_x`. The number of additional elements
-    /// required is given by `addmem_w`.
+    /// required is given by [`LU::addmem_w`].
     ///
     /// The user must reallocate `w_i`, `w_x`. It is recommended to reallocate for
     /// the requested number of additional elements plus some extra space
     /// for further updates (e.g. 0.5 times the current array length). The
-    /// new array length must be provided in `w_mem`.
+    /// new array length must be provided in [`LU::w_mem`].
     Reallocate,
 
-    /// The factorization did [`rank`] < [`m`] pivot steps. The remaining elements
-    /// in the active submatrix are zero or less than [`abstol`]. The factors have
-    /// been augmented by unit columns to form a square matrix. See
-    /// [`blu_get_factors()`] on how to get the indices of linearly dependent
+    /// The factorization did [`LU::rank`] < [`LU::m`] pivot steps. The remaining
+    /// elements in the active submatrix are zero or less than [`LU::abstol`].
+    /// The factors have been augmented by unit columns to form a square matrix.
+    /// See [`get_factors()`] on how to get the indices of linearly dependent
     /// columns.
     WarningSingularMatrix,
 

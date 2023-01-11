@@ -6,8 +6,9 @@ use crate::lu::lu::*;
 use crate::LUInt;
 use crate::Status;
 
-/// Given the factorization computed by [`factorize()`] or [`update()`],
-/// solve a linear system in preparation to update the factorization.
+/// Given the factorization computed by [`factorize()`](crate::factorize()) or
+/// [`update()`](crate::update()), solve a linear system in preparation to update
+/// the factorization.
 ///
 /// When the forward system is solved, then the right-hand side is the column
 /// to be inserted into the factorized matrix. When the transposed system is
@@ -18,6 +19,8 @@ use crate::Status;
 /// partial solution. If the left-hand side is not requested by the user (see
 /// below), then only one triangular solve is done. If the left-hand side is
 /// requested, then a second triangular solve is required.
+///
+/// ## Arguments
 ///
 /// The right-hand side vector is provided in compressed format. When the forward
 /// system is solved, `irhs[0..nzrhs-1]` are the indices of nonzeros and
@@ -39,31 +42,33 @@ use crate::Status;
 /// `trans` defines which system to solve. 't' or 'T' for the transposed system,
 /// any other character for the forward system.
 ///
-/// See parameters [`LU.sparse_thres`] and [`LU.droptol`].
+/// See parameters [`LU::sparse_thres`] and [`LU::droptol`].
 ///
-/// # Returns
+/// ## Returns
 ///
-/// [`ErrorInvalidCall`] if the factorization is invalid.
+/// [`Status::ErrorInvalidCall`] if the factorization is invalid.
 ///
-/// [`ErrorMaximumUpdates`] if rhere have already been `m` Forrest-Tomlin updates,
-/// see [`LU.nforrest`]. The factorization cannot be updated any more and must be
-/// recomputed by [`factorize()`]. The solution to the linear system has not been
-/// computed.
+/// [`Status::ErrorMaximumUpdates`] if rhere have already been `m` Forrest-Tomlin updates,
+/// see [`LU::nforrest`]. The factorization cannot be updated any more and must be
+/// recomputed by [`factorize()`](crate::factorize()). The solution to the linear
+/// system has not been computed.
 ///
-/// [`ErrorInvalidArgument`] if the right-hand side is invalid
-/// (forward system: nzrhs < 0 or nzrhs > m or one or more indices out of range;
-/// backward system: irhs[0] out of range).
+/// [`Status::ErrorInvalidArgument`] if the right-hand side is invalid
+/// (forward system: `nzrhs` < 0 or `nzrhs` > [`LU::m`] or one or more indices out of range;
+/// backward system: `irhs[0]` out of range).
 ///
-/// [`Reallocate`] if the solve was aborted because of insufficient memory in
-/// `l_i`,`l_x` or `u_i`,`u_x` to store data for [`update()`]. The number of
-/// additional elements required is given by [`LU.addmem_l`] and [`LU.addmem_u`].
+/// [`Status::Reallocate`] if the solve was aborted because of insufficient memory in
+/// `l_i`,`l_x` or `u_i`,`u_x` to store data for [`update()`](crate::update()).
+/// The number of additional elements required is given by [`LU::addmem_l`] and
+/// [`LU::addmem_u`].
 ///
 /// The user must reallocate the arrays for which additional memory is
 /// required. It is recommended to reallocate for the requested number
 /// of additional elements plus some extra space for further updates
 /// (e.g. 0.5 times the current array length). The new array lengths
-/// must be provided in [`LU.l_mem`] and [`LU.u_mem`]. [`solve_for_update()`] will
-/// start from scratch in the next call.
+/// must be provided in [`LU::l_mem`] and [`LU::u_mem`].
+/// [`solve_for_update()`](crate::solve_for_update()) will start from
+/// scratch in the next call.
 pub fn solve_for_update(
     lu: &mut LU,
     nzrhs: LUInt,

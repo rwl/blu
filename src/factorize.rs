@@ -16,10 +16,14 @@ use std::time::Instant;
 /// Markowitz criterion subject to columnwise threshold pivoting (the pivot
 /// may not be smaller than a factor of the largest entry in its column).
 ///
+/// ## Arguments
+///
 /// Matrix `B` must be in packed column form. `b_i` and `b_x` are arrays of row
 /// indices and nonzero values. Column `j` of matrix `B` contains elements
 ///
+/// ```txt
 ///     b_i[b_begin[j] .. b_end[j]-1], b_x[b_begin[j] .. b_end[j]-1].
+/// ```
 ///
 /// The columns must not contain duplicate row indices. The arrays `b_begin`
 /// and `b_end` may overlap, so that it is valid to pass `b_p`, `b_p[1..]` for

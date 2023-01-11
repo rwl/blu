@@ -6,19 +6,25 @@ use crate::LUInt;
 use crate::Status;
 
 /// Extract the row and column permutation and the LU factors. This routine can
-/// be used only after [`factorize()`] has completed and before a call to
-/// [`update()`]. At that point the factorized form of matrix `B` is
+/// be used only after [`factorize()`](crate::factorize()) has completed and before
+/// a call to [`update()`](crate::update()). At that point the factorized form of
+/// matrix `B` is
 ///
+/// ```txt
 ///     B[rowperm,colperm] = L*U,
+/// ```
 ///
 /// where `L` is unit lower triangular and `U` is upper triangular. If the
 /// factorization was singular (`rank` < `m`), then columns `colperm[rank..m-1]`
 /// of `B` have been replaced by unit columns with entry 1 in position
 /// `rowperm[rank..m-1]`.
 ///
-/// `get_factors()` is intended when the user needs direct access to the
+/// [`get_factors()`] is intended when the user needs direct access to the
 /// matrix factors. It is not required to solve linear systems with the factors
-/// (see [`solve_dense()`] and [`solve_sparse()`] instead).
+/// (see [`solve_dense()`](crate::solve_dense()) and [`solve_sparse()`](crate::solve_sparse())
+/// instead).
+///
+/// ## Arguments
 ///
 /// `rowperm[m]`: Returns the row permutation. If the row permutation is not required,
 /// then `None` can be passed.
@@ -36,9 +42,9 @@ use crate::Status;
 /// indices in each column are sorted with the diagonal element at the end.
 /// If any of the three arguments is `None`, then `U` is not returned.
 ///
-/// Returns [`BLU_ERROR_INVALID_CALL`] if the [`LU`] instance does not hold a fresh
-/// factorization (either [`factorize()`] has not completed or [`update()`] has been
-/// called in the meanwhile).
+/// Returns [`Status::ErrorInvalidCall`] if the [`LU`](crate::LU) instance does not
+/// hold a fresh factorization (either [`factorize()`](crate::factorize()) has not
+/// completed or [`update()`](crate::update()) has been called in the meanwhile).
 pub fn get_factors(
     lu: &mut LU,
     rowperm: Option<&mut [LUInt]>,
